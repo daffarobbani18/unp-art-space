@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../main.dart'; // Untuk akses supabase
+import '../../../../main/main_app.dart'; // Untuk akses supabase
 import 'artist_detail_page.dart';
 
 class ArtistListPage extends StatefulWidget {

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../main.dart';
-import '../../profile/screens/artist_list_page.dart';
-import '../../profile/screens/artist_detail_page.dart';
-import '../../../search_results_page.dart';
-import '../../../inspirasi_dunia_page.dart';
+import '../../../../main/main_app.dart';
+import '../../artist/screens/artist_list_page.dart';
+import '../../artist/screens/artist_detail_page.dart';
+import '../../search/screens/search_results_page.dart';
+import 'inspirasi_dunia_page.dart';
 
 class JelajahiPage extends StatefulWidget {
   const JelajahiPage({super.key});

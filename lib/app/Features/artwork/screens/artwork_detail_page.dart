@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
-import '../../profile/screens/artist_detail_page.dart';
+import '../../artist/screens/artist_detail_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 //import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';

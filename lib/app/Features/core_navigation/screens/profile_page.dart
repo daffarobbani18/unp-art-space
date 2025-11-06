@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../../main.dart'; // Untuk akses supabase
+import '../../../../main/main_app.dart'; // Untuk akses supabase
 import '../../artwork/screens/artwork_detail_page.dart';
 import '../../artwork/screens/edit_artwork_page.dart';
 import '../../profile/screens/setting_page.dart';
-import '../../../widgets/artist_profile_header.dart';
+import '../../profile/widgets/artist_profile_header.dart';
 import '../../profile/screens/edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {

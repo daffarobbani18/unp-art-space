@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'Features/core_navigation/screens/home_page.dart';
-import 'Features/core_navigation/screens/jelajahi_page.dart';
-import 'Features/core_navigation/screens/profile_page.dart';
+import '../../Features/home/screens/home_page.dart';
+import '../../Features/explore/screens/jelajahi_page.dart';
+import '../../Features/core_navigation/screens/profile_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'Features/profile/screens/artist_detail_page.dart';
-import 'Features/artwork/screens/artwork_detail_page.dart';
+import '../../artist/screens/artist_detail_page.dart';
+import '../../artwork/screens/artwork_detail_page.dart';
 
 class SearchResultsPage extends StatelessWidget {
   final String query;

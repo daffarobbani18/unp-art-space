@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import '../../../widgets/artist_profile_header.dart';
+import '../../profile/widgets/artist_profile_header.dart';
 
-import '../../../main.dart'; // Untuk akses supabase
+import '../../../../main/main_app.dart'; // Untuk akses supabase
 import '../../artwork/screens/artwork_detail_page.dart';
 
 class ArtistDetailPage extends StatefulWidget {

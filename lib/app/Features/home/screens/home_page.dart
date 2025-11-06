@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../../main.dart'; // access supabase client
-import '../../auth/auth_gate.dart';
+import '../../../../main/main_app.dart'; // access supabase client
+import '../../../core/navigation/auth_gate.dart';
 import '../../artwork/screens/upload_artwork_page.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:project1/Features/auth/screens/login_page.dart';
+import 'package:project1/app/Features/auth/screens/login_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../main.dart';
+import '../../../../main/main_app.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);

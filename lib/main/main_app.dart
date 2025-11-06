@@ -1,9 +1,10 @@
+//File main untuk aplikasi mobile (pengguna)
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'Features/auth/auth_gate.dart';
-import 'splash_screen.dart';
-import 'package:project1/http_overrides.dart';
+import '../app/core/navigation/auth_gate.dart';
+import '../app/core/screens/splash_screen.dart';
+import 'package:project1/app/core/utils/http_overrides.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
 late final SupabaseClient supabase;
