@@ -37,28 +37,34 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
 
   Future<void> _loadDashboardData() async {
     try {
+      print('📊 Loading dashboard data...');
+      
       // Get pending artworks count
       final pendingResponse = await Supabase.instance.client
           .from('artworks')
           .select('id')
           .eq('status', 'pending');
+      print('⏳ Pending artworks: ${(pendingResponse as List).length}');
       
       // Get approved artworks count
       final approvedResponse = await Supabase.instance.client
           .from('artworks')
           .select('id')
           .eq('status', 'approved');
+      print('✅ Approved artworks: ${(approvedResponse as List).length}');
       
-      // Get total artists count
+      // Get total artists count from users table (where role = 'artist')
       final artistsResponse = await Supabase.instance.client
-          .from('profiles')
+          .from('users')
           .select('id')
           .eq('role', 'artist');
+      print('🎨 Total artists: ${(artistsResponse as List).length}');
       
-      // Get total users count
+      // Get total users count from users table
       final usersResponse = await Supabase.instance.client
-          .from('profiles')
+          .from('users')
           .select('id');
+      print('👥 Total users: ${(usersResponse as List).length}');
 
       setState(() {
         _pendingArtworks = (pendingResponse as List).length;
@@ -67,7 +73,10 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         _totalUsers = (usersResponse as List).length;
         _isLoading = false;
       });
+      
+      print('✨ Dashboard loaded successfully!');
     } catch (e) {
+      print('❌ Error loading dashboard: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

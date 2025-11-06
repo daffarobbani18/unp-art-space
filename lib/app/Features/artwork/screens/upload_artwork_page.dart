@@ -224,7 +224,7 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
         'artist_name': artistName,
         'created_at': DateTime.now().toIso8601String(),
         'likes_count': 0,
-        'status': 'menunggu_persetujuan',
+        'status': 'pending',
       };
       
       print('Artwork data: $artworkData');

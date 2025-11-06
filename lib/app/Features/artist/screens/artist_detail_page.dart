@@ -37,7 +37,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
         .from('artworks')
         .select()
         .eq('artist_id', widget.artistId)
-        .eq('status', 'disetujui');
+        .eq('status', 'approved');
   }
 
   @override

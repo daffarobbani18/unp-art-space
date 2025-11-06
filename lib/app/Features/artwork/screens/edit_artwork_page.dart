@@ -97,8 +97,8 @@ Future<void> _updateArtwork() async {
           'description': _deskripsiController.text.trim(),
           'external_link': _linkController.text.trim().isEmpty ? null : _linkController.text.trim(),
           'category': _selectedKategori,
-          // Kita juga ubah statusnya kembali ke 'menunggu' setelah diedit
-          'status': 'menunggu_persetujuan',
+          // Kita juga ubah statusnya kembali ke 'pending' setelah diedit
+          'status': 'pending',
         })
         .eq('id', widget.artwork['id']); // Berdasarkan ID karya yang diedit
 

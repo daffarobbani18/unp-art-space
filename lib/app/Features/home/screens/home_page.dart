@@ -104,7 +104,7 @@ class _HomePageState extends State<HomePage> {
       query = query.eq('category', _selectedCategory);
     }
 
-    final data = await query.eq('status', 'disetujui').order('created_at', ascending: false) as List<dynamic>;
+    final data = await query.eq('status', 'approved').order('created_at', ascending: false) as List<dynamic>;
     return data.cast<Map<String, dynamic>>();
   }
 

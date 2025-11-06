@@ -40,7 +40,7 @@ class _JelajahiPageState extends State<JelajahiPage> {
       final artworkResults = await supabase
           .from('artworks')
           .select('*, users!inner(name)')
-          .eq('status', 'disetujui')
+          .eq('status', 'approved')
           .ilike('title', searchQuery);
 
       // Hentikan loading

@@ -23,9 +23,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
+      // Query dari tabel users karena aplikasi utama menggunakan tabel users
       final response = await Supabase.instance.client
-          .from('profiles')
-          .select('*, auth.users!inner(email)')
+          .from('users')
+          .select('*')
           .order('created_at', ascending: false);
 
       setState(() {
@@ -45,7 +46,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _updateUserRole(String userId, String newRole) async {
     try {
       await Supabase.instance.client
-          .from('profiles')
+          .from('users')
           .update({'role': newRole})
           .eq('id', userId);
 
@@ -89,7 +90,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     if (confirm == true) {
       try {
-        await Supabase.instance.client.from('profiles').delete().eq('id', userId);
+        await Supabase.instance.client.from('users').delete().eq('id', userId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Pengguna berhasil dihapus'), backgroundColor: Colors.green),
@@ -107,10 +108,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   List<Map<String, dynamic>> get _filteredUsers {
     if (_searchQuery.isEmpty) return _users;
     return _users.where((user) {
-      final username = user['username']?.toString().toLowerCase() ?? '';
+      final name = user['name']?.toString().toLowerCase() ?? '';
       final email = user['email']?.toString().toLowerCase() ?? '';
       final query = _searchQuery.toLowerCase();
-      return username.contains(query) || email.contains(query);
+      return name.contains(query) || email.contains(query);
     }).toList();
   }
 
@@ -235,7 +236,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  user['username'] ?? 'No name',
+                  user['name'] ?? 'No name',
                   style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),

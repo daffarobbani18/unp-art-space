@@ -296,8 +296,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                         left: 8,
                                         top: 8,
                                         child: Chip(
-                                          label: Text(status == 'disetujui' ? 'Disetujui' : 'Menunggu'),
-                                          backgroundColor: status == 'disetujui' ? Colors.green[100] : Colors.orange[100],
+                                          label: Text(status == 'approved' ? 'Disetujui' : (status == 'rejected' ? 'Ditolak' : 'Menunggu')),
+                                          backgroundColor: status == 'approved' ? Colors.green[100] : (status == 'rejected' ? Colors.red[100] : Colors.orange[100]),
                                         ),
                                       ),
                                       // Edit/Delete if owner
