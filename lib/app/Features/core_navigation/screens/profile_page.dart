@@ -5,6 +5,8 @@ import '../../artwork/screens/edit_artwork_page.dart';
 import '../../profile/screens/setting_page.dart';
 import '../../profile/widgets/artist_profile_header.dart';
 import '../../profile/screens/edit_profile_page.dart';
+import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/app_animations.dart';
 
 class ProfilePage extends StatefulWidget {
   // If userId is provided, this page shows that user's public profile.
@@ -121,17 +123,27 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Profil Saya'),
+        title: Text(
+          'Profil Saya',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontFamily: 'Playfair Display',
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        backgroundColor: AppTheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        shadowColor: AppTheme.textPrimary.withOpacity(0.1),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: Icon(Icons.settings_rounded, color: AppTheme.primary),
             onPressed: () {
-              // Navigasi ke Halaman Pengaturan
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const SettingsPage()),
-              ).then((_) { // <-- INI BAGIAN PENTINGNYA
-                // Refresh halaman profil setelah kembali dari halaman Settings
+              ).then((_) {
                 setState(() {
                   _userProfileFuture = _fetchUserProfile();
                   _myArtworksFuture = _fetchMyArtworks();
@@ -141,17 +153,9 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ],
       ),
-      body: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (event) {
-          debugPrint('ProfilePage.PointerDown at ${event.localPosition} global=${event.position}');
-        },
-        onPointerUp: (event) {
-          debugPrint('ProfilePage.PointerUp at ${event.localPosition} global=${event.position}');
-        },
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppTheme.spaceMd),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header profil + stats + conditional content berdasarkan role
@@ -159,20 +163,65 @@ class _ProfilePageState extends State<ProfilePage> {
               future: _userProfileFuture,
               builder: (context, userSnap) {
                 if (userSnap.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppTheme.spaceLg * 2),
+                      child: CircularProgressIndicator(color: AppTheme.primary),
+                    ),
+                  );
                 }
                 if (userSnap.hasError) {
-                  return Column(
-                    children: [
-                      const Text('Gagal memuat profil.'),
-                      const SizedBox(height: 8),
-                      Text(userSnap.error.toString()),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => setState(() => _userProfileFuture = _fetchUserProfile()),
-                        child: const Text('Coba lagi'),
+                  return FadeInAnimation(
+                    child: Container(
+                      padding: const EdgeInsets.all(AppTheme.spaceLg),
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(color: AppTheme.error.withOpacity(0.3)),
                       ),
-                    ],
+                      child: Column(
+                        children: [
+                          Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
+                          const SizedBox(height: AppTheme.spaceSm),
+                          Text(
+                            'Gagal memuat profil.',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: AppTheme.error,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.spaceXs),
+                          Text(
+                            userSnap.error.toString(),
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppTheme.textSecondary,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: AppTheme.spaceMd),
+                          BounceAnimation(
+                            onTap: () => setState(() => _userProfileFuture = _fetchUserProfile()),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppTheme.spaceMd,
+                                vertical: AppTheme.spaceSm,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                              ),
+                              child: Text(
+                                'Coba Lagi',
+                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   );
                 }
 
@@ -234,97 +283,292 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ),
 
-                        const Divider(thickness: 2),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: AppTheme.spaceLg),
 
                         // Conditional: artist -> tampilkan Karya Saya; selainnya tampilkan placeholder "Karya yang Disukai"
                         if (role == 'artist') ...[
-                          const Text('Karya Saya', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                          const SizedBox(height: 12),
+                          FadeSlideAnimation(
+                            delay: const Duration(milliseconds: 100),
+                            child: Text(
+                              'Karya Saya',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontFamily: 'Playfair Display',
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: AppTheme.spaceMd),
 
                           // Tampilkan konten galeri berdasarkan artSnap state
                           if (artSnap.connectionState == ConnectionState.waiting) ...[
-                            const Center(child: CircularProgressIndicator()),
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppTheme.spaceLg),
+                                child: CircularProgressIndicator(color: AppTheme.primary),
+                              ),
+                            ),
                           ] else if (artSnap.hasError) ...[
-                            Column(
-                              children: [
-                                const Text('Gagal memuat karya.'),
-                                Text(artSnap.error.toString()),
-                                ElevatedButton(
-                                  onPressed: () => setState(() => _myArtworksFuture = _fetchMyArtworks()),
-                                  child: const Text('Coba lagi'),
+                            FadeInAnimation(
+                              child: Container(
+                                padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.error.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
                                 ),
-                              ],
+                                child: Column(
+                                  children: [
+                                    Icon(Icons.error_outline_rounded, color: AppTheme.error, size: 32),
+                                    const SizedBox(height: AppTheme.spaceSm),
+                                    Text(
+                                      'Gagal memuat karya.',
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        color: AppTheme.error,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppTheme.spaceXs),
+                                    Text(
+                                      artSnap.error.toString(),
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: AppTheme.spaceSm),
+                                    BounceAnimation(
+                                      onTap: () => setState(() => _myArtworksFuture = _fetchMyArtworks()),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: AppTheme.spaceMd,
+                                          vertical: AppTheme.spaceSm,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          gradient: AppTheme.primaryGradient,
+                                          borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                        ),
+                                        child: Text(
+                                          'Coba Lagi',
+                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ] else if (artworks.isEmpty) ...[
-                            const Text('Anda belum mengunggah karya.'),
+                            FadeInAnimation(
+                              child: Container(
+                                padding: const EdgeInsets.all(AppTheme.spaceLg * 2),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(AppTheme.spaceLg),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppTheme.primary.withOpacity(0.1),
+                                      ),
+                                      child: Icon(
+                                        Icons.palette_outlined,
+                                        size: 64,
+                                        color: AppTheme.primary,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppTheme.spaceMd),
+                                    Text(
+                                      'Anda belum mengunggah karya.',
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ] else ...[
                             GridView.builder(
                               shrinkWrap: true,
                               physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: 0.8),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: AppTheme.spaceSm,
+                                mainAxisSpacing: AppTheme.spaceSm,
+                                childAspectRatio: 0.75,
+                              ),
                               itemCount: artworks.length,
                               itemBuilder: (context, index) {
                                 final artwork = artworks[index];
                                 final status = (artwork['status'] ?? '').toString();
                                 final imageUrl = artwork['media_url'] ?? '';
 
-                                return Card(
-                                  clipBehavior: Clip.hardEdge,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  child: Stack(
-                                    children: [
-                                      InkWell(
-                                        onTap: () => _navigateToDetail(artwork),
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                                          children: [
-                                            Expanded(
-                                              child: imageUrl.isNotEmpty
-                                                  ? Image.network(imageUrl, fit: BoxFit.cover)
-                                                  : Container(color: Colors.grey[300]),
-                                            ),
-                                            Padding(
-                                              padding: const EdgeInsets.all(8.0),
-                                              child: Text(artwork['title'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                                            ),
-                                          ],
-                                        ),
+                                return RevealAnimation(
+                                  delay: Duration(milliseconds: 50 * index),
+                                  child: AnimatedCard(
+                                    onTap: () => _navigateToDetail(artwork),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.surface,
+                                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                        boxShadow: AppTheme.shadowMd,
                                       ),
-                                      // Status chip top-left
-                                      Positioned(
-                                        left: 8,
-                                        top: 8,
-                                        child: Chip(
-                                          label: Text(status == 'approved' ? 'Disetujui' : (status == 'rejected' ? 'Ditolak' : 'Menunggu')),
-                                          backgroundColor: status == 'approved' ? Colors.green[100] : (status == 'rejected' ? Colors.red[100] : Colors.orange[100]),
-                                        ),
-                                      ),
-                                      // Edit/Delete if owner
-                                      if (_isOwnProfile)
-                                        Positioned(
-                                          right: 4,
-                                          top: 4,
-                                          child: Row(
-                                            children: [
-                                              IconButton(
-                                                icon: const Icon(Icons.edit, size: 18, color: Colors.white),
-                                                onPressed: () {
-                                                  Navigator.of(context).push(MaterialPageRoute(builder: (c) => EditArtworkPage(artwork: artwork))).then((_) {
-                                                    setState(() {
-                                                      _myArtworksFuture = _fetchMyArtworks();
-                                                    });
-                                                  });
-                                                },
-                                              ),
-                                              IconButton(
-                                                icon: const Icon(Icons.delete, size: 18, color: Colors.redAccent),
-                                                onPressed: () => _deleteArtwork(artwork['id'], artwork['media_url']),
-                                              ),
-                                            ],
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                                        children: [
+                                          // Image with Status and Actions
+                                          Expanded(
+                                            child: Stack(
+                                              children: [
+                                                ClipRRect(
+                                                  borderRadius: BorderRadius.only(
+                                                    topLeft: Radius.circular(AppTheme.radiusMd),
+                                                    topRight: Radius.circular(AppTheme.radiusMd),
+                                                  ),
+                                                  child: imageUrl.isNotEmpty
+                                                      ? Image.network(
+                                                          imageUrl,
+                                                          width: double.infinity,
+                                                          height: double.infinity,
+                                                          fit: BoxFit.cover,
+                                                          loadingBuilder: (context, child, progress) {
+                                                            if (progress == null) return child;
+                                                            return Container(
+                                                              color: AppTheme.surface,
+                                                              child: Center(
+                                                                child: CircularProgressIndicator(
+                                                                  color: AppTheme.primary,
+                                                                  strokeWidth: 2,
+                                                                ),
+                                                              ),
+                                                            );
+                                                          },
+                                                          errorBuilder: (_, __, ___) => Container(
+                                                            color: AppTheme.surface,
+                                                            child: Center(
+                                                              child: Icon(
+                                                                Icons.broken_image_rounded,
+                                                                color: AppTheme.textTertiary,
+                                                                size: 32,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        )
+                                                      : Container(
+                                                          color: AppTheme.surface,
+                                                          child: Center(
+                                                            child: Icon(
+                                                              Icons.image_not_supported_rounded,
+                                                              color: AppTheme.textTertiary,
+                                                              size: 32,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+                                                
+                                                // Status Badge - Top Left
+                                                Positioned(
+                                                  left: AppTheme.spaceXs,
+                                                  top: AppTheme.spaceXs,
+                                                  child: Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                      horizontal: AppTheme.spaceSm,
+                                                      vertical: 4,
+                                                    ),
+                                                    decoration: BoxDecoration(
+                                                      color: status == 'approved'
+                                                          ? AppTheme.success
+                                                          : (status == 'rejected' ? AppTheme.error : AppTheme.warning),
+                                                      borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                                      boxShadow: AppTheme.shadowSm,
+                                                    ),
+                                                    child: Text(
+                                                      status == 'approved'
+                                                          ? 'Disetujui'
+                                                          : (status == 'rejected' ? 'Ditolak' : 'Pending'),
+                                                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                                        color: Colors.white,
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 10,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ),
+                                                
+                                                // Edit & Delete Icons - Top Right
+                                                if (_isOwnProfile)
+                                                  Positioned(
+                                                    right: AppTheme.spaceXs,
+                                                    top: AppTheme.spaceXs,
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.black.withOpacity(0.6),
+                                                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                                      ),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          InkWell(
+                                                            onTap: () {
+                                                              Navigator.of(context)
+                                                                  .push(MaterialPageRoute(
+                                                                      builder: (c) => EditArtworkPage(artwork: artwork)))
+                                                                  .then((_) {
+                                                                setState(() {
+                                                                  _myArtworksFuture = _fetchMyArtworks();
+                                                                });
+                                                              });
+                                                            },
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(6),
+                                                              child: Icon(
+                                                                Icons.edit_rounded,
+                                                                size: 16,
+                                                                color: Colors.white,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                          Container(
+                                                            width: 1,
+                                                            height: 16,
+                                                            color: Colors.white.withOpacity(0.3),
+                                                          ),
+                                                          InkWell(
+                                                            onTap: () => _deleteArtwork(artwork['id'], artwork['media_url']),
+                                                            child: Padding(
+                                                              padding: const EdgeInsets.all(6),
+                                                              child: Icon(
+                                                                Icons.delete_rounded,
+                                                                size: 16,
+                                                                color: AppTheme.error,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                    ],
+                                          
+                                          // Title
+                                          Padding(
+                                            padding: const EdgeInsets.all(AppTheme.spaceSm),
+                                            child: Text(
+                                              artwork['title'] ?? '',
+                                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                                color: AppTheme.textPrimary,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                                   ),
                                 );
                               },
@@ -332,13 +576,44 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ] else ...[
                           // Viewer / non-artist view
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                            child: Text('Karya yang Disukai', style: Theme.of(context).textTheme.titleLarge, textAlign: TextAlign.center,),
-                          ),
-                          const SizedBox(height: 16),
-                          const Center(
-                            child: Text('Fitur "Karya yang Disukai" akan segera hadir.'),
+                          FadeInAnimation(
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppTheme.spaceLg * 2),
+                              child: Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(AppTheme.spaceLg),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppTheme.secondary.withOpacity(0.1),
+                                    ),
+                                    child: Icon(
+                                      Icons.favorite_outline_rounded,
+                                      size: 64,
+                                      color: AppTheme.secondary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceMd),
+                                  Text(
+                                    'Karya yang Disukai',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                      fontFamily: 'Playfair Display',
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceXs),
+                                  Text(
+                                    'Fitur ini akan segera hadir.',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ],
                       ],
@@ -350,7 +625,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ],
         ),
       ),
-    ),
     );
   }
 }
