@@ -3,8 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../../main/main_app.dart'; // access supabase client
 import '../../../core/navigation/auth_gate.dart';
 import '../../artwork/screens/upload_artwork_page.dart';
+import '../../events/upload_event_screen.dart';
+import '../../events/event_detail_screen.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -15,24 +18,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
-  // Dummy data for events
-  final List<Map<String, String>> _events = [
-    {
-      'title': 'Pameran Tugas Akhir DKV',
-      'date': '12 - 15 Juli 2024',
-      'image': 'https://images.unsplash.com/photo-1504198453319-5ce911bafcde?auto=format&fit=crop&w=800&q=60',
-    },
-    {
-      'title': 'Festival Seni Rupa',
-      'date': '20 Juli 2024',
-      'image': 'https://images.unsplash.com/photo-1529101091764-c3526daf38fe?auto=format&fit=crop&w=800&q=60',
-    },
-    {
-      'title': 'Workshop Ilustrasi',
-      'date': '25 Juli 2024',
-      'image': 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=60',
-    },
-  ];
+  // Real events from database
+  List<Map<String, dynamic>> _events = [];
+  bool _isLoadingEvents = true;
 
   // Kategori yang digunakan di halaman Home
   List<String> _categories = [
@@ -62,13 +50,97 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
+    // Show dialog to choose between artwork or event
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Pilih Jenis Upload',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF9333EA).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.palette, color: Color(0xFF9333EA)),
+                ),
+                title: Text(
+                  'Unggah Karya',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Upload artwork/karya seni Anda',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                ),
+                onTap: () => Navigator.pop(context, 'artwork'),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E3A8A).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.event, color: Color(0xFF1E3A8A)),
+                ),
+                title: Text(
+                  'Ajukan Event',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  'Ajukan event atau pameran seni',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
+                ),
+                onTap: () => Navigator.pop(context, 'event'),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
     );
-    setState(() {
-      _artworksFuture = _loadArtworks();
-    });
+
+    if (choice == 'artwork') {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
+      );
+      setState(() {
+        _artworksFuture = _loadArtworks();
+      });
+    } else if (choice == 'event') {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const UploadEventScreen()),
+      );
+      // Event doesn't affect artworks, but you might want to refresh something else
+    }
   }
 
   @override
@@ -76,6 +148,30 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     _artworksFuture = _loadArtworks();
     _loadCurrentUserRole();
+    _loadApprovedEvents();
+  }
+
+  Future<void> _loadApprovedEvents() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('events')
+          .select('*')
+          .eq('status', 'approved')
+          .order('event_date', ascending: true)
+          .limit(5);
+
+      if (mounted) {
+        setState(() {
+          _events = List<Map<String, dynamic>>.from(response as List);
+          _isLoadingEvents = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading events: $e');
+      if (mounted) {
+        setState(() => _isLoadingEvents = false);
+      }
+    }
   }
 
   Future<void> _loadCurrentUserRole() async {
@@ -106,6 +202,35 @@ class _HomePageState extends State<HomePage> {
 
     final data = await query.eq('status', 'approved').order('created_at', ascending: false) as List<dynamic>;
     return data.cast<Map<String, dynamic>>();
+  }
+
+  String _formatEventDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final now = DateTime.now();
+      final difference = date.difference(now).inDays;
+
+      if (difference == 0) {
+        return 'Hari ini';
+      } else if (difference == 1) {
+        return 'Besok';
+      } else if (difference < 7 && difference > 0) {
+        return '$difference hari lagi';
+      } else {
+        // Format: "12 November 2024"
+        return '${date.day} ${_getMonthName(date.month)} ${date.year}';
+      }
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    return months[month];
   }
 
   @override
@@ -180,71 +305,150 @@ class _HomePageState extends State<HomePage> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _events.length,
+              itemCount: _isLoadingEvents ? 3 : _events.length,
               separatorBuilder: (_, __) => const SizedBox(width: 16),
               itemBuilder: (context, idx) {
-                final event = _events[idx];
-                return SizedBox(
-                  width: 300,
-                  child: Card(
-                    color: Colors.grey[200],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                if (_isLoadingEvents) {
+                  // Loading skeleton
+                  return SizedBox(
+                    width: 300,
+                    child: Card(
+                      color: Colors.grey[200],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      elevation: 0,
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
                     ),
-                    elevation: 0,
-                    child: Stack(
-                      children: [
-                        // Background image from Unsplash (dummy)
-                        Container(
-                          height: double.infinity,
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
-                            image: DecorationImage(
-                              image: NetworkImage(event['image'] ?? ''),
-                              fit: BoxFit.cover,
+                  );
+                }
+
+                if (_events.isEmpty) {
+                  return SizedBox(
+                    width: 300,
+                    child: Card(
+                      color: Colors.grey[100],
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.event_busy_outlined, size: 48, color: Colors.grey[400]),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Belum ada event',
+                              style: GoogleFonts.poppins(color: Colors.grey[600]),
                             ),
-                          ),
-                          // subtle gradient overlay to ensure text contrast
-                          child: Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(24),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [Colors.transparent, Colors.black26],
-                              ),
-                            ),
-                          ),
+                          ],
                         ),
-                        Positioned(
-                          left: 20,
-                          bottom: 20,
-                          right: 20,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                event['title'] ?? '',
-                                style: GoogleFonts.playfairDisplay(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                      ),
+                    ),
+                  );
+                }
+
+                final event = _events[idx];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => EventDetailScreen(event: event),
+                      ),
+                    );
+                  },
+                  child: Hero(
+                    tag: 'event_${event['id']}',
+                    child: SizedBox(
+                      width: 300,
+                      child: Card(
+                        color: Colors.grey[200],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        elevation: 0,
+                        child: Stack(
+                          children: [
+                            // Background image from database
+                            Container(
+                              height: double.infinity,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(24),
+                                image: DecorationImage(
+                                  image: NetworkImage(event['image_url'] ?? ''),
+                                  fit: BoxFit.cover,
+                                  onError: (_, __) {},
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                event['date'] ?? '',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w500,
+                              // gradient overlay
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(24),
+                                  gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            Positioned(
+                              left: 20,
+                              bottom: 20,
+                              right: 20,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    event['title'] ?? 'Event',
+                                    style: GoogleFonts.playfairDisplay(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  if (event['event_date'] != null)
+                                    Text(
+                                      _formatEventDate(event['event_date']),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  if (event['location'] != null) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.location_on, size: 14, color: Colors.white),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            event['location'],
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 );

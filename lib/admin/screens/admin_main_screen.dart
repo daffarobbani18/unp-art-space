@@ -3,7 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_login_screen.dart';
 import 'dashboard_screen.dart';
-import 'moderation_screen.dart';
+import 'work_moderation_screen.dart';
+import 'event_moderation_screen.dart';
 import 'user_management_screen.dart';
 import 'settings_screen.dart';
 
@@ -21,6 +22,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Map<String, dynamic>> _menuItems = [
     {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'color': Color(0xFF1E3A8A)},
     {'icon': Icons.palette_rounded, 'label': 'Moderasi Karya', 'color': Color(0xFF9333EA)},
+    {'icon': Icons.event_rounded, 'label': 'Moderasi Event', 'color': Color(0xFFDC2626)},
     {'icon': Icons.people_rounded, 'label': 'Manajemen Pengguna', 'color': Color(0xFF059669)},
     {'icon': Icons.settings_rounded, 'label': 'Pengaturan', 'color': Color(0xFFEA580C)},
   ];
@@ -28,6 +30,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const ModerationScreen(),
+    const EventModerationScreen(),
     const UserManagementScreen(),
     const SettingsScreen(),
   ];
