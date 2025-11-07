@@ -4,8 +4,9 @@ import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import '../../artist/screens/artist_detail_page.dart';
 import 'package:google_fonts/google_fonts.dart';
-//import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../shared/theme/app_theme.dart';
+import '../../../shared/theme/app_animations.dart';
 
 class ArtworkDetailPage extends StatefulWidget {
   final Map<String, dynamic> artwork;
@@ -53,10 +54,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
     }
   }
 
-  // Colors from the spec
-  static const Color ivory = Color(0xFFF8F7FA);
-  static const Color deepBlue = Color(0xFF1E3A8A);
-  static const Color purpleAccent = Color(0xFF9333EA);
+  // Colors removed - now using AppTheme
 
   Future<void> _openUrl(String url) async {
     final uri = Uri.tryParse(url) ?? Uri();
@@ -96,26 +94,30 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
     };
 
     return Scaffold(
-      backgroundColor: ivory,
+      backgroundColor: AppTheme.background,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             pinned: true,
             expandedHeight: 400.0,
-            backgroundColor: deepBlue,
+            backgroundColor: AppTheme.primary,
             leading: IconButton(
-              icon: const Icon(Icons.arrow_back),
+              icon: const Icon(Icons.arrow_back_rounded),
               onPressed: () => Navigator.of(context).pop(),
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.favorite_border, color: Colors.red[400]),
+                icon: Icon(
+                  Icons.favorite_border_rounded,
+                  color: AppTheme.error,
+                ),
                 onPressed: _isLiking ? null : _likeArtwork,
               ),
               IconButton(
-                icon: const Icon(Icons.share_outlined),
+                icon: const Icon(Icons.share_rounded),
                 onPressed: () => _shareArtwork(title, imageUrl),
               ),
+              const SizedBox(width: AppTheme.spaceXs),
             ],
             flexibleSpace: FlexibleSpaceBar(
               collapseMode: CollapseMode.parallax,
@@ -201,7 +203,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                   //   child: Text(
                   //     'UNP ART SPACE',
                   //     style: GoogleFonts.playfairDisplay(
-                  //       color: purpleAccent,
+                  //       color: AppTheme.secondary,
                   //       fontWeight: FontWeight.w700,
                   //       fontSize: 18,
                   //       shadows: [
@@ -230,7 +232,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                         style: GoogleFonts.playfairDisplay(
                           fontSize: 28,
                           fontWeight: FontWeight.w700,
-                          color: deepBlue,
+                          color: AppTheme.primary,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -261,7 +263,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                             style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                           ),
                           const SizedBox(width: 16),
-                          Icon(Icons.comment_outlined, color: deepBlue),
+                          Icon(Icons.comment_outlined, color: AppTheme.primary),
                           const SizedBox(width: 6),
                           Text(
                             '${artwork['comments_count'] ?? 0} Komentar',
@@ -287,7 +289,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: deepBlue,
+                                  color: AppTheme.primary,
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -308,7 +310,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                               // Spesifikasi
                               Text(
                                 'Spesifikasi',
-                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: deepBlue),
+                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primary),
                               ),
                               const SizedBox(height: 8),
                               Wrap(
@@ -328,7 +330,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                               // Tentang Seniman
                               Text(
                                 'Tentang Seniman',
-                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: deepBlue),
+                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primary),
                               ),
                               const SizedBox(height: 12),
                               InkWell(
@@ -346,10 +348,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                   children: [
                                     CircleAvatar(
                                       radius: 28,
-                                      backgroundColor: purpleAccent.withOpacity(0.12),
+                                      backgroundColor: AppTheme.secondary.withOpacity(0.12),
                                       child: Text(
                                         artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
-                                        style: GoogleFonts.poppins(color: purpleAccent, fontWeight: FontWeight.w700, fontSize: 20),
+                                        style: GoogleFonts.poppins(color: AppTheme.secondary, fontWeight: FontWeight.w700, fontSize: 20),
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -373,13 +375,13 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                               if ((social['instagram'] as String?)?.isNotEmpty ?? false)
                                                 IconButton(
                                                   icon: const Icon(Icons.camera_alt),
-                                                  color: deepBlue,
+                                                  color: AppTheme.primary,
                                                   onPressed: () => _openUrl(social['instagram'] as String),
                                                 ),
                                               if ((social['behance'] as String?)?.isNotEmpty ?? false)
                                                 IconButton(
                                                   icon: const Icon(Icons.work),
-                                                  color: purpleAccent,
+                                                  color: AppTheme.secondary,
                                                   onPressed: () => _openUrl(social['behance'] as String),
                                                 ),
                                               // add more platforms if present
@@ -406,7 +408,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                   onTap: () => _openUrl(externalLink),
                                   child: Row(
                                     children: [
-                                      Icon(Icons.link, color: deepBlue),
+                                      Icon(Icons.link, color: AppTheme.primary),
                                       const SizedBox(width: 8),
                                       Expanded(
                                         child: Text(
@@ -438,7 +440,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                               icon: const Icon(Icons.favorite, color: Colors.white),
                               label: Text('Suka', style: GoogleFonts.poppins(color: Colors.white)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: deepBlue,
+                                backgroundColor: AppTheme.primary,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
@@ -451,11 +453,11 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur komentar akan segera hadir!')));
                               },
                               icon: const Icon(Icons.comment_outlined),
-                              label: Text('Komentar', style: GoogleFonts.poppins(color: deepBlue)),
+                              label: Text('Komentar', style: GoogleFonts.poppins(color: AppTheme.primary)),
                               style: OutlinedButton.styleFrom(
                                 padding: const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                side: BorderSide(color: deepBlue),
+                                side: BorderSide(color: AppTheme.primary),
                               ),
                             ),
                           ),

@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
+import '../../shared/theme/app_theme.dart';
+import '../../shared/theme/app_animations.dart';
 
 class UploadEventScreen extends StatefulWidget {
   const UploadEventScreen({super.key});
@@ -50,7 +51,14 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal memilih gambar: $e')),
+          SnackBar(
+            content: Text('Gagal memilih gambar: $e'),
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            ),
+          ),
         );
       }
     }
@@ -197,10 +205,14 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Event berhasil diajukan! Menunggu persetujuan admin.'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
+          SnackBar(
+            content: const Text('Event berhasil diajukan! Menunggu persetujuan admin.'),
+            backgroundColor: AppTheme.success,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            ),
+            duration: const Duration(seconds: 3),
           ),
         );
         Navigator.pop(context, true); // Return true untuk refresh my_events_screen
@@ -210,7 +222,11 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Gagal mengupload event: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: AppTheme.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -225,335 +241,470 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: Text('Upload Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(color: Colors.grey[200], height: 1),
+        title: Text(
+          'Upload Event',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontFamily: 'Playfair Display',
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
         ),
+        backgroundColor: AppTheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 2,
+        shadowColor: AppTheme.textPrimary.withOpacity(0.1),
       ),
       body: Stack(
         children: [
           SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(AppTheme.spaceMd),
             child: Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Image Picker Section
-                  GestureDetector(
-                    onTap: _isUploading ? null : _pickImage,
+                  // Info Banner
+                  FadeInAnimation(
                     child: Container(
-                      height: 200,
+                      padding: const EdgeInsets.all(AppTheme.spaceMd),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[300]!),
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primary.withOpacity(0.1),
+                            AppTheme.secondary.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                        border: Border.all(
+                          color: AppTheme.primary.withOpacity(0.3),
+                        ),
                       ),
-                      child: _imageFile != null
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(16),
-                              child: Image.file(_imageFile!, fit: BoxFit.cover),
-                            )
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.add_photo_alternate_outlined, size: 64, color: Colors.grey[400]),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Tap untuk pilih gambar event',
-                                  style: GoogleFonts.poppins(color: Colors.grey[600], fontSize: 14),
-                                ),
-                              ],
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outline_rounded, color: AppTheme.primary, size: 20),
+                          const SizedBox(width: AppTheme.spaceSm),
+                          Expanded(
+                            child: Text(
+                              'Event akan direview admin terlebih dahulu',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceLg),
+                  
+                  // Image Picker Section
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 100),
+                    child: BounceAnimation(
+                      onTap: _isUploading ? null : _pickImage,
+                      child: Container(
+                        height: 220,
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                          boxShadow: AppTheme.shadowMd,
+                          border: Border.all(
+                            color: _imageFile != null 
+                                ? AppTheme.success.withOpacity(0.5)
+                                : AppTheme.primary.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: _imageFile != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    Image.file(_imageFile!, fit: BoxFit.cover),
+                                    Positioned(
+                                      top: AppTheme.spaceSm,
+                                      right: AppTheme.spaceSm,
+                                      child: Container(
+                                        padding: const EdgeInsets.all(AppTheme.spaceXs),
+                                        decoration: BoxDecoration(
+                                          color: AppTheme.success,
+                                          shape: BoxShape.circle,
+                                          boxShadow: AppTheme.shadowMd,
+                                        ),
+                                        child: const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppTheme.primary.withOpacity(0.1),
+                                    ),
+                                    child: Icon(
+                                      Icons.add_photo_alternate_rounded,
+                                      size: 56,
+                                      color: AppTheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceMd),
+                                  Text(
+                                    'Tap untuk pilih gambar event',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: AppTheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceXs),
+                                  Text(
+                                    'Ukuran maksimal 5MB',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: AppTheme.spaceLg),
 
                   // Title Field
-                  Text('Judul Event *', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _titleController,
-                    enabled: !_isUploading,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Pameran Seni Rupa UNP 2024',
-                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                    style: GoogleFonts.poppins(fontSize: 14),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Judul event wajib diisi';
-                      }
-                      if (value.trim().length < 5) {
-                        return 'Judul minimal 5 karakter';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Content Field
-                  Text('Deskripsi Event *', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _contentController,
-                    enabled: !_isUploading,
-                    maxLines: 6,
-                    decoration: InputDecoration(
-                      hintText: 'Jelaskan tentang event ini, kegiatan yang akan dilakukan, dll.',
-                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                    style: GoogleFonts.poppins(fontSize: 14),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Deskripsi event wajib diisi';
-                      }
-                      if (value.trim().length < 20) {
-                        return 'Deskripsi minimal 20 karakter';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Date & Time Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Tanggal *', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: _isUploading ? null : _selectDate,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.calendar_today_outlined, size: 20, color: Colors.grey[600]),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _selectedDate != null
-                                          ? DateFormat('dd MMM yyyy').format(_selectedDate!)
-                                          : 'Pilih tanggal',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: _selectedDate != null ? Colors.black : Colors.grey[400],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('Waktu *', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                            const SizedBox(height: 8),
-                            InkWell(
-                              onTap: _isUploading ? null : _selectTime,
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.access_time_outlined, size: 20, color: Colors.grey[600]),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      _selectedTime != null
-                                          ? _selectedTime!.format(context)
-                                          : 'Pilih waktu',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: _selectedTime != null ? Colors.black : Colors.grey[400],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Location Field
-                  Text('Lokasi *', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14)),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _locationController,
-                    enabled: !_isUploading,
-                    decoration: InputDecoration(
-                      hintText: 'Contoh: Galeri Seni FBS UNP, Padang',
-                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[400]),
-                      filled: true,
-                      fillColor: Colors.white,
-                      prefixIcon: Icon(Icons.location_on_outlined, color: Colors.grey[600]),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFF1E3A8A), width: 2),
-                      ),
-                      contentPadding: const EdgeInsets.all(16),
-                    ),
-                    style: GoogleFonts.poppins(fontSize: 14),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Lokasi event wajib diisi';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Submit Button
-                  ElevatedButton(
-                    onPressed: _isUploading ? null : _submitEvent,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1E3A8A),
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey[300],
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      elevation: 0,
-                    ),
-                    child: _isUploading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : Text(
-                            'Upload Event',
-                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // Info Box
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.blue[200]!),
-                    ),
-                    child: Row(
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 150),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(Icons.info_outline, color: Colors.blue[700], size: 20),
-                        const SizedBox(width: 12),
+                        Text(
+                          'Judul Event',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.spaceXs),
+                        TextFormField(
+                          controller: _titleController,
+                          enabled: !_isUploading,
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: Pameran Seni Rupa UNP 2024',
+                            filled: true,
+                            fillColor: AppTheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.primary, width: 2),
+                            ),
+                            prefixIcon: Icon(Icons.title_rounded, color: AppTheme.primary),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Judul event wajib diisi';
+                            }
+                            if (value.trim().length < 5) {
+                              return 'Judul minimal 5 karakter';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Content Field
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 200),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Deskripsi Event',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.spaceXs),
+                        TextFormField(
+                          controller: _contentController,
+                          enabled: !_isUploading,
+                          maxLines: 6,
+                          decoration: InputDecoration(
+                            hintText: 'Jelaskan tentang event ini, kegiatan yang akan dilakukan, dll.',
+                            filled: true,
+                            fillColor: AppTheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.primary, width: 2),
+                            ),
+                            prefixIcon: Icon(Icons.description_rounded, color: AppTheme.primary),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Deskripsi event wajib diisi';
+                            }
+                            if (value.trim().length < 20) {
+                              return 'Deskripsi minimal 20 karakter';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Date & Time Row
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 250),
+                    child: Row(
+                      children: [
                         Expanded(
-                          child: Text(
-                            'Event yang diajukan akan direview oleh admin terlebih dahulu. Anda akan menerima notifikasi jika event disetujui atau ditolak.',
-                            style: GoogleFonts.poppins(fontSize: 12, color: Colors.blue[900]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Tanggal',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceXs),
+                              BounceAnimation(
+                                onTap: _isUploading ? null : _selectDate,
+                                child: Container(
+                                  padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surface,
+                                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                    border: Border.all(
+                                      color: _selectedDate != null 
+                                          ? AppTheme.primary 
+                                          : AppTheme.textTertiary.withOpacity(0.2),
+                                    ),
+                                    boxShadow: _selectedDate != null ? AppTheme.shadowSm : null,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 20,
+                                        color: _selectedDate != null ? AppTheme.primary : AppTheme.textSecondary,
+                                      ),
+                                      const SizedBox(width: AppTheme.spaceSm),
+                                      Expanded(
+                                        child: Text(
+                                          _selectedDate != null
+                                              ? DateFormat('dd MMM yyyy').format(_selectedDate!)
+                                              : 'Pilih tanggal',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: _selectedDate != null ? AppTheme.textPrimary : AppTheme.textSecondary,
+                                            fontWeight: _selectedDate != null ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spaceSm),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Waktu',
+                                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppTheme.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: AppTheme.spaceXs),
+                              BounceAnimation(
+                                onTap: _isUploading ? null : _selectTime,
+                                child: Container(
+                                  padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.surface,
+                                    borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                                    border: Border.all(
+                                      color: _selectedTime != null 
+                                          ? AppTheme.primary 
+                                          : AppTheme.textTertiary.withOpacity(0.2),
+                                    ),
+                                    boxShadow: _selectedTime != null ? AppTheme.shadowSm : null,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 20,
+                                        color: _selectedTime != null ? AppTheme.primary : AppTheme.textSecondary,
+                                      ),
+                                      const SizedBox(width: AppTheme.spaceSm),
+                                      Expanded(
+                                        child: Text(
+                                          _selectedTime != null
+                                              ? _selectedTime!.format(context)
+                                              : 'Pilih waktu',
+                                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                            color: _selectedTime != null ? AppTheme.textPrimary : AppTheme.textSecondary,
+                                            fontWeight: _selectedTime != null ? FontWeight.w600 : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Location Field
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 300),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Lokasi',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppTheme.spaceXs),
+                        TextFormField(
+                          controller: _locationController,
+                          enabled: !_isUploading,
+                          decoration: InputDecoration(
+                            hintText: 'Contoh: Galeri Seni FBS UNP, Padang',
+                            filled: true,
+                            fillColor: AppTheme.surface,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                              borderSide: BorderSide(color: AppTheme.primary, width: 2),
+                            ),
+                            prefixIcon: Icon(Icons.location_on_rounded, color: AppTheme.primary),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Lokasi event wajib diisi';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: AppTheme.spaceLg * 2),
+
+                  // Submit Button
+                  ScaleInAnimation(
+                    delay: const Duration(milliseconds: 350),
+                    child: BounceAnimation(
+                      onTap: _isUploading ? null : _submitEvent,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd + 2),
+                        decoration: BoxDecoration(
+                          gradient: _isUploading 
+                              ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500])
+                              : AppTheme.primaryGradient,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+                          boxShadow: _isUploading ? [] : AppTheme.shadowLg,
+                        ),
+                        child: _isUploading
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppTheme.spaceSm),
+                                  Text(
+                                    'Mengupload...',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.cloud_upload_rounded, color: Colors.white),
+                                  const SizedBox(width: AppTheme.spaceXs),
+                                  Text(
+                                    'Upload Event',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceMd),
                 ],
               ),
             ),
           ),
-
-          // Loading Overlay
-          if (_isUploading)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text('Mengupload event...', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 8),
-                      Text('Mohon tunggu sebentar', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
