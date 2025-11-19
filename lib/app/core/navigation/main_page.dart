@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../Features/home/screens/home_page.dart';
+import '../../Features/home/screens/home_page_glass.dart';
 import '../../Features/search/screens/search_page.dart';
 import '../../Features/upload/screens/upload_page.dart';
 import '../../Features/notification/screens/notification_page.dart';
@@ -19,7 +19,7 @@ class _MainPageState extends State<MainPage> {
 
   // Daftar semua halaman utama kita
   static const List<Widget> _pages = <Widget>[
-    HomePage(),
+    HomePageGlass(),
     SearchPage(),
     UploadPage(),
     NotificationPage(),

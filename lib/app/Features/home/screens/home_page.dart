@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../main/main_app.dart'; // access supabase client
-import '../../../core/navigation/auth_gate.dart';
+import 'dart:ui';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../../../main/main_app.dart';
 import '../../artwork/screens/upload_artwork_page.dart';
 import '../../events/upload_event_screen.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
+import '../../events/event_detail_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -365,54 +364,59 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
 
+          // Event Seni Mendatang Section
           SliverToBoxAdapter(
             child: Column(
               children: [
+                const SizedBox(height: 24),
+                
+                // Section Title with Glass Effect
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: const Icon(
+                          Icons.event_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Event Seni Mendatang',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 16),
                 
-                // Simple Event Section
+                // Event Carousel
                 if (_isLoadingEvents)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: SizedBox(
-                      height: 180,
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
-                        ),
+                  SizedBox(
+                    height: 220,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
                       ),
                     ),
                   ),
                 if (!_isLoadingEvents && _events.isNotEmpty) ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Event Seni Mendatang',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {},
-                          child: Text(
-                            'Lihat Semua',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[700],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
                   SizedBox(
-                    height: 180,
+                    height: 220,
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -424,161 +428,204 @@ class _HomePageState extends State<HomePage> {
                         final location = event['location'] ?? '';
                         final eventDate = event['event_date'];
                         
-                        return Container(
-                          width: 280,
-                          margin: const EdgeInsets.only(right: 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.grey[200]!,
-                              width: 1,
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Event Image
-                                Container(
-                                  height: 100,
-                                  width: double.infinity,
-                                  color: Colors.grey[100],
-                                  child: imageUrl.isNotEmpty
-                                      ? Image.network(
-                                          imageUrl,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Icon(
-                                            Icons.image_outlined,
-                                            size: 40,
-                                            color: Colors.grey[400],
-                                          ),
-                                        )
-                                      : Icon(
-                                          Icons.event_outlined,
-                                          size: 40,
-                                          color: Colors.grey[400],
-                                        ),
-                                ),
-                                // Event Info
-                                Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                      const SizedBox(height: 6),
-                                      if (eventDate != null)
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.calendar_today,
-                                              size: 12,
-                                              color: Colors.grey[600],
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              _formatDate(eventDate),
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                color: Colors.grey[600],
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => EventDetailScreen(event: event),
+                              ),
+                            );
+                          },
+                          child: Container(
+                            width: 320,
+                            margin: const EdgeInsets.only(right: 16),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Stack(
+                                children: [
+                                  // Background Image
+                                  Positioned.fill(
+                                    child: imageUrl.isNotEmpty
+                                        ? Image.network(
+                                            imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, __, ___) => Container(
+                                              color: Colors.white.withOpacity(0.05),
+                                              child: const Icon(
+                                                Icons.event_rounded,
+                                                size: 60,
+                                                color: Colors.white38,
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      if (location.isNotEmpty) ...[
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.location_on_outlined,
-                                              size: 12,
-                                              color: Colors.grey[600],
+                                          )
+                                        : Container(
+                                            color: Colors.white.withOpacity(0.05),
+                                            child: const Icon(
+                                              Icons.event_rounded,
+                                              size: 60,
+                                              color: Colors.white38,
                                             ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                location,
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: Colors.grey[600],
+                                          ),
+                                  ),
+                                  // Glass Overlay at Bottom
+                                  Positioned(
+                                    bottom: 0,
+                                    left: 0,
+                                    right: 0,
+                                    child: ClipRRect(
+                                      borderRadius: const BorderRadius.only(
+                                        bottomLeft: Radius.circular(24),
+                                        bottomRight: Radius.circular(24),
+                                      ),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(16),
+                                          decoration: BoxDecoration(
+                                            gradient: LinearGradient(
+                                              begin: Alignment.topCenter,
+                                              end: Alignment.bottomCenter,
+                                              colors: [
+                                                Colors.transparent,
+                                                Colors.black.withOpacity(0.7),
+                                              ],
+                                            ),
+                                            border: Border(
+                                              top: BorderSide(
+                                                color: Colors.white.withOpacity(0.2),
+                                              ),
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
                                                 ),
-                                                maxLines: 1,
+                                                maxLines: 2,
                                                 overflow: TextOverflow.ellipsis,
                                               ),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 8),
+                                              if (eventDate != null)
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.calendar_today,
+                                                      size: 14,
+                                                      color: Colors.white70,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      _formatDate(eventDate),
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.white70,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              if (location.isNotEmpty) ..[
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                  children: [
+                                                    const Icon(
+                                                      Icons.location_on,
+                                                      size: 14,
+                                                      color: Colors.white70,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Expanded(
+                                                      child: Text(
+                                                        location,
+                                                        style: const TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.white70,
+                                                        ),
+                                                        maxLines: 1,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ],
+                                          ),
                                         ),
-                                      ],
-                                    ],
+                                      ),
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
+                                ],
+                              ),
                           ),
                         );
                       },
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
                 ],
                 
-                // Simple Category Filter
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: SizedBox(
-                    height: 40,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      itemBuilder: (context, idx) {
-                        final cat = _categories[idx];
-                        final isSelected = _selectedCategory == cat;
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: InkWell(
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = cat;
-                                _artworksFuture = _loadArtworks();
-                              });
-                            },
-                            borderRadius: BorderRadius.circular(20),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.black : Colors.grey[100],
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  cat,
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : Colors.black87,
-                                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                    fontSize: 14,
+                // Glass Filter Chips
+                SizedBox(
+                  height: 50,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    itemCount: _categories.length,
+                    itemBuilder: (context, idx) {
+                      final cat = _categories[idx];
+                      final isSelected = _selectedCategory == cat;
+                      
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedCategory = cat;
+                              _artworksFuture = _loadArtworks();
+                            });
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(25),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isSelected 
+                                      ? Colors.white.withOpacity(0.3)
+                                      : Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(25),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.white.withOpacity(0.5)
+                                        : Colors.white.withOpacity(0.2),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    cat,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      fontSize: 14,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
                 const SizedBox(height: 24),
