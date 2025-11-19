@@ -19,16 +19,18 @@ class _HomePageGlassState extends State<HomePageGlass> {
   bool _isLoadingEvents = true;
 
   List<String> _categories = [
-    'All',
-    'Painting',
-    'Digital',
-    '3D',
-    'Photography',
-    'Sculpture',
-    'Mixed Media',
+    'Semua',
+    'Lukisan',
+    'Fotografi',
+    'Patung',
+    'Digital Art',
+    'Kerajinan',
+    'Musik',
+    'Film',
+    'Lainnya'
   ];
 
-  String _selectedCategory = 'All';
+  String _selectedCategory = 'Semua';
   late Future<List<Map<String, dynamic>>> _artworksFuture;
   String? _currentUserRole;
 
@@ -86,7 +88,7 @@ class _HomePageGlassState extends State<HomePageGlass> {
   Future<List<Map<String, dynamic>>> _loadArtworks() async {
     var query = supabase.from('artworks').select();
 
-    if (_selectedCategory != 'All') {
+    if (_selectedCategory != 'Semua') {
       query = query.eq('category', _selectedCategory);
     }
 
