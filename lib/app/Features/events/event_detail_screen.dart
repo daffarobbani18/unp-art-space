@@ -263,179 +263,175 @@ ${widget.event['content'] ?? ''}
           ),
 
           // Layer 3: Scrollable Content
-          SafeArea(
-            child: SingleChildScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  SizedBox(height: imageHeight - 120),
+          SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                // Spacing untuk foto - konten dimulai tepat di bawah foto
+                SizedBox(height: imageHeight),
 
-                  // Content with Animation
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title Glass Card
-                          _buildGlassCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.event['title'] ?? 'Untitled Event',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                    height: 1.3,
-                                    letterSpacing: -0.5,
-                                  ),
+                // Content with Animation
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title Glass Card
+                        _buildGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.event['title'] ?? 'Untitled Event',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.3,
+                                  letterSpacing: -0.5,
                                 ),
-                                const SizedBox(height: 12),
-                                // Artist Info (if available)
-                                if (widget.event['artist_name'] != null)
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        radius: 16,
-                                        backgroundColor: Colors.white
-                                            .withOpacity(0.2),
-                                        backgroundImage:
-                                            widget.event['artist_avatar'] !=
-                                                null
-                                            ? NetworkImage(
-                                                widget.event['artist_avatar'],
-                                              )
-                                            : null,
-                                        child:
-                                            widget.event['artist_avatar'] ==
-                                                null
-                                            ? const Icon(
-                                                Icons.person,
-                                                size: 18,
-                                                color: Colors.white70,
-                                              )
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Diselenggarakan oleh',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 11,
-                                                color: Colors.white60,
-                                              ),
-                                            ),
-                                            Text(
-                                              widget.event['artist_name'],
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.white,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                              ],
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Date & Time Glass Card
-                          _buildInfoGlassCard(
-                            icon: Icons.calendar_month_rounded,
-                            iconGradient: const LinearGradient(
-                              colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
-                            ),
-                            title: 'Tanggal & Waktu',
-                            content: _formatEventDate(eventDate),
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Location Glass Card
-                          _buildInfoGlassCard(
-                            icon: Icons.location_on_rounded,
-                            iconGradient: const LinearGradient(
-                              colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
-                            ),
-                            title: 'Lokasi Event',
-                            content:
-                                widget.event['location'] ??
-                                'Lokasi belum ditentukan',
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Description Glass Card
-                          _buildGlassCard(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                              ),
+                              const SizedBox(height: 12),
+                              // Artist Info (if available)
+                              if (widget.event['artist_name'] != null)
                                 Row(
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(10),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFF10B981),
-                                            Color(0xFF34D399),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
+                                    CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: Colors.white.withOpacity(
+                                        0.2,
                                       ),
-                                      child: const Icon(
-                                        Icons.description_rounded,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
+                                      backgroundImage:
+                                          widget.event['artist_avatar'] != null
+                                          ? NetworkImage(
+                                              widget.event['artist_avatar'],
+                                            )
+                                          : null,
+                                      child:
+                                          widget.event['artist_avatar'] == null
+                                          ? const Icon(
+                                              Icons.person,
+                                              size: 18,
+                                              color: Colors.white70,
+                                            )
+                                          : null,
                                     ),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Tentang Event',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Diselenggarakan oleh',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 11,
+                                              color: Colors.white60,
+                                            ),
+                                          ),
+                                          Text(
+                                            widget.event['artist_name'],
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  widget.event['content'] ??
-                                      'Tidak ada deskripsi',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 15,
-                                    height: 1.8,
-                                    color: Colors.grey[300],
-                                  ),
-                                ),
-                              ],
-                            ),
+                            ],
                           ),
+                        ),
 
-                          const SizedBox(
-                            height: 100,
-                          ), // Space for bottom button
-                        ],
-                      ),
+                        const SizedBox(height: 16),
+
+                        // Date & Time Glass Card
+                        _buildInfoGlassCard(
+                          icon: Icons.calendar_month_rounded,
+                          iconGradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+                          ),
+                          title: 'Tanggal & Waktu',
+                          content: _formatEventDate(eventDate),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Location Glass Card
+                        _buildInfoGlassCard(
+                          icon: Icons.location_on_rounded,
+                          iconGradient: const LinearGradient(
+                            colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                          ),
+                          title: 'Lokasi Event',
+                          content:
+                              widget.event['location'] ??
+                              'Lokasi belum ditentukan',
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Description Glass Card
+                        _buildGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF10B981),
+                                          Color(0xFF34D399),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.description_rounded,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Tentang Event',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                widget.event['content'] ??
+                                    'Tidak ada deskripsi',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  height: 1.8,
+                                  color: Colors.grey[300],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 100), // Space for bottom button
+                      ],
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
 
