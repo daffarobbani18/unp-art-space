@@ -1,6 +1,7 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../artwork/screens/upload_artwork_page.dart';
 import '../../events/upload_event_screen.dart';
 import '../../../../main/main_app.dart';
@@ -16,6 +17,13 @@ class _UploadPageState extends State<UploadPage> {
   String? _currentUserRole;
   bool _isLoading = true;
 
+  // Background gradient colors (Dark Glassmorphism)
+  static const List<Color> _bgGradient = [
+    Color(0xFF0F2027),
+    Color(0xFF203A43),
+    Color(0xFF2C5364),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -24,7 +32,7 @@ class _UploadPageState extends State<UploadPage> {
 
   Future<void> _loadCurrentUserRole() async {
     setState(() => _isLoading = true);
-    
+
     final user = supabase.auth.currentUser;
     if (user == null) {
       if (mounted) {
@@ -42,10 +50,12 @@ class _UploadPageState extends State<UploadPage> {
           .select('role')
           .eq('id', user.id)
           .maybeSingle();
-      
+
       if (mounted) {
         setState(() {
-          _currentUserRole = result != null ? (result['role'] as String?) : null;
+          _currentUserRole = result != null
+              ? (result['role'] as String?)
+              : null;
           _isLoading = false;
         });
       }
@@ -62,388 +72,412 @@ class _UploadPageState extends State<UploadPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: AppTheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 2,
-        shadowColor: AppTheme.textTertiary.withOpacity(0.1),
-        title: Text(
-          'Upload Karya',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontFamily: 'Playfair Display',
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          // Background Layer - Gradient penuh layar
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _bgGradient,
+              ),
+            ),
+          ),
+          // Content Layer
+          SafeArea(
+            child: _isLoading
+                ? Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                    ),
+                  )
+                : _currentUserRole != 'artist'
+                ? _buildAccessDeniedView()
+                : _buildUploadOptionsView(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Access Denied View (Glassmorphism)
+  Widget _buildAccessDeniedView() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.1),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.lock_rounded,
+                      size: 64,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Akses Terbatas',
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Hanya akun Artist yang dapat mengunggah karya seni atau mengajukan event.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.orange.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.info_outline_rounded,
+                              color: Colors.orange,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Daftar sebagai Artist untuk mengakses',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.white.withOpacity(0.9),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
-      body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
-              ),
-            )
-          : _currentUserRole != 'artist'
-              ? Center(
-                  child: FadeInAnimation(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppTheme.spaceLg),
+    );
+  }
+
+  // Upload Options View (Glassmorphism)
+  Widget _buildUploadOptionsView() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Title
+          Text(
+            'Upload Karya',
+            style: GoogleFonts.poppins(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Bagikan karya terbaik Anda dengan dunia',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.white.withOpacity(0.7),
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Welcome Banner (Glass Card)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.15),
+                    width: 1.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.palette_rounded,
+                        color: Colors.white.withOpacity(0.8),
+                        size: 32,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceLg),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppTheme.secondary.withOpacity(0.2),
-                                  AppTheme.accent.withOpacity(0.2),
-                                ],
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.lock_rounded,
-                              size: 80,
-                              color: AppTheme.secondary,
-                            ),
-                          ),
-                          const SizedBox(height: AppTheme.spaceLg),
                           Text(
-                            'Akses Terbatas',
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontFamily: 'Playfair Display',
-                              fontWeight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
+                            'Selamat Datang, Artist!',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: AppTheme.spaceSm),
+                          const SizedBox(height: 4),
                           Text(
-                            'Hanya akun Artist yang dapat mengunggah karya seni atau mengajukan event.',
-                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: AppTheme.textSecondary,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          const SizedBox(height: AppTheme.spaceLg),
-                          Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceMd),
-                            decoration: BoxDecoration(
-                              color: AppTheme.secondary.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.info_outline_rounded,
-                                  color: AppTheme.secondary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: AppTheme.spaceXs),
-                                Text(
-                                  'Daftar sebagai Artist untuk mengakses fitur ini',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.secondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
+                            'Mari wujudkan kreativitas Anda',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.white.withOpacity(0.7),
                             ),
                           ),
                         ],
                       ),
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Section Title
+          Text(
+            'Pilih Jenis Upload',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white.withOpacity(0.95),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Pilih salah satu opsi di bawah untuk mulai',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.6),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Button 1: Unggah Karya Seni (Purple Glass)
+          _buildGlassButton(
+            icon: Icons.palette_rounded,
+            title: 'Unggah Karya Seni',
+            subtitle: 'Upload foto, video, atau karya digital',
+            gradientColors: [
+              const Color(0xFF9C27B0).withOpacity(0.3),
+              const Color(0xFF673AB7).withOpacity(0.3),
+            ],
+            borderColor: const Color(0xFF9C27B0).withOpacity(0.4),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Button 2: Ajukan Event (Orange/Red Glass)
+          _buildGlassButton(
+            icon: Icons.event_rounded,
+            title: 'Ajukan Event',
+            subtitle: 'Ajukan pameran seni atau event kreatif',
+            gradientColors: [
+              const Color(0xFFFF5722).withOpacity(0.3),
+              const Color(0xFFFF9800).withOpacity(0.3),
+            ],
+            borderColor: const Color(0xFFFF5722).withOpacity(0.4),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const UploadEventScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 32),
+
+          // Tips Section (Glass Container)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.lightbulb_outline_rounded,
+                          color: Color(0xFFFFC107),
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Tips Upload',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(0.95),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTipItem('Gunakan foto berkualitas tinggi'),
+                    _buildTipItem('Berikan deskripsi yang jelas'),
+                    _buildTipItem('Pilih kategori yang sesuai'),
+                    _buildTipItem('Upload akan direview oleh admin'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  // Glass Button Widget
+  Widget _buildGlassButton({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required List<Color> gradientColors,
+    required Color borderColor,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradientColors,
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: borderColor, width: 1.5),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(AppTheme.spaceLg),
+                  child: Icon(icon, color: Colors.white, size: 32),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Welcome Section
-                      FadeSlideAnimation(
-                        child: Container(
-                          padding: const EdgeInsets.all(AppTheme.spaceMd),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.secondary.withOpacity(0.1),
-                                AppTheme.accent.withOpacity(0.1),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(AppTheme.spaceSm),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.secondary.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                ),
-                                child: Icon(
-                                  Icons.palette_rounded,
-                                  color: AppTheme.secondary,
-                                  size: 32,
-                                ),
-                              ),
-                              const SizedBox(width: AppTheme.spaceMd),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Selamat Datang, Artist!',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'Bagikan karya terbaik Anda',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
-                      const SizedBox(height: AppTheme.spaceLg),
-
-                      // Title
-                      FadeSlideAnimation(
-                        delay: const Duration(milliseconds: 100),
-                        child: Text(
-                          'Pilih Jenis Upload',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontFamily: 'Playfair Display',
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spaceXs),
-                      FadeSlideAnimation(
-                        delay: const Duration(milliseconds: 150),
-                        child: Text(
-                          'Pilih salah satu opsi di bawah untuk mulai mengunggah',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spaceLg),
-
-                      // Upload Artwork Card
-                      ScaleInAnimation(
-                        delay: const Duration(milliseconds: 200),
-                        child: BounceAnimation(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const UploadArtworkPage(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceLg),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppTheme.secondary, AppTheme.secondaryLight],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.secondary.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                  ),
-                                  child: const Icon(
-                                    Icons.palette_rounded,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ),
-                                const SizedBox(width: AppTheme.spaceMd),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Unggah Karya Seni',
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontFamily: 'Playfair Display',
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Upload foto, video, atau karya digital Anda',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Colors.white.withOpacity(0.9),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spaceMd),
-
-                      // Upload Event Card
-                      ScaleInAnimation(
-                        delay: const Duration(milliseconds: 300),
-                        child: BounceAnimation(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const UploadEventScreen(),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(AppTheme.spaceLg),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppTheme.accent, AppTheme.accentOrange],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppTheme.accent.withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                  ),
-                                  child: const Icon(
-                                    Icons.event_rounded,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ),
-                                const SizedBox(width: AppTheme.spaceMd),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Ajukan Event',
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontFamily: 'Playfair Display',
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Ajukan pameran seni atau event kreatif',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Colors.white.withOpacity(0.9),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppTheme.spaceLg),
-
-                      // Tips Section
-                      FadeSlideAnimation(
-                        delay: const Duration(milliseconds: 400),
-                        child: Container(
-                          padding: const EdgeInsets.all(AppTheme.spaceMd),
-                          decoration: BoxDecoration(
-                            color: AppTheme.surface,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            boxShadow: AppTheme.shadowSm,
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.lightbulb_outline_rounded,
-                                    color: AppTheme.accentYellow,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: AppTheme.spaceXs),
-                                  Text(
-                                    'Tips Upload',
-                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: AppTheme.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppTheme.spaceSm),
-                              _buildTipItem('Gunakan foto berkualitas tinggi'),
-                              _buildTipItem('Berikan deskripsi yang jelas'),
-                              _buildTipItem('Pilih kategori yang sesuai'),
-                              _buildTipItem('Upload akan direview oleh admin'),
-                            ],
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.8),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
+  // Tip Item Helper Widget
   Widget _buildTipItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(top: AppTheme.spaceXs),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -452,16 +486,18 @@ class _UploadPageState extends State<UploadPage> {
             width: 6,
             height: 6,
             decoration: BoxDecoration(
-              color: AppTheme.secondary,
+              color: Colors.white.withOpacity(0.6),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: AppTheme.spaceXs),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppTheme.textSecondary,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: Colors.white.withOpacity(0.8),
+                height: 1.4,
               ),
             ),
           ),
