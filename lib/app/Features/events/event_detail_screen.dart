@@ -256,6 +256,42 @@ ${widget.event['content'] ?? ''}
                         ),
                       ),
                     ),
+                    // Small "View Image" Button (Bottom Right Corner)
+                    Positioned(
+                      bottom: 16,
+                      right: 16,
+                      child: GestureDetector(
+                        onTap: () {
+                          if (widget.event['image_url'] != null) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => _FullScreenImageView(
+                                  imageUrl: widget.event['image_url'],
+                                  heroTag: 'event_${widget.event['id']}_button',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.3),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.zoom_out_map,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -432,66 +468,6 @@ ${widget.event['content'] ?? ''}
                   ),
                 ),
               ],
-            ),
-          ),
-
-          // Floating "View Image" Button (Above scroll content)
-          Positioned(
-            top: imageHeight - 60,
-            right: 20,
-            child: GestureDetector(
-              onTap: () {
-                if (widget.event['image_url'] != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => _FullScreenImageView(
-                        imageUrl: widget.event['image_url'],
-                        heroTag: 'event_${widget.event['id']}_button',
-                      ),
-                    ),
-                  );
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.zoom_in,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Lihat Foto',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
             ),
           ),
 
