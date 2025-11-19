@@ -407,6 +407,20 @@ class _HomePageState extends State<HomePage> {
       SliverToBoxAdapter(
         child: Column(
           children: [
+            // Gradient overlay effect at top
+            Container(
+              height: 20,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppTheme.secondary.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: AppTheme.spaceMd),
           // Section Header: Event Seni Mendatang
           FadeSlideAnimation(
@@ -884,6 +898,11 @@ class _HomePageState extends State<HomePage> {
                               offset: const Offset(0, 8),
                             ),
                           ],
+                          // Subtle gradient border effect
+                          border: Border.all(
+                            color: AppTheme.secondary.withOpacity(0.05),
+                            width: 1,
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1036,6 +1055,26 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                         ),
                                       ),
+                                    // Bottom gradient overlay for smooth transition
+                                    Positioned(
+                                      bottom: 0,
+                                      left: 0,
+                                      right: 0,
+                                      child: Container(
+                                        height: 40,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topCenter,
+                                            end: Alignment.bottomCenter,
+                                            colors: [
+                                              Colors.transparent,
+                                              AppTheme.surface.withOpacity(0.3),
+                                              AppTheme.surface,
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
