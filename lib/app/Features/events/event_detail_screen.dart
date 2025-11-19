@@ -266,42 +266,6 @@ ${widget.event['content'] ?? ''}
                         ),
                       ),
                     ),
-                    // Small "View Image" Button (Bottom Right Corner)
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: GestureDetector(
-                        onTap: () {
-                          if (widget.event['image_url'] != null) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => _FullScreenImageView(
-                                  imageUrl: widget.event['image_url'],
-                                  heroTag: 'event_${widget.event['id']}_button',
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.3),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.zoom_out_map,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -574,7 +538,7 @@ ${widget.event['content'] ?? ''}
 
           // Zoom Button (Top layer above scroll)
           Positioned(
-            bottom: 0,
+            top: 180,
             right: 0,
             left: 0,
             child: AnimatedOpacity(
@@ -584,8 +548,8 @@ ${widget.event['content'] ?? ''}
                 ignoring: !_isZoomButtonVisible,
                 child: Container(
                   height: imageHeight,
-                  alignment: Alignment.bottomRight,
-                  padding: const EdgeInsets.only(right: 16, bottom: 16),
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 10),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
