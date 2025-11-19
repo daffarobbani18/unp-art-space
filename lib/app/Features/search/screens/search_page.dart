@@ -1,12 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
-import '../../../../main/main_app.dart';
 import '../../artist/screens/artist_list_page.dart';
 import '../../artist/screens/artist_detail_page.dart';
 import 'search_results_page.dart';
-import '../../explore/screens/inspirasi_dunia_page.dart';
+// imported pages
 
+// Glassmorphism-styled SearchPage using SingleChildScrollView
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
 
@@ -15,343 +15,81 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  late Future<List<Map<String, dynamic>>> _newTalentsFuture;
+  // Sample talents list (local placeholder)
+  final List<Map<String, String>> _newTalents = List.generate(
+    8,
+    (i) => {
+      'name': 'Talent ${i + 1}',
+      'avatar': '',
+    },
+  );
 
-  // Daftar spesialisasi untuk UI
-  final List<String> _specializations = const [
+  final List<String> _specializations = [
     'Pelukis',
     'Fotografer',
     'Ilustrator',
     'Videografer',
     'Desainer Grafis',
-    'Musisi'
+    'Musisi',
   ];
 
-  // Palet warna dengan tema ungu
-  final List<LinearGradient> _gradients = [
-    LinearGradient(
-      colors: [AppTheme.secondary, AppTheme.secondaryLight],
-    ),
-    LinearGradient(
-      colors: [AppTheme.accent, Color(0xFFF06292)],
-    ),
-    LinearGradient(
-      colors: [AppTheme.accentOrange, Color(0xFFFFB74D)],
-    ),
-    LinearGradient(
-      colors: [AppTheme.secondary.withOpacity(0.8), AppTheme.accent],
-    ),
-    LinearGradient(
-      colors: [AppTheme.secondaryLight, AppTheme.accent],
-    ),
-    LinearGradient(
-      colors: [AppTheme.accentYellow, AppTheme.accentOrange],
-    ),
+  static const List<Color> _bgGradient = [
+    Color(0xFF0F2027),
+    Color(0xFF203A43),
+    Color(0xFF2C5364),
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _newTalentsFuture = _loadNewTalents();
-  }
-
-  Future<List<Map<String, dynamic>>> _loadNewTalents() async {
-    try {
-      final res = await supabase
-          .from('users')
-          .select('id,name,specialization')
-          .eq('role', 'artist')
-          .order('created_at', ascending: false)
-          .limit(10);
-      return (res as List).cast<Map<String, dynamic>>();
-    } catch (e) {
-      print('Error loading talents: $e');
-      return [];
-    }
-  }
-
-  Future<void> _performSearch(String query) async {
-    if (query.isEmpty) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
-        ),
-      ),
-    );
-
-    try {
-      final searchQuery = '%$query%';
-
-      final artistResults = await supabase
-          .from('users')
-          .select()
-          .eq('role', 'artist')
-          .ilike('name', searchQuery);
-
-      final artworkResults = await supabase
-          .from('artworks')
-          .select('*, users!inner(name)')
-          .eq('status', 'approved')
-          .ilike('title', searchQuery);
-
-      if (mounted) Navigator.of(context).pop();
-
-      if (mounted) {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => SearchResultsPage(
-              query: query,
-              artistResults: List<Map<String, dynamic>>.from(artistResults),
-              artworkResults: List<Map<String, dynamic>>.from(artworkResults),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        Navigator.of(context).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error pencarian: ${e.toString()}'),
-            backgroundColor: AppTheme.error,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              FadeSlideAnimation(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: _bgGradient,
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.secondary.withOpacity(0.2), AppTheme.accent.withOpacity(0.2)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.white.withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.white.withOpacity(0.14)),
                         ),
-                        child: Icon(
-                          Icons.explore_rounded,
-                          color: AppTheme.secondary,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spaceSm),
-                      Text(
-                        'Jelajahi',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontFamily: 'Playfair Display',
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-
-              // Search Bar
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 100),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                      border: Border.all(
-                        color: AppTheme.secondary.withOpacity(0.3),
-                        width: 1.5,
-                      ),
-                      boxShadow: AppTheme.shadowSm,
-                    ),
-                    child: TextFormField(
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        hintText: 'Cari karya atau seniman...',
-                        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: AppTheme.textTertiary,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.search_rounded,
-                          color: AppTheme.secondary,
-                          size: 24,
-                        ),
-                        filled: false,
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: AppTheme.spaceMd,
-                          horizontal: AppTheme.spaceMd,
-                        ),
-                      ),
-                      onFieldSubmitted: (value) {
-                        _performSearch(value);
-                      },
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: AppTheme.spaceLg),
-
-              // Section Title: Spesialisasi
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 200),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: Text(
-                    'Jelajahi Berdasarkan Spesialisasi',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontFamily: 'Playfair Display',
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-
-              // Grid Spesialisasi
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: AppTheme.spaceMd,
-                  crossAxisSpacing: AppTheme.spaceMd,
-                  childAspectRatio: 2.5,
-                  children: List.generate(_specializations.length, (index) {
-                    final specialization = _specializations[index];
-                    final gradient = _gradients[index % _gradients.length];
-
-                    return ScaleInAnimation(
-                      delay: Duration(milliseconds: 300 + (index * 50)),
-                      child: BounceAnimation(
-                        onTap: () {
-                          Navigator.of(context).push(MaterialPageRoute(
-                            builder: (_) =>
-                                ArtistListPage(specialization: specialization),
-                          ));
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: gradient,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.secondary.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Center(
-                            child: Text(
-                              specialization,
-                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-
-              const SizedBox(height: AppTheme.spaceLg),
-
-              // Inspirasi Dunia Card
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 500),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: BounceAnimation(
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const InspirasiDuniaPage()),
-                      );
-                    },
-                    child: Container(
-                      height: 140,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.secondary.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        child: Stack(
-                          fit: StackFit.expand,
+                        child: Row(
                           children: [
-                            Image.network(
-                              'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43',
-                              fit: BoxFit.cover,
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    AppTheme.secondary.withOpacity(0.4),
-                                    AppTheme.secondary.withOpacity(0.8),
-                                  ],
+                            const Icon(Icons.search_rounded, color: Colors.white70),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: TextField(
+                                style: const TextStyle(color: Colors.white),
+                                cursorColor: Colors.white70,
+                                decoration: InputDecoration(
+                                  hintText: 'Cari seniman, karya, atau event...',
+                                  hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                                  border: InputBorder.none,
                                 ),
-                              ),
-                            ),
-                            Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    '🌍',
-                                    style: const TextStyle(fontSize: 48),
-                                  ),
-                                  const SizedBox(height: AppTheme.spaceXs),
-                                  Text(
-                                    'Inspirasi Dunia',
-                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                      fontFamily: 'Playfair Display',
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: AppTheme.spaceXs),
-                                  Text(
-                                    'Jelajahi karya seni dari seluruh dunia',
-                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                ],
+                                onSubmitted: (v) {
+                                  if (v.trim().isEmpty) return;
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (_) => SearchResultsPage(query: v, artistResults: [], artworkResults: [])),
+                                  );
+                                },
                               ),
                             ),
                           ],
@@ -360,201 +98,172 @@ class _SearchPageState extends State<SearchPage> {
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: AppTheme.spaceLg),
+                const SizedBox(height: 20),
 
-              // Talenta Baru Bergabung
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 600),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [AppTheme.accentYellow.withOpacity(0.2), AppTheme.accentOrange.withOpacity(0.2)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          Icons.star_rounded,
-                          color: AppTheme.accentYellow,
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: AppTheme.spaceXs),
-                      Text(
-                        'Talenta Baru Bergabung',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontFamily: 'Playfair Display',
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ],
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Jelajahi Berdasarkan Spesialisasi',
+                    style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 18, fontWeight: FontWeight.w700),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-
-              // Talent List
-              SizedBox(
-                height: 180,
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _newTalentsFuture,
-                  builder: (context, snap) {
-                    if (snap.connectionState == ConnectionState.waiting) {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
-                        ),
-                      );
-                    }
-                    if (snap.hasError) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppTheme.spaceMd),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline_rounded,
-                                size: 48,
-                                color: AppTheme.error,
-                              ),
-                              const SizedBox(height: AppTheme.spaceXs),
-                              Text(
-                                'Gagal memuat talenta',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    final talents = snap.data ?? [];
-                    if (talents.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'Belum ada talenta baru.',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      );
-                    }
-
-                    return ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: talents.length,
-                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                      itemBuilder: (context, index) {
-                        final talent = talents[index];
-                        final name = (talent['name'] ?? 'Pengguna') as String;
-                        final spec = (talent['specialization'] ?? '') as String;
-
-                        return ScaleInAnimation(
-                          delay: Duration(milliseconds: 700 + (index * 50)),
-                          child: BounceAnimation(
-                            onTap: () {
-                              Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) =>
-                                      ArtistDetailPage(artistId: talent['id'])));
-                            },
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: _specializations.map((spec) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => SearchResultsPage(query: spec, artistResults: [], artworkResults: [])));
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
                             child: Container(
-                              width: 150,
-                              margin: const EdgeInsets.only(right: AppTheme.spaceMd),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
-                                color: AppTheme.surface,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                border: Border.all(
-                                  color: AppTheme.secondary.withOpacity(0.1),
-                                  width: 1,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.secondary.withOpacity(0.1),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                                color: Colors.white.withOpacity(0.06),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: Colors.white.withOpacity(0.12)),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(3),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: LinearGradient(
-                                          colors: [AppTheme.secondary, AppTheme.secondaryLight],
-                                        ),
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 32,
-                                        backgroundColor: AppTheme.surface,
-                                        child: Text(
-                                          name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                            color: AppTheme.secondary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppTheme.spaceSm),
-                                    Text(
-                                      name,
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      textAlign: TextAlign.center,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppTheme.spaceXs,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.secondary.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                      ),
+                              child: Text(spec, style: TextStyle(color: Colors.white.withOpacity(0.95))),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Stack(
+                      children: [
+                        Container(
+                          height: 140,
+                          color: Colors.white.withOpacity(0.04),
+                          child: Image.network(
+                            'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                            height: 140,
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, Colors.black.withOpacity(0.6)],
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          bottom: 12,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                ),
+                                child: Row(
+                                  children: const [
+                                    Expanded(
                                       child: Text(
-                                        spec.isNotEmpty ? spec : 'Artist',
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          fontSize: 11,
-                                          color: AppTheme.secondary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        textAlign: TextAlign.center,
+                                        'Inspirasi Dunia',
+                                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
                                       ),
                                     ),
+                                    Icon(Icons.arrow_forward_ios_rounded, color: Colors.white70, size: 16),
                                   ],
                                 ),
                               ),
                             ),
                           ),
-                        );
-                      },
-                    );
-                  },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
-            ],
+
+                const SizedBox(height: 24),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Talenta Baru Bergabung', style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 16, fontWeight: FontWeight.w700)),
+                      TextButton(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistListPage(specialization: ''))),
+                        child: Text('Lihat Semua', style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 84,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _newTalents.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 12),
+                    itemBuilder: (context, idx) {
+                      final t = _newTalents[idx];
+                      return GestureDetector(
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistDetailPage(artistId: ''))),
+                        child: Column(
+                          children: [
+                            ClipOval(
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
+                                child: Container(
+                                  width: 56,
+                                  height: 56,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.06),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withOpacity(0.12)),
+                                  ),
+                                  child: t['avatar']!.isNotEmpty
+                                      ? ClipOval(child: Image.network(t['avatar']!, fit: BoxFit.cover))
+                                      : Center(child: Text(t['name']!.substring(0,1), style: const TextStyle(color: Colors.white))),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            SizedBox(
+                              width: 72,
+                              child: Text(t['name']!, style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center),
+                            )
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const SizedBox(height: 40),
+              ],
+            ),
           ),
         ),
       ),
