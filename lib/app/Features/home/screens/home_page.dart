@@ -5,7 +5,6 @@ import '../../artwork/screens/upload_artwork_page.dart';
 import '../../events/upload_event_screen.dart';
 import '../../events/event_detail_screen.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/app_animations.dart';
@@ -1165,52 +1164,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-}
-                                        color: AppTheme.textSecondary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: AppTheme.spaceLg),
-            ],
-          ),
-        ),
-      ],
-      ),
-      floatingActionButton: _currentUserRole == 'artist'
-          ? ScaleInAnimation(
-              duration: const Duration(milliseconds: 600),
-              delay: const Duration(milliseconds: 400),
-              child: FloatingActionButton.extended(
-                onPressed: _openUploadPage,
-                backgroundColor: AppTheme.secondary,
-                elevation: 8,
-                icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
-                label: Text(
-                  'Unggah Karya',
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            )
-          : null,
     );
   }
 }
