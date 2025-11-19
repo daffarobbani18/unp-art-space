@@ -331,31 +331,48 @@ class _HomePageState extends State<HomePage> {
   _artworksFuture = _loadArtworks();
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        backgroundColor: AppTheme.surface,
-        elevation: 0,
-        scrolledUnderElevation: 2,
-        shadowColor: AppTheme.textTertiary.withOpacity(0.1),
-        title: Text(
-          'UNP Art Space',
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            fontFamily: 'Playfair Display',
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            color: AppTheme.textPrimary,
-            tooltip: 'Notifikasi',
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout_rounded),
-            color: AppTheme.textPrimary,
-            tooltip: 'Logout',
-            onPressed: () async {
+      body: CustomScrollView(
+        slivers: [
+          // Modern App Bar with gradient
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            backgroundColor: Colors.transparent,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppTheme.secondary, AppTheme.secondaryLight],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: FlexibleSpaceBar(
+                title: Text(
+                  'UNP Art Space',
+                  style: TextStyle(
+                    fontFamily: 'Playfair Display',
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    fontSize: 22,
+                  ),
+                ),
+                centerTitle: false,
+                titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                color: Colors.white,
+                tooltip: 'Notifikasi',
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: const Icon(Icons.logout_rounded),
+                color: Colors.white,
+                tooltip: 'Logout',
+                onPressed: () async {
               try {
                 await supabase.auth.signOut();
               } catch (e) {
@@ -387,10 +404,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(width: AppTheme.spaceXs),
         ],
       ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          const SizedBox(height: AppTheme.spaceLg),
+      
+      SliverToBoxAdapter(
+        child: Column(
+          children: [
+            const SizedBox(height: AppTheme.spaceMd),
           // Section Header: Event Seni Mendatang
           FadeSlideAnimation(
             delay: const Duration(milliseconds: 100),
@@ -398,10 +416,19 @@ class _HomePageState extends State<HomePage> {
               padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.event_note_rounded,
-                    color: AppTheme.primary,
-                    size: 28,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppTheme.secondary.withOpacity(0.2), AppTheme.accent.withOpacity(0.2)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      Icons.event_note_rounded,
+                      color: AppTheme.secondary,
+                      size: 24,
+                    ),
                   ),
                   const SizedBox(width: AppTheme.spaceSm),
                   Text(
@@ -629,7 +656,7 @@ class _HomePageState extends State<HomePage> {
           FadeSlideAnimation(
             delay: const Duration(milliseconds: 200),
             child: SizedBox(
-              height: 50,
+              height: 48,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
@@ -639,7 +666,7 @@ class _HomePageState extends State<HomePage> {
                   final isSelected = _selectedCategory == cat;
                   
                   return Padding(
-                    padding: const EdgeInsets.only(right: AppTheme.spaceSm),
+                    padding: const EdgeInsets.only(right: AppTheme.spaceXs),
                     child: BounceAnimation(
                       onTap: () {
                         setState(() {
@@ -652,13 +679,29 @@ class _HomePageState extends State<HomePage> {
                         curve: Curves.easeInOut,
                         padding: const EdgeInsets.symmetric(
                           horizontal: AppTheme.spaceMd,
-                          vertical: AppTheme.spaceSm,
+                          vertical: AppTheme.spaceXs,
                         ),
                         decoration: BoxDecoration(
-                          gradient: isSelected ? AppTheme.primaryGradient : null,
+                          gradient: isSelected 
+                              ? LinearGradient(
+                                  colors: [AppTheme.secondary, AppTheme.secondaryLight],
+                                )
+                              : null,
                           color: isSelected ? null : AppTheme.surface,
                           borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                          boxShadow: isSelected ? AppTheme.shadowMd : AppTheme.shadowSm,
+                          border: Border.all(
+                            color: isSelected ? Colors.transparent : AppTheme.secondary.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                          boxShadow: isSelected 
+                              ? [
+                                  BoxShadow(
+                                    color: AppTheme.secondary.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ]
+                              : null,
                         ),
                         child: Center(
                           child: Text(
@@ -678,6 +721,39 @@ class _HomePageState extends State<HomePage> {
           ),
           const SizedBox(height: AppTheme.spaceLg),
 
+          // Galeri Karya Section Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppTheme.secondary.withOpacity(0.2), AppTheme.accent.withOpacity(0.2)],
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.art_track_rounded,
+                    color: AppTheme.secondary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppTheme.spaceSm),
+                Text(
+                  'Galeri Karya',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontFamily: 'Playfair Display',
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppTheme.spaceMd),
+
           // Galeri Karya
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
@@ -692,7 +768,7 @@ class _HomePageState extends State<HomePage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
                           ),
                           const SizedBox(height: AppTheme.spaceMd),
                           Text(
@@ -809,9 +885,19 @@ class _HomePageState extends State<HomePage> {
                         },
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppTheme.surface,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            boxShadow: AppTheme.shadowMd,
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.secondary.withOpacity(0.1),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: AppTheme.secondary.withOpacity(0.1),
+                              width: 1,
+                            ),
                           ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -840,7 +926,7 @@ class _HomePageState extends State<HomePage> {
                                                         progress.expectedTotalBytes!
                                                     : null,
                                                 valueColor: AlwaysStoppedAnimation<Color>(
-                                                  AppTheme.primary,
+                                                  AppTheme.secondary,
                                                 ),
                                               ),
                                             ),
@@ -931,7 +1017,10 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           const SizedBox(height: AppTheme.spaceLg),
-        ],
+            ],
+          ),
+        ),
+      ],
       ),
       floatingActionButton: _currentUserRole == 'artist'
           ? ScaleInAnimation(
