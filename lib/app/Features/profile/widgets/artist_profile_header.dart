@@ -48,10 +48,6 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
   late final SupabaseClient _supabase;
   bool _isProcessing = false;
   String? _profileImageUrl;
-  final GlobalKey _cameraKey = GlobalKey();
-  OverlayEntry? _cameraOverlayEntry;
-  Offset? _cameraGlobalTopLeft;
-  Size? _cameraGlobalSize;
 
   @override
   void initState() {
@@ -232,181 +228,113 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
       debugPrint(
         'ArtistProfileHeader.build: isOwnProfile=${widget.isOwnProfile} profileImageUrl=$_profileImageUrl',
       );
-    if (_kDebugCameraArea) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        try {
-          final ctx = _cameraKey.currentContext;
-          if (ctx != null) {
-            final box = ctx.findRenderObject() as RenderBox?;
-            if (box != null && box.hasSize) {
-              final topLeft = box.localToGlobal(Offset.zero);
-              final size = box.size;
-              // store for overlay
-              _cameraGlobalTopLeft = topLeft;
-              _cameraGlobalSize = size;
-              debugPrint('cameraRect: topLeft=$topLeft size=$size');
-              _ensureCameraOverlay();
-            } else {
-              debugPrint('cameraRect: box null or has no size');
-              _removeCameraOverlay();
-            }
-          } else {
-            debugPrint('cameraRect: _cameraKey.currentContext is null');
-            _removeCameraOverlay();
-          }
-        } catch (e) {
-          debugPrint('cameraRect: error $e');
-        }
-      });
-    } else {
-      // Even if debug disabled, still update overlay position each frame so overlay stays aligned
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        try {
-          final ctx = _cameraKey.currentContext;
-          if (ctx != null) {
-            final box = ctx.findRenderObject() as RenderBox?;
-            if (box != null && box.hasSize) {
-              _cameraGlobalTopLeft = box.localToGlobal(Offset.zero);
-              _cameraGlobalSize = box.size;
-              _ensureCameraOverlay();
-            } else {
-              _removeCameraOverlay();
-            }
-          } else {
-            _removeCameraOverlay();
-          }
-        } catch (_) {}
-      });
-    }
     return Column(
       children: [
-        Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: (event) {
-            if (_kDebugCameraArea)
-              debugPrint(
-                'ArtistProfileHeader.PointerDown at ${event.localPosition} global=${event.position}',
-              );
-          },
-          onPointerUp: (event) {
-            if (_kDebugCameraArea)
-              debugPrint(
-                'ArtistProfileHeader.PointerUp at ${event.localPosition} global=${event.position}',
-              );
-          },
-          child: Stack(
-            clipBehavior: Clip.none,
-            alignment: Alignment.center,
-            children: [
-              Container(
-                height: 200,
-                width: double.infinity,
-                color: Colors.grey[200],
-                child: Image.network(
-                  'https://picsum.photos/seed/${widget.artistId}/800/400',
-                  fit: BoxFit.cover,
-                ),
+        Stack(
+          clipBehavior: Clip.none,
+          alignment: Alignment.center,
+          children: [
+            Container(
+              height: 200,
+              width: double.infinity,
+              color: Colors.grey[200],
+              child: Image.network(
+                'https://picsum.photos/seed/${widget.artistId}/800/400',
+                fit: BoxFit.cover,
               ),
-              if (!widget.isOwnProfile)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 8,
-                  left: 8,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.black.withOpacity(0.4),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
+            ),
+            if (!widget.isOwnProfile)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 8,
+                left: 8,
+                child: CircleAvatar(
+                  backgroundColor: Colors.black.withOpacity(0.4),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.of(context).pop(),
                   ),
                 ),
-              Positioned(
-                top: 140,
-                child: SizedBox(
-                  width: 130,
-                  height: 130,
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      GestureDetector(
-                        onTap: _showFullImage,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 4),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.white,
-                            backgroundImage: _profileImageUrl != null
-                                ? NetworkImage(_profileImageUrl!)
-                                : null,
-                            child: _profileImageUrl == null
-                                ? Text(
-                                    widget.name.isNotEmpty
-                                        ? widget.name[0].toUpperCase()
-                                        : 'U',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 50,
-                                      fontWeight: FontWeight.bold,
-                                      color: ArtistProfileHeader.deepBlue,
-                                    ),
-                                  )
-                                : null,
-                          ),
+              ),
+            Positioned(
+              top: 140,
+              child: SizedBox(
+                width: 130,
+                height: 130,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    GestureDetector(
+                      onTap: _showFullImage,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 4),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor: Colors.white,
+                          backgroundImage: _profileImageUrl != null
+                              ? NetworkImage(_profileImageUrl!)
+                              : null,
+                          child: _profileImageUrl == null
+                              ? Text(
+                                  widget.name.isNotEmpty
+                                      ? widget.name[0].toUpperCase()
+                                      : 'U',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 50,
+                                    fontWeight: FontWeight.bold,
+                                    color: ArtistProfileHeader.deepBlue,
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
-                      if (widget.isOwnProfile)
-                        Positioned(
-                          right: 0,
-                          bottom: 0,
-                          child: Container(
-                            key: _cameraKey,
-                            // debug border to visualize the tappable area when enabled
-                            decoration: _kDebugCameraArea
-                                ? BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    //border: Border.all(color: Colors.redAccent, width: 2),
-                                  )
-                                : null,
-                            // keep original placeholder but ignore pointers so overlay handles taps
-                            child: IgnorePointer(
-                              ignoring: true,
-                              child: Material(
-                                elevation: 2,
-                                shape: const CircleBorder(),
-                                clipBehavior: Clip.antiAlias,
-                                color: Colors.white,
-                                child: SizedBox(
-                                  width: 36,
-                                  height: 36,
-                                  child: Center(
-                                    child: _isProcessing
-                                        ? const SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
-                                  ),
-                                ),
+                    ),
+                    if (widget.isOwnProfile)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Material(
+                          elevation: 2,
+                          shape: const CircleBorder(),
+                          clipBehavior: Clip.antiAlias,
+                          color: Colors.white,
+                          child: InkWell(
+                            onTap: _isProcessing ? null : _showAvatarOptions,
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: Center(
+                                child: _isProcessing
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.camera_alt,
+                                        size: 20,
+                                        color: Colors.grey,
+                                      ),
                               ),
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         const SizedBox(height: 70),
         Padding(
@@ -522,70 +450,13 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
     );
   }
 
-  void _ensureCameraOverlay() {
-    if (!mounted) return;
-    final overlay = Overlay.of(context);
-    if (overlay == null) return;
-
-    // If overlay exists and position hasn't changed, do nothing
-    if (_cameraOverlayEntry != null) {
-      // rebuild to update position
-      _cameraOverlayEntry!.markNeedsBuild();
-      return;
-    }
-
-    _cameraOverlayEntry = OverlayEntry(
-      builder: (context) {
-        if (_cameraGlobalTopLeft == null || _cameraGlobalSize == null)
-          return const SizedBox.shrink();
-        final topLeft = _cameraGlobalTopLeft!;
-        final size = _cameraGlobalSize!;
-
-        return Positioned(
-          left: topLeft.dx,
-          top: topLeft.dy,
-          width: size.width,
-          height: size.height,
-          child: Material(
-            color: Colors.transparent,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 24,
-              icon: const Icon(
-                Icons.camera_alt,
-                color: ArtistProfileHeader.deepBlue,
-              ),
-              onPressed: () {
-                if (_kDebugCameraArea)
-                  debugPrint('overlay camera IconButton.onPressed called');
-                _showAvatarOptions();
-              },
-            ),
-          ),
-        );
-      },
-    );
-
-    overlay.insert(_cameraOverlayEntry!);
-  }
-
-  void _removeCameraOverlay() {
-    try {
-      _cameraOverlayEntry?.remove();
-    } catch (_) {}
-    _cameraOverlayEntry = null;
-  }
-
   @override
   void dispose() {
-    _removeCameraOverlay();
     super.dispose();
   }
 
   Future<void> _showFullImage() async {
     if (_profileImageUrl == null || !mounted) return;
-    // remove overlay so it doesn't stay visible above the dialog
-    _removeCameraOverlay();
     await showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -623,11 +494,5 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
         );
       },
     );
-
-    // restore overlay after dialog is dismissed
-    if (!mounted) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _ensureCameraOverlay();
-    });
   }
 }
