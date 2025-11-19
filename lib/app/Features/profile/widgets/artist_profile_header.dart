@@ -33,7 +33,8 @@ class ArtistProfileHeader extends StatefulWidget {
     required this.socialMedia,
     this.isOwnProfile = false,
     this.onEditProfile,
-    required this.onProfileUpdated, required Map userData,
+    required this.onProfileUpdated,
+    required Map userData,
   });
 
   static const Color deepBlue = Color(0xFF1E3A8A);
@@ -61,7 +62,11 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
 
   Future<void> _loadProfileImage() async {
     try {
-      final res = await _supabase.from('users').select('profile_image_url').eq('id', widget.artistId).single();
+      final res = await _supabase
+          .from('users')
+          .select('profile_image_url')
+          .eq('id', widget.artistId)
+          .single();
       if (res != null && res is Map<String, dynamic>) {
         final url = res['profile_image_url'] as String?;
         if (mounted) {
@@ -76,7 +81,8 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
   Future<void> _launchURL(String urlString) async {
     if (urlString.isEmpty) return;
     var normalizedUrl = urlString;
-    if (!normalizedUrl.startsWith('http://') && !normalizedUrl.startsWith('https://')) {
+    if (!normalizedUrl.startsWith('http://') &&
+        !normalizedUrl.startsWith('https://')) {
       normalizedUrl = 'https://$normalizedUrl';
     }
     final Uri url = Uri.parse(normalizedUrl);
@@ -90,31 +96,46 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
     setState(() => _isProcessing = true);
     try {
       final picker = ImagePicker();
-      final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85, maxWidth: 600);
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+        maxWidth: 600,
+      );
       if (pickedFile == null) return;
 
       final bytes = await pickedFile.readAsBytes();
       final fileExt = pickedFile.path.split('.').last;
       final fileName = '${widget.artistId}/profile.$fileExt';
 
-      await _supabase.storage.from('avatars').uploadBinary(
-        fileName,
-        bytes,
-        fileOptions: const FileOptions(upsert: true),
-      );
+      await _supabase.storage
+          .from('avatars')
+          .uploadBinary(
+            fileName,
+            bytes,
+            fileOptions: const FileOptions(upsert: true),
+          );
 
-      final publicUrl = _supabase.storage.from('avatars').getPublicUrl(fileName);
+      final publicUrl = _supabase.storage
+          .from('avatars')
+          .getPublicUrl(fileName);
 
-  await _supabase.from('users').update({'profile_image_url': publicUrl}).eq('id', widget.artistId);
+      await _supabase
+          .from('users')
+          .update({'profile_image_url': publicUrl})
+          .eq('id', widget.artistId);
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto profil berhasil diperbarui')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Foto profil berhasil diperbarui')),
+      );
       await _loadProfileImage();
       widget.onProfileUpdated();
     } catch (e) {
       if (!mounted) return;
       if (_kDebugCameraArea) debugPrint('uploadAvatar: error $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal mengunggah foto: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal mengunggah foto: $e')));
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -145,17 +166,17 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
       }
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto profil dihapus')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Foto profil dihapus')));
       setState(() => _profileImageUrl = null);
       widget.onProfileUpdated();
     } catch (e) {
       if (!mounted) return;
       if (_kDebugCameraArea) debugPrint('deleteAvatar: error $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus foto: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Gagal menghapus foto: $e')));
     } finally {
       if (mounted) setState(() => _isProcessing = false);
     }
@@ -163,7 +184,10 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
 
   Future<void> _showAvatarOptions() async {
     if (!mounted) return;
-    if (_kDebugCameraArea) debugPrint('showAvatarOptions: called, profileImageUrl=$_profileImageUrl');
+    if (_kDebugCameraArea)
+      debugPrint(
+        'showAvatarOptions: called, profileImageUrl=$_profileImageUrl',
+      );
     showModalBottomSheet(
       context: context,
       builder: (context) => SafeArea(
@@ -175,8 +199,9 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
               title: const Text('Unggah Foto'),
               onTap: () {
                 Navigator.of(context).pop();
-                  if (_kDebugCameraArea) debugPrint('showAvatarOptions: Unggah Foto tapped');
-                  _uploadAvatar();
+                if (_kDebugCameraArea)
+                  debugPrint('showAvatarOptions: Unggah Foto tapped');
+                _uploadAvatar();
               },
             ),
             if (_profileImageUrl != null)
@@ -185,8 +210,9 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
                 title: const Text('Hapus Foto'),
                 onTap: () {
                   Navigator.of(context).pop();
-                      if (_kDebugCameraArea) debugPrint('showAvatarOptions: Hapus Foto tapped');
-                      _deleteAvatar();
+                  if (_kDebugCameraArea)
+                    debugPrint('showAvatarOptions: Hapus Foto tapped');
+                  _deleteAvatar();
                 },
               ),
             ListTile(
@@ -202,7 +228,10 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
 
   @override
   Widget build(BuildContext context) {
-    if (_kDebugCameraArea) debugPrint('ArtistProfileHeader.build: isOwnProfile=${widget.isOwnProfile} profileImageUrl=$_profileImageUrl');
+    if (_kDebugCameraArea)
+      debugPrint(
+        'ArtistProfileHeader.build: isOwnProfile=${widget.isOwnProfile} profileImageUrl=$_profileImageUrl',
+      );
     if (_kDebugCameraArea) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         try {
@@ -254,105 +283,130 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
         Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: (event) {
-            if (_kDebugCameraArea) debugPrint('ArtistProfileHeader.PointerDown at ${event.localPosition} global=${event.position}');
+            if (_kDebugCameraArea)
+              debugPrint(
+                'ArtistProfileHeader.PointerDown at ${event.localPosition} global=${event.position}',
+              );
           },
           onPointerUp: (event) {
-            if (_kDebugCameraArea) debugPrint('ArtistProfileHeader.PointerUp at ${event.localPosition} global=${event.position}');
+            if (_kDebugCameraArea)
+              debugPrint(
+                'ArtistProfileHeader.PointerUp at ${event.localPosition} global=${event.position}',
+              );
           },
           child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            Container(
-              height: 200,
-              width: double.infinity,
-              color: Colors.grey[200],
-              child: Image.network(
-                'https://picsum.photos/seed/${widget.artistId}/800/400',
-                fit: BoxFit.cover,
-              ),
-            ),
-            if (!widget.isOwnProfile)
-              Positioned(
-                top: MediaQuery.of(context).padding.top + 8,
-                left: 8,
-                child: CircleAvatar(
-                  backgroundColor: Colors.black.withOpacity(0.4),
-                  child: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              Container(
+                height: 200,
+                width: double.infinity,
+                color: Colors.grey[200],
+                child: Image.network(
+                  'https://picsum.photos/seed/${widget.artistId}/800/400',
+                  fit: BoxFit.cover,
                 ),
               ),
-            Positioned(
-              top: 140,
-              child: SizedBox(
-                width: 130,
-                height: 130,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
+              if (!widget.isOwnProfile)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 8,
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black.withOpacity(0.4),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: 140,
+                child: SizedBox(
+                  width: 130,
+                  height: 130,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
                       GestureDetector(
                         onTap: _showFullImage,
                         child: Container(
                           decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 4),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-                      ),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 4),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
                           child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.white,
-                        backgroundImage: _profileImageUrl != null ? NetworkImage(_profileImageUrl!) : null,
-                        child: _profileImageUrl == null
-                            ? Text(
-                                widget.name.isNotEmpty ? widget.name[0].toUpperCase() : 'U',
-                                style: GoogleFonts.poppins(fontSize: 50, fontWeight: FontWeight.bold, color: ArtistProfileHeader.deepBlue),
-                              )
-                            : null,
-                      ),
+                            radius: 60,
+                            backgroundColor: Colors.white,
+                            backgroundImage: _profileImageUrl != null
+                                ? NetworkImage(_profileImageUrl!)
+                                : null,
+                            child: _profileImageUrl == null
+                                ? Text(
+                                    widget.name.isNotEmpty
+                                        ? widget.name[0].toUpperCase()
+                                        : 'U',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 50,
+                                      fontWeight: FontWeight.bold,
+                                      color: ArtistProfileHeader.deepBlue,
+                                    ),
+                                  )
+                                : null,
+                          ),
                         ),
                       ),
-                    if (widget.isOwnProfile)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Container(
-                          key: _cameraKey,
-                          // debug border to visualize the tappable area when enabled
-                          decoration: _kDebugCameraArea
-                              ? BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  //border: Border.all(color: Colors.redAccent, width: 2),
-                                )
-                              : null,
-                          // keep original placeholder but ignore pointers so overlay handles taps
-                          child: IgnorePointer(
-                            ignoring: true,
-                            child: Material(
-                            elevation: 2,
-                            shape: const CircleBorder(),
-                            clipBehavior: Clip.antiAlias,
-                            color: Colors.white,
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Center(
-                                child: _isProcessing
-                                    ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2))
-                                    : const SizedBox.shrink(),
+                      if (widget.isOwnProfile)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            key: _cameraKey,
+                            // debug border to visualize the tappable area when enabled
+                            decoration: _kDebugCameraArea
+                                ? BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    //border: Border.all(color: Colors.redAccent, width: 2),
+                                  )
+                                : null,
+                            // keep original placeholder but ignore pointers so overlay handles taps
+                            child: IgnorePointer(
+                              ignoring: true,
+                              child: Material(
+                                elevation: 2,
+                                shape: const CircleBorder(),
+                                clipBehavior: Clip.antiAlias,
+                                color: Colors.white,
+                                child: SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: Center(
+                                    child: _isProcessing
+                                        ? const SizedBox(
+                                            width: 24,
+                                            height: 24,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ),
                               ),
                             ),
                           ),
-                          ),
                         ),
-                      ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         ),
         const SizedBox(height: 70),
         Padding(
@@ -362,13 +416,17 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
               Text(
                 widget.name,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.playfairDisplay(fontSize: 28, fontWeight: FontWeight.bold),
+                style: GoogleFonts.playfairDisplay(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
                 widget.specialization,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[700]),
+                style: GoogleFonts.poppins(fontSize: 16, color: Colors.white70),
               ),
               const SizedBox(height: 24),
               if (widget.role == 'artist')
@@ -377,15 +435,38 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
                   children: [
                     Column(
                       children: [
-                        Text('${widget.artworkCount}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        const Text('Karya'),
+                        Text(
+                          '${widget.artworkCount}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Text(
+                          'Karya',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ],
                     ),
-                    SizedBox(height: 30, child: VerticalDivider(color: Colors.grey[300])),
+                    SizedBox(
+                      height: 30,
+                      child: VerticalDivider(color: Colors.white24),
+                    ),
                     Column(
                       children: [
-                        Text('${widget.likesReceived}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        const Text('Suka Diterima'),
+                        Text(
+                          '${widget.likesReceived}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Text(
+                          'Suka Diterima',
+                          style: TextStyle(color: Colors.white70),
+                        ),
                       ],
                     ),
                   ],
@@ -394,7 +475,11 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
               Text(
                 widget.bio,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[800], height: 1.5),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[300],
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 16),
               if (widget.role == 'artist' && widget.socialMedia.isNotEmpty)
@@ -403,18 +488,30 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
                   children: [
                     if (widget.socialMedia['instagram'] != null)
                       IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.instagram, color: ArtistProfileHeader.deepBlue),
-                        onPressed: () => _launchURL(widget.socialMedia['instagram']),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.instagram,
+                          color: Colors.white,
+                        ),
+                        onPressed: () =>
+                            _launchURL(widget.socialMedia['instagram']),
                       ),
                     if (widget.socialMedia['behance'] != null)
                       IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.behance, color: ArtistProfileHeader.deepBlue),
-                        onPressed: () => _launchURL(widget.socialMedia['behance']),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.behance,
+                          color: Colors.white,
+                        ),
+                        onPressed: () =>
+                            _launchURL(widget.socialMedia['behance']),
                       ),
                     if (widget.socialMedia['youtube'] != null)
                       IconButton(
-                        icon: const FaIcon(FontAwesomeIcons.youtube, color: ArtistProfileHeader.deepBlue),
-                        onPressed: () => _launchURL(widget.socialMedia['youtube']),
+                        icon: const FaIcon(
+                          FontAwesomeIcons.youtube,
+                          color: Colors.white,
+                        ),
+                        onPressed: () =>
+                            _launchURL(widget.socialMedia['youtube']),
                       ),
                   ],
                 ),
@@ -437,30 +534,37 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
       return;
     }
 
-    _cameraOverlayEntry = OverlayEntry(builder: (context) {
-      if (_cameraGlobalTopLeft == null || _cameraGlobalSize == null) return const SizedBox.shrink();
-      final topLeft = _cameraGlobalTopLeft!;
-      final size = _cameraGlobalSize!;
+    _cameraOverlayEntry = OverlayEntry(
+      builder: (context) {
+        if (_cameraGlobalTopLeft == null || _cameraGlobalSize == null)
+          return const SizedBox.shrink();
+        final topLeft = _cameraGlobalTopLeft!;
+        final size = _cameraGlobalSize!;
 
-      return Positioned(
-        left: topLeft.dx,
-        top: topLeft.dy,
-        width: size.width,
-        height: size.height,
-        child: Material(
-          color: Colors.transparent,
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            iconSize: 24,
-            icon: const Icon(Icons.camera_alt, color: ArtistProfileHeader.deepBlue),
-            onPressed: () {
-              if (_kDebugCameraArea) debugPrint('overlay camera IconButton.onPressed called');
-              _showAvatarOptions();
-            },
+        return Positioned(
+          left: topLeft.dx,
+          top: topLeft.dy,
+          width: size.width,
+          height: size.height,
+          child: Material(
+            color: Colors.transparent,
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              iconSize: 24,
+              icon: const Icon(
+                Icons.camera_alt,
+                color: ArtistProfileHeader.deepBlue,
+              ),
+              onPressed: () {
+                if (_kDebugCameraArea)
+                  debugPrint('overlay camera IconButton.onPressed called');
+                _showAvatarOptions();
+              },
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     overlay.insert(_cameraOverlayEntry!);
   }
@@ -504,7 +608,13 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
                       if (progress == null) return child;
                       return const Center(child: CircularProgressIndicator());
                     },
-                    errorBuilder: (context, err, st) => const Center(child: Icon(Icons.broken_image, color: Colors.white, size: 64)),
+                    errorBuilder: (context, err, st) => const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
                   ),
                 ),
               ),
