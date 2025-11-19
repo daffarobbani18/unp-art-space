@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/app_animations.dart';
 import '../../../../main/main_app.dart';
-import '../../artwork/screens/artwork_detail_page.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import '../../artist/screens/artist_list_page.dart';
+import '../../artist/screens/artist_detail_page.dart';
+import 'search_results_page.dart';
+import '../../explore/screens/inspirasi_dunia_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({Key? key}) : super(key: key);
@@ -13,253 +15,113 @@ class SearchPage extends StatefulWidget {
 }
 
 class _SearchPageState extends State<SearchPage> {
-  final TextEditingController _searchController = TextEditingController();
-  List<Map<String, dynamic>> _searchResults = [];
-  List<Map<String, dynamic>> _trendingArtworks = [];
-  bool _isSearching = false;
-  bool _isLoading = true;
-  String _selectedFilter = 'Semua';
+  late Future<List<Map<String, dynamic>>> _newTalentsFuture;
 
-  final List<String> _filters = [
-    'Semua',
-    'Lukisan',
-    'Fotografi',
-    'Patung',
-    'Digital Art',
-    'Kerajinan',
-    'Musik',
-    'Film',
+  // Daftar spesialisasi untuk UI
+  final List<String> _specializations = const [
+    'Pelukis',
+    'Fotografer',
+    'Ilustrator',
+    'Videografer',
+    'Desainer Grafis',
+    'Musisi'
+  ];
+
+  // Palet warna dengan tema ungu
+  final List<LinearGradient> _gradients = [
+    LinearGradient(
+      colors: [AppTheme.secondary, AppTheme.secondaryLight],
+    ),
+    LinearGradient(
+      colors: [AppTheme.accent, Color(0xFFF06292)],
+    ),
+    LinearGradient(
+      colors: [AppTheme.accentOrange, Color(0xFFFFB74D)],
+    ),
+    LinearGradient(
+      colors: [AppTheme.secondary.withOpacity(0.8), AppTheme.accent],
+    ),
+    LinearGradient(
+      colors: [AppTheme.secondaryLight, AppTheme.accent],
+    ),
+    LinearGradient(
+      colors: [AppTheme.accentYellow, AppTheme.accentOrange],
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadTrendingArtworks();
+    _newTalentsFuture = _loadNewTalents();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadTrendingArtworks() async {
-    setState(() => _isLoading = true);
-    
+  Future<List<Map<String, dynamic>>> _loadNewTalents() async {
     try {
-      final data = await supabase
-          .from('artworks')
-          .select()
-          .eq('status', 'approved')
+      final res = await supabase
+          .from('users')
+          .select('id,name,specialization')
+          .eq('role', 'artist')
           .order('created_at', ascending: false)
-          .limit(20) as List<dynamic>;
-      
-      if (mounted) {
-        setState(() {
-          _trendingArtworks = data.cast<Map<String, dynamic>>();
-          _isLoading = false;
-        });
-      }
+          .limit(10);
+      return (res as List).cast<Map<String, dynamic>>();
     } catch (e) {
-      print('Error loading trending: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      print('Error loading talents: $e');
+      return [];
     }
   }
 
   Future<void> _performSearch(String query) async {
-    if (query.trim().isEmpty) {
-      setState(() {
-        _searchResults = [];
-        _isSearching = false;
-      });
-      return;
-    }
+    if (query.isEmpty) return;
 
-    setState(() => _isSearching = true);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
+        ),
+      ),
+    );
 
     try {
-      var queryBuilder = supabase
-          .from('artworks')
+      final searchQuery = '%$query%';
+
+      final artistResults = await supabase
+          .from('users')
           .select()
+          .eq('role', 'artist')
+          .ilike('name', searchQuery);
+
+      final artworkResults = await supabase
+          .from('artworks')
+          .select('*, users!inner(name)')
           .eq('status', 'approved')
-          .or('title.ilike.%$query%,description.ilike.%$query%,artist_name.ilike.%$query%');
+          .ilike('title', searchQuery);
 
-      if (_selectedFilter != 'Semua') {
-        queryBuilder = queryBuilder.eq('category', _selectedFilter);
-      }
-
-      final data = await queryBuilder.order('created_at', ascending: false) as List<dynamic>;
+      if (mounted) Navigator.of(context).pop();
 
       if (mounted) {
-        setState(() {
-          _searchResults = data.cast<Map<String, dynamic>>();
-        });
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => SearchResultsPage(
+              query: query,
+              artistResults: List<Map<String, dynamic>>.from(artistResults),
+              artworkResults: List<Map<String, dynamic>>.from(artworkResults),
+            ),
+          ),
+        );
       }
     } catch (e) {
-      print('Error searching: $e');
       if (mounted) {
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal mencari: $e'),
+            content: Text('Error pencarian: ${e.toString()}'),
             backgroundColor: AppTheme.error,
           ),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isSearching = false);
-      }
     }
-  }
-
-  Widget _buildArtworkGrid(List<Map<String, dynamic>> artworks) {
-    return MasonryGridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 2,
-      mainAxisSpacing: AppTheme.spaceMd,
-      crossAxisSpacing: AppTheme.spaceMd,
-      itemCount: artworks.length,
-      itemBuilder: (context, idx) {
-        final artwork = artworks[idx];
-        final imageUrl = ((artwork['thumbnail_url'] ?? artwork['media_url'] ?? artwork['image_url']) ?? '') as String;
-        final title = (artwork['title'] ?? '') as String;
-        final artist = (artwork['artist_name'] ?? '') as String;
-        final isVideo = (artwork['artwork_type'] ?? '') == 'video';
-
-        return RevealAnimation(
-          delay: Duration(milliseconds: idx * 50),
-          child: BounceAnimation(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ArtworkDetailPage(artwork: artwork),
-                ),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                boxShadow: AppTheme.shadowMd,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Image/Thumbnail
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(AppTheme.radiusLg),
-                    ),
-                    child: Stack(
-                      children: [
-                        if (imageUrl.isNotEmpty)
-                          Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                            loadingBuilder: (context, child, progress) {
-                              if (progress == null) return child;
-                              return Container(
-                                height: 160,
-                                color: AppTheme.textTertiary.withOpacity(0.1),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    value: progress.expectedTotalBytes != null
-                                        ? progress.cumulativeBytesLoaded /
-                                            progress.expectedTotalBytes!
-                                        : null,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppTheme.secondary,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 160,
-                              color: AppTheme.textTertiary.withOpacity(0.1),
-                              child: Icon(
-                                Icons.broken_image_outlined,
-                                size: 48,
-                                color: AppTheme.textTertiary,
-                              ),
-                            ),
-                          )
-                        else
-                          Container(
-                            height: 180,
-                            color: AppTheme.textTertiary.withOpacity(0.1),
-                            child: Icon(
-                              Icons.image_not_supported_outlined,
-                              size: 48,
-                              color: AppTheme.textTertiary,
-                            ),
-                          ),
-                        // Video indicator
-                        if (isVideo)
-                          Positioned.fill(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.transparent,
-                                    Colors.black.withOpacity(0.3),
-                                  ],
-                                ),
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.play_circle_fill_rounded,
-                                  size: 48,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Info
-                  Padding(
-                    padding: const EdgeInsets.all(AppTheme.spaceSm),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontFamily: 'Playfair Display',
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textPrimary,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          artist,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   @override
@@ -267,258 +129,433 @@ class _SearchPageState extends State<SearchPage> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            // Header with Search Bar
-            Container(
-              padding: const EdgeInsets.all(AppTheme.spaceMd),
-              decoration: BoxDecoration(
-                color: AppTheme.surface,
-                boxShadow: AppTheme.shadowSm,
-              ),
-              child: Column(
-                children: [
-                  // Search Bar
-                  FadeSlideAnimation(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.background,
-                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                        border: Border.all(
-                          color: AppTheme.secondary.withOpacity(0.3),
-                          width: 1.5,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              FadeSlideAnimation(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppTheme.secondary.withOpacity(0.2), AppTheme.accent.withOpacity(0.2)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.explore_rounded,
+                          color: AppTheme.secondary,
+                          size: 24,
                         ),
                       ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (value) {
-                          if (value.trim().isEmpty) {
-                            setState(() {
-                              _searchResults = [];
-                            });
-                          }
+                      const SizedBox(width: AppTheme.spaceSm),
+                      Text(
+                        'Jelajahi',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontFamily: 'Playfair Display',
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spaceMd),
+
+              // Search Bar
+              FadeSlideAnimation(
+                delay: const Duration(milliseconds: 100),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                      border: Border.all(
+                        color: AppTheme.secondary.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                      boxShadow: AppTheme.shadowSm,
+                    ),
+                    child: TextFormField(
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      decoration: InputDecoration(
+                        hintText: 'Cari karya atau seniman...',
+                        hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.textTertiary,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.search_rounded,
+                          color: AppTheme.secondary,
+                          size: 24,
+                        ),
+                        filled: false,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: AppTheme.spaceMd,
+                          horizontal: AppTheme.spaceMd,
+                        ),
+                      ),
+                      onFieldSubmitted: (value) {
+                        _performSearch(value);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: AppTheme.spaceLg),
+
+              // Section Title: Spesialisasi
+              FadeSlideAnimation(
+                delay: const Duration(milliseconds: 200),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                  child: Text(
+                    'Jelajahi Berdasarkan Spesialisasi',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontFamily: 'Playfair Display',
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spaceMd),
+
+              // Grid Spesialisasi
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                child: GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: AppTheme.spaceMd,
+                  crossAxisSpacing: AppTheme.spaceMd,
+                  childAspectRatio: 2.5,
+                  children: List.generate(_specializations.length, (index) {
+                    final specialization = _specializations[index];
+                    final gradient = _gradients[index % _gradients.length];
+
+                    return ScaleInAnimation(
+                      delay: Duration(milliseconds: 300 + (index * 50)),
+                      child: BounceAnimation(
+                        onTap: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) =>
+                                ArtistListPage(specialization: specialization),
+                          ));
                         },
-                        onSubmitted: _performSearch,
-                        decoration: InputDecoration(
-                          hintText: 'Cari karya seni, artis...',
-                          hintStyle: TextStyle(
-                            color: AppTheme.textTertiary,
-                            fontSize: 16,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: gradient,
+                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.secondary.withOpacity(0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: AppTheme.secondary,
-                            size: 24,
+                          child: Center(
+                            child: Text(
+                              specialization,
+                              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
-                          suffixIcon: _searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: Icon(
-                                    Icons.clear_rounded,
-                                    color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+
+              const SizedBox(height: AppTheme.spaceLg),
+
+              // Inspirasi Dunia Card
+              FadeSlideAnimation(
+                delay: const Duration(milliseconds: 500),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                  child: BounceAnimation(
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const InspirasiDuniaPage()),
+                      );
+                    },
+                    child: Container(
+                      height: 140,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.secondary.withOpacity(0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            Image.network(
+                              'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43',
+                              fit: BoxFit.cover,
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    AppTheme.secondary.withOpacity(0.4),
+                                    AppTheme.secondary.withOpacity(0.8),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '🌍',
+                                    style: const TextStyle(fontSize: 48),
                                   ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() {
-                                      _searchResults = [];
-                                    });
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: AppTheme.spaceMd,
-                            vertical: AppTheme.spaceSm,
-                          ),
+                                  const SizedBox(height: AppTheme.spaceXs),
+                                  Text(
+                                    'Inspirasi Dunia',
+                                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                      fontFamily: 'Playfair Display',
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceXs),
+                                  Text(
+                                    'Jelajahi karya seni dari seluruh dunia',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: AppTheme.spaceMd),
-                  // Filter Chips
-                  SizedBox(
-                    height: 40,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _filters.length,
-                      itemBuilder: (context, index) {
-                        final filter = _filters[index];
-                        final isSelected = _selectedFilter == filter;
-                        
-                        return Padding(
-                          padding: const EdgeInsets.only(right: AppTheme.spaceXs),
-                          child: BounceAnimation(
-                            onTap: () {
-                              setState(() {
-                                _selectedFilter = filter;
-                              });
-                              if (_searchController.text.isNotEmpty) {
-                                _performSearch(_searchController.text);
-                              }
-                            },
-                            child: AnimatedContainer(
-                              duration: AppTheme.animationFast,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppTheme.spaceMd,
-                                vertical: AppTheme.spaceXs,
+                ),
+              ),
+
+              const SizedBox(height: AppTheme.spaceLg),
+
+              // Talenta Baru Bergabung
+              FadeSlideAnimation(
+                delay: const Duration(milliseconds: 600),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [AppTheme.accentYellow.withOpacity(0.2), AppTheme.accentOrange.withOpacity(0.2)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.star_rounded,
+                          color: AppTheme.accentYellow,
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: AppTheme.spaceXs),
+                      Text(
+                        'Talenta Baru Bergabung',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontFamily: 'Playfair Display',
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppTheme.spaceMd),
+
+              // Talent List
+              SizedBox(
+                height: 180,
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: _newTalentsFuture,
+                  builder: (context, snap) {
+                    if (snap.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
+                        ),
+                      );
+                    }
+                    if (snap.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(AppTheme.spaceMd),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline_rounded,
+                                size: 48,
+                                color: AppTheme.error,
                               ),
-                              decoration: BoxDecoration(
-                                gradient: isSelected
-                                    ? LinearGradient(
-                                        colors: [AppTheme.secondary, AppTheme.secondaryLight],
-                                      )
-                                    : null,
-                                color: isSelected ? null : AppTheme.background,
-                                borderRadius: BorderRadius.circular(AppTheme.radiusXl),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? Colors.transparent
-                                      : AppTheme.secondary.withOpacity(0.3),
-                                  width: 1.5,
+                              const SizedBox(height: AppTheme.spaceXs),
+                              Text(
+                                'Gagal memuat talenta',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: AppTheme.textSecondary,
                                 ),
                               ),
-                              child: Center(
-                                child: Text(
-                                  filter,
-                                  style: TextStyle(
-                                    color: isSelected ? Colors.white : AppTheme.textPrimary,
-                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                                    fontSize: 14,
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+                    final talents = snap.data ?? [];
+                    if (talents.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'Belum ada talenta baru.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: talents.length,
+                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
+                      itemBuilder: (context, index) {
+                        final talent = talents[index];
+                        final name = (talent['name'] ?? 'Pengguna') as String;
+                        final spec = (talent['specialization'] ?? '') as String;
+
+                        return ScaleInAnimation(
+                          delay: Duration(milliseconds: 700 + (index * 50)),
+                          child: BounceAnimation(
+                            onTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) =>
+                                      ArtistDetailPage(artistId: talent['id'])));
+                            },
+                            child: Container(
+                              width: 150,
+                              margin: const EdgeInsets.only(right: AppTheme.spaceMd),
+                              decoration: BoxDecoration(
+                                color: AppTheme.surface,
+                                borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                                border: Border.all(
+                                  color: AppTheme.secondary.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppTheme.secondary.withOpacity(0.1),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
                                   ),
+                                ],
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppTheme.spaceMd),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(3),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: LinearGradient(
+                                          colors: [AppTheme.secondary, AppTheme.secondaryLight],
+                                        ),
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 32,
+                                        backgroundColor: AppTheme.surface,
+                                        child: Text(
+                                          name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                            color: AppTheme.secondary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppTheme.spaceSm),
+                                    Text(
+                                      name,
+                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: AppTheme.spaceXs,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.secondary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
+                                      ),
+                                      child: Text(
+                                        spec.isNotEmpty ? spec : 'Artist',
+                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                          fontSize: 11,
+                                          color: AppTheme.secondary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                         );
                       },
-                    ),
-                  ),
-                ],
+                    );
+                  },
+                ),
               ),
-            ),
-            
-            // Content
-            Expanded(
-              child: _isSearching
-                  ? Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
-                      ),
-                    )
-                  : _searchController.text.isNotEmpty && _searchResults.isEmpty
-                      ? Center(
-                          child: FadeInAnimation(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(AppTheme.spaceLg),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppTheme.secondary.withOpacity(0.1),
-                                  ),
-                                  child: Icon(
-                                    Icons.search_off_rounded,
-                                    size: 64,
-                                    color: AppTheme.secondary,
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.spaceMd),
-                                Text(
-                                  'Tidak Ada Hasil',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    fontFamily: 'Playfair Display',
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.spaceXs),
-                                Text(
-                                  'Coba kata kunci lain',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : ListView(
-                          padding: const EdgeInsets.all(AppTheme.spaceMd),
-                          children: [
-                            if (_searchResults.isEmpty) ...[
-                              // Trending Section
-                              FadeSlideAnimation(
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.trending_up_rounded,
-                                      color: AppTheme.secondary,
-                                      size: 28,
-                                    ),
-                                    const SizedBox(width: AppTheme.spaceXs),
-                                    Text(
-                                      'Karya Trending',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontFamily: 'Playfair Display',
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: AppTheme.spaceMd),
-                              _isLoading
-                                  ? Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(AppTheme.spaceLg),
-                                        child: CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.secondary),
-                                        ),
-                                      ),
-                                    )
-                                  : _trendingArtworks.isEmpty
-                                      ? Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(AppTheme.spaceLg),
-                                            child: Text(
-                                              'Belum ada karya',
-                                              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                                color: AppTheme.textSecondary,
-                                              ),
-                                            ),
-                                          ),
-                                        )
-                                      : _buildArtworkGrid(_trendingArtworks),
-                            ] else ...[
-                              // Search Results
-                              FadeSlideAnimation(
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.search_rounded,
-                                      color: AppTheme.secondary,
-                                      size: 28,
-                                    ),
-                                    const SizedBox(width: AppTheme.spaceXs),
-                                    Text(
-                                      'Hasil Pencarian (${_searchResults.length})',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontFamily: 'Playfair Display',
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textPrimary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: AppTheme.spaceMd),
-                              _buildArtworkGrid(_searchResults),
-                            ],
-                          ],
-                        ),
-            ),
-          ],
+              const SizedBox(height: AppTheme.spaceLg),
+            ],
+          ),
         ),
       ),
     );

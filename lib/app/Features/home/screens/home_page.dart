@@ -858,54 +858,112 @@ class _HomePageState extends State<HomePage> {
                   );
                 }
 
-                return MasonryGridView.count(
+                // Full-screen card layout seperti social media
+                return ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  mainAxisSpacing: AppTheme.spaceMd,
-                  crossAxisSpacing: AppTheme.spaceMd,
                   itemCount: artworks.length,
                   itemBuilder: (context, idx) {
                     final artwork = artworks[idx];
                     final imageUrl = ((artwork['thumbnail_url'] ?? artwork['media_url'] ?? artwork['image_url']) ?? '') as String;
                     final title = (artwork['title'] ?? '') as String;
                     final artist = (artwork['artist_name'] ?? '') as String;
+                    final category = (artwork['category'] ?? '') as String;
                     final isVideo = (artwork['artwork_type'] ?? '') == 'video';
 
-                    return RevealAnimation(
-                      delay: Duration(milliseconds: idx * 50),
-                      child: BounceAnimation(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ArtworkDetailPage(artwork: artwork),
+                    return FadeSlideAnimation(
+                      delay: Duration(milliseconds: idx * 100),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: AppTheme.spaceLg),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(AppTheme.radiusXl),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.secondary.withOpacity(0.15),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
-                          );
-                        },
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppTheme.secondary.withOpacity(0.1),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
+                          ],
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header with artist info
+                            Padding(
+                              padding: const EdgeInsets.all(AppTheme.spaceMd),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(2),
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      gradient: LinearGradient(
+                                        colors: [AppTheme.secondary, AppTheme.secondaryLight],
+                                      ),
+                                    ),
+                                    child: CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: AppTheme.surface,
+                                      child: Text(
+                                        artist.isNotEmpty ? artist[0].toUpperCase() : 'A',
+                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                          color: AppTheme.secondary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppTheme.spaceSm),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          artist,
+                                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.textPrimary,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        if (category.isNotEmpty)
+                                          Text(
+                                            category,
+                                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: AppTheme.textSecondary,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(
+                                      Icons.more_vert_rounded,
+                                      color: AppTheme.textSecondary,
+                                    ),
+                                    onPressed: () {},
+                                  ),
+                                ],
                               ),
-                            ],
-                            border: Border.all(
-                              color: AppTheme.secondary.withOpacity(0.1),
-                              width: 1,
                             ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Image/Thumbnail
-                              ClipRRect(
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(AppTheme.radiusLg),
+
+                            // Main Image - Full width
+                            BounceAnimation(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ArtworkDetailPage(artwork: artwork),
+                                  ),
+                                );
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                constraints: BoxConstraints(
+                                  minHeight: MediaQuery.of(context).size.height * 0.5,
+                                  maxHeight: MediaQuery.of(context).size.height * 0.7,
                                 ),
                                 child: Stack(
                                   children: [
@@ -917,8 +975,8 @@ class _HomePageState extends State<HomePage> {
                                         loadingBuilder: (context, child, progress) {
                                           if (progress == null) return child;
                                           return Container(
-                                            height: 160,
-                                            color: AppTheme.textTertiary.withOpacity(0.1),
+                                            height: MediaQuery.of(context).size.height * 0.5,
+                                            color: AppTheme.textTertiary.withOpacity(0.05),
                                             child: Center(
                                               child: CircularProgressIndicator(
                                                 value: progress.expectedTotalBytes != null
@@ -933,23 +991,27 @@ class _HomePageState extends State<HomePage> {
                                           );
                                         },
                                         errorBuilder: (context, error, stackTrace) => Container(
-                                          height: 160,
-                                          color: AppTheme.textTertiary.withOpacity(0.1),
-                                          child: Icon(
-                                            Icons.broken_image_outlined,
-                                            size: 48,
-                                            color: AppTheme.textTertiary,
+                                          height: MediaQuery.of(context).size.height * 0.5,
+                                          color: AppTheme.textTertiary.withOpacity(0.05),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.broken_image_outlined,
+                                              size: 64,
+                                              color: AppTheme.textTertiary,
+                                            ),
                                           ),
                                         ),
                                       )
                                     else
                                       Container(
-                                        height: 180,
-                                        color: AppTheme.textTertiary.withOpacity(0.1),
-                                        child: Icon(
-                                          Icons.image_not_supported_outlined,
-                                          size: 48,
-                                          color: AppTheme.textTertiary,
+                                        height: MediaQuery.of(context).size.height * 0.5,
+                                        color: AppTheme.textTertiary.withOpacity(0.05),
+                                        child: Center(
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            size: 64,
+                                            color: AppTheme.textTertiary,
+                                          ),
                                         ),
                                       ),
                                     // Video indicator
@@ -969,7 +1031,7 @@ class _HomePageState extends State<HomePage> {
                                           child: const Center(
                                             child: Icon(
                                               Icons.play_circle_fill_rounded,
-                                              size: 56,
+                                              size: 72,
                                               color: Colors.white,
                                             ),
                                           ),
@@ -978,26 +1040,134 @@ class _HomePageState extends State<HomePage> {
                                   ],
                                 ),
                               ),
-                              // Info
-                              Padding(
-                                padding: const EdgeInsets.all(AppTheme.spaceSm),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      title,
-                                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                        fontFamily: 'Playfair Display',
-                                        fontWeight: FontWeight.w700,
-                                        color: AppTheme.textPrimary,
+                            ),
+
+                            // Action buttons and info
+                            Padding(
+                              padding: const EdgeInsets.all(AppTheme.spaceMd),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Action buttons
+                                  Row(
+                                    children: [
+                                      _buildActionButton(
+                                        icon: Icons.chat_bubble_outline_rounded,
+                                        count: '10',
+                                        onTap: () {},
                                       ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                      const SizedBox(width: AppTheme.spaceSm),
+                                      _buildActionButton(
+                                        icon: Icons.favorite_outline_rounded,
+                                        count: '122',
+                                        onTap: () {},
+                                      ),
+                                      const Spacer(),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.send_rounded,
+                                          color: AppTheme.textSecondary,
+                                          size: 22,
+                                        ),
+                                        onPressed: () {},
+                                      ),
+                                      IconButton(
+                                        icon: Icon(
+                                          Icons.bookmark_outline_rounded,
+                                          color: AppTheme.textSecondary,
+                                          size: 22,
+                                        ),
+                                        onPressed: () {},
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppTheme.spaceSm),
+                                  // Title
+                                  Text(
+                                    title,
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      fontFamily: 'Playfair Display',
+                                      fontWeight: FontWeight.w700,
+                                      color: AppTheme.textPrimary,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      artist,
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppTheme.spaceLg),
+            ],
+          ),
+        ),
+      ],
+      ),
+      floatingActionButton: _currentUserRole == 'artist'
+          ? ScaleInAnimation(
+              duration: const Duration(milliseconds: 600),
+              delay: const Duration(milliseconds: 400),
+              child: FloatingActionButton.extended(
+                onPressed: _openUploadPage,
+                backgroundColor: AppTheme.secondary,
+                elevation: 8,
+                icon: const Icon(Icons.add_rounded, color: Colors.white, size: 24),
+                label: Text(
+                  'Unggah Karya',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String count,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spaceXs,
+          vertical: 4,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: AppTheme.textSecondary,
+              size: 22,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              count,
+              style: TextStyle(
+                color: AppTheme.textSecondary,
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
                                         color: AppTheme.textSecondary,
                                       ),
                                       maxLines: 1,
