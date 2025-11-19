@@ -260,83 +260,99 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
               child: SizedBox(
                 width: 130,
                 height: 130,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    GestureDetector(
-                      onTap: _showFullImage,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 4),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 10,
-                            ),
-                          ],
+                child: GestureDetector(
+                  onTap: _showFullImage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
                         ),
-                        child: CircleAvatar(
-                          radius: 60,
-                          backgroundColor: Colors.white,
-                          backgroundImage: _profileImageUrl != null
-                              ? NetworkImage(_profileImageUrl!)
-                              : null,
-                          child: _profileImageUrl == null
-                              ? Text(
-                                  widget.name.isNotEmpty
-                                      ? widget.name[0].toUpperCase()
-                                      : 'U',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 50,
-                                    fontWeight: FontWeight.bold,
-                                    color: ArtistProfileHeader.deepBlue,
-                                  ),
-                                )
-                              : null,
-                        ),
-                      ),
+                      ],
                     ),
-                    if (widget.isOwnProfile)
-                      Positioned(
-                        right: 0,
-                        bottom: 0,
-                        child: Material(
-                          elevation: 2,
-                          shape: const CircleBorder(),
-                          clipBehavior: Clip.antiAlias,
-                          color: Colors.white,
-                          child: InkWell(
-                            onTap: _isProcessing ? null : _showAvatarOptions,
-                            child: SizedBox(
-                              width: 36,
-                              height: 36,
-                              child: Center(
-                                child: _isProcessing
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(
-                                        Icons.camera_alt,
-                                        size: 20,
-                                        color: Colors.grey,
-                                      ),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.white,
+                      backgroundImage: _profileImageUrl != null
+                          ? NetworkImage(_profileImageUrl!)
+                          : null,
+                      child: _profileImageUrl == null
+                          ? Text(
+                              widget.name.isNotEmpty
+                                  ? widget.name[0].toUpperCase()
+                                  : 'U',
+                              style: GoogleFonts.poppins(
+                                fontSize: 50,
+                                fontWeight: FontWeight.bold,
+                                color: ArtistProfileHeader.deepBlue,
                               ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+                            )
+                          : null,
+                    ),
+                  ),
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 70),
+        const SizedBox(height: 30),
+        if (widget.isOwnProfile)
+          Padding(
+            padding: const EdgeInsets.only(right: 140.0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Material(
+                elevation: 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                clipBehavior: Clip.antiAlias,
+                color: Colors.white,
+                child: InkWell(
+                  onTap: () {
+                    if (_kDebugCameraArea) debugPrint('Camera button tapped!');
+                    if (!_isProcessing) _showAvatarOptions();
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_isProcessing)
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          const Icon(
+                            Icons.camera_alt,
+                            size: 20,
+                            color: Colors.grey,
+                          ),
+                        //const SizedBox(width: 8),
+                        // Text(
+                        //   _isProcessing ? 'Memproses...' : '',
+                        //   style: GoogleFonts.poppins(
+                        //     fontSize: 14,
+                        //     fontWeight: FontWeight.w500,
+                        //     color: Colors.grey[800],
+                        //   ),
+                        // ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 20),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Column(
