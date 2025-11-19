@@ -17,6 +17,9 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
 
+  List<Map<String, dynamic>> _events = [];
+  bool _isLoadingEvents = true;
+
   // Kategori yang digunakan di halaman Home
   List<String> _categories = [
     'Semua',
@@ -233,8 +236,32 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _loadEvents();
     _artworksFuture = _loadArtworks();
     _loadCurrentUserRole();
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final response = await supabase
+          .from('events')
+          .select('*')
+          .eq('status', 'approved')
+          .order('event_date', ascending: true)
+          .limit(5);
+
+      if (mounted) {
+        setState(() {
+          _events = List<Map<String, dynamic>>.from(response as List);
+          _isLoadingEvents = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading events: \$e');
+      if (mounted) {
+        setState(() => _isLoadingEvents = false);
+      }
+    }
   }
 
   Future<void> _loadCurrentUserRole() async {
@@ -265,6 +292,16 @@ class _HomePageState extends State<HomePage> {
 
     final data = await query.eq('status', 'approved').order('created_at', ascending: false) as List<dynamic>;
     return data.cast<Map<String, dynamic>>();
+  }
+
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (e) {
+      return dateString;
+    }
   }
 
   @override
@@ -332,6 +369,169 @@ class _HomePageState extends State<HomePage> {
             child: Column(
               children: [
                 const SizedBox(height: 16),
+                
+                // Simple Event Section
+                if (_isLoadingEvents)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      height: 180,
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (!_isLoadingEvents && _events.isNotEmpty) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Event Seni Mendatang',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: Text(
+                            'Lihat Semua',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 180,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: _events.length,
+                      itemBuilder: (context, idx) {
+                        final event = _events[idx];
+                        final imageUrl = event['image_url'] ?? '';
+                        final title = event['title'] ?? 'Event';
+                        final location = event['location'] ?? '';
+                        final eventDate = event['event_date'];
+                        
+                        return Container(
+                          width: 280,
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.grey[200]!,
+                              width: 1,
+                            ),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Event Image
+                                Container(
+                                  height: 100,
+                                  width: double.infinity,
+                                  color: Colors.grey[100],
+                                  child: imageUrl.isNotEmpty
+                                      ? Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Icon(
+                                            Icons.image_outlined,
+                                            size: 40,
+                                            color: Colors.grey[400],
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.event_outlined,
+                                          size: 40,
+                                          color: Colors.grey[400],
+                                        ),
+                                ),
+                                // Event Info
+                                Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        title,
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      if (eventDate != null)
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.calendar_today,
+                                              size: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              _formatDate(eventDate),
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      if (location.isNotEmpty) ...[
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.location_on_outlined,
+                                              size: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Expanded(
+                                              child: Text(
+                                                location,
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[600],
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 
                 // Simple Category Filter
                 Padding(
