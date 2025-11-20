@@ -29,6 +29,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   final ScrollController _scrollController = ScrollController();
+  bool _showFullImageButton = true;
 
   @override
   void initState() {
@@ -57,6 +58,19 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
           ),
         );
+
+    _animationController.forward();
+
+    // Scroll listener for full image button visibility
+    _scrollController.addListener(() {
+      final offset = _scrollController.offset;
+      final shouldShow = offset < 100;
+      if (shouldShow != _showFullImageButton) {
+        setState(() {
+          _showFullImageButton = shouldShow;
+        });
+      }
+    });
 
     _animationController.forward();
 
@@ -147,183 +161,161 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // Layer 1: Dark Gradient Background (Full Screen)
-          Container(
-            height: double.infinity,
-            width: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF0F2027), // Deep Blue Dark
-                  Color(0xFF203A43),
-                  Color(0xFF2C5364),
-                ],
+          // Layer 1: Fixed Background Image (stays in place while scrolling)
+          Positioned.fill(
+            child: Hero(
+              tag: 'artwork_${artwork['id']}',
+              child: artworkType == 'image'
+                  ? (imageUrl.isNotEmpty
+                        ? Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF1E3A8A),
+                                    Color(0xFF9333EA),
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.image,
+                                size: 120,
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                          )
+                        : Container(
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.image,
+                              size: 120,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
+                          ))
+                  : artworkType == 'video' && _videoController != null
+                  ? Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.cover,
+                          child: SizedBox(
+                            width: _videoController!.value.size.width,
+                            height: _videoController!.value.size.height,
+                            child: VideoPlayer(_videoController!),
+                          ),
+                        ),
+                        if (!_isVideoInitialized)
+                          const Center(child: CircularProgressIndicator()),
+                        Center(
+                          child: Material(
+                            color: Colors.transparent,
+                            child: IconButton(
+                              icon: Icon(
+                                _isVideoPlaying
+                                    ? Icons.pause_circle_filled
+                                    : Icons.play_circle_fill,
+                                size: 64,
+                                color: Colors.white,
+                              ),
+                              onPressed: _togglePlayPause,
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  : Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.video_library,
+                        size: 120,
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+            ),
+          ),
+
+          // Layer 2: Gradient Overlay
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.3),
+                    Colors.black.withOpacity(0.7),
+                    const Color(0xFF0F2027),
+                  ],
+                  stops: const [0.0, 0.3, 0.6, 0.9],
+                ),
               ),
             ),
           ),
 
-          // Layer 2: Main Content
+          // Layer 3: Scrollable Content Card
           SafeArea(
-            child: SingleChildScrollView(
+            child: CustomScrollView(
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
-              child: Column(
-                children: [
-                  // Fixed Hero Image with rounded bottom corners
-                  Stack(
-                    children: [
-                      Hero(
-                        tag: 'artwork_${artwork['id']}',
-                        child: Container(
-                          height: 400,
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: Radius.circular(24),
-                              bottomRight: Radius.circular(24),
-                            ),
-                          ),
-                          child: ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              bottomLeft: Radius.circular(24),
-                              bottomRight: Radius.circular(24),
-                            ),
-                            child: artworkType == 'image'
-                                ? (imageUrl.isNotEmpty
-                                      ? Image.network(
-                                          imageUrl,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              Container(
-                                                decoration: const BoxDecoration(
-                                                  gradient: LinearGradient(
-                                                    colors: [
-                                                      Color(0xFF1E3A8A),
-                                                      Color(0xFF9333EA),
-                                                    ],
-                                                  ),
-                                                ),
-                                                child: Icon(
-                                                  Icons.image,
-                                                  size: 120,
-                                                  color: Colors.white
-                                                      .withOpacity(0.3),
-                                                ),
-                                              ),
-                                        )
-                                      : Container(
-                                          decoration: const BoxDecoration(
-                                            gradient: LinearGradient(
-                                              colors: [
-                                                Color(0xFF1E3A8A),
-                                                Color(0xFF9333EA),
-                                              ],
-                                            ),
-                                          ),
-                                          child: Icon(
-                                            Icons.image,
-                                            size: 120,
-                                            color: Colors.white.withOpacity(
-                                              0.3,
-                                            ),
-                                          ),
-                                        ))
-                                : artworkType == 'video' &&
-                                      _videoController != null
-                                ? AspectRatio(
-                                    aspectRatio:
-                                        _videoController!.value.aspectRatio,
-                                    child: Stack(
-                                      alignment: Alignment.center,
-                                      children: [
-                                        VideoPlayer(_videoController!),
-                                        if (!_isVideoInitialized)
-                                          const Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        Positioned(
-                                          bottom: 12,
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: IconButton(
-                                              icon: Icon(
-                                                _isVideoPlaying
-                                                    ? Icons.pause_circle_filled
-                                                    : Icons.play_circle_fill,
-                                                size: 52,
-                                                color: Colors.white,
-                                              ),
-                                              onPressed: _togglePlayPause,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : Container(
-                                    decoration: const BoxDecoration(
-                                      gradient: LinearGradient(
-                                        colors: [
-                                          Color(0xFF1E3A8A),
-                                          Color(0xFF9333EA),
-                                        ],
-                                      ),
-                                    ),
-                                    child: Icon(
-                                      Icons.video_library,
-                                      size: 120,
-                                      color: Colors.white.withOpacity(0.3),
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-                      // Back and Share buttons floating on image
-                      Positioned(
-                        top: 16,
-                        left: 16,
-                        right: 16,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _buildGlassCircleButton(
-                              icon: Icons.arrow_back,
-                              onTap: () => Navigator.pop(context),
-                            ),
-                            _buildGlassCircleButton(
-                              icon: Icons.share,
-                              onTap: () => _shareArtwork(title, imageUrl),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+              slivers: [
+                // Top spacing to show the image - card starts below the visible area
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height:
+                        MediaQuery.of(context).size.height -
+                        MediaQuery.of(context).padding.top -
+                        80,
                   ),
+                ),
 
-                  // Large glass card container with all content
-                  FadeTransition(
+                // Main Content Card
+                SliverToBoxAdapter(
+                  child: FadeTransition(
                     opacity: _fadeAnimation,
                     child: SlideTransition(
                       position: _slideAnimation,
                       child: Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(20),
+                        margin: const EdgeInsets.only(
+                          left: 16,
+                          right: 16,
+                          bottom: 16,
+                        ),
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(32),
+                            topRight: Radius.circular(32),
+                          ),
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(32),
+                            topRight: Radius.circular(32),
+                          ),
                           child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(20),
+                                color: const Color(
+                                  0xFF0F2027,
+                                ).withOpacity(0.95),
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(32),
+                                  topRight: Radius.circular(32),
+                                ),
                               ),
                               child: Padding(
-                                padding: const EdgeInsets.all(20),
+                                padding: const EdgeInsets.all(24),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -784,15 +776,103 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                       ),
                     ),
                   ),
+                ),
 
-                  // Bottom Padding for action bar
-                  const SizedBox(height: 100),
+                // Bottom Padding for action bar
+                SliverToBoxAdapter(child: const SizedBox(height: 100)),
+              ],
+            ),
+          ),
+
+          // Layer 4: Top Navigation Buttons (Back & Share)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildGlassCircleButton(
+                    icon: Icons.arrow_back,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  _buildGlassCircleButton(
+                    icon: Icons.share,
+                    onTap: () => _shareArtwork(title, imageUrl),
+                  ),
                 ],
               ),
             ),
           ),
 
-          // Bottom Action Bar (Like & Comment) - Positioned at bottom, sticky
+          // Layer 5: "Lihat Foto Penuh" Button
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            bottom: _showFullImageButton ? 120 : -100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    if (imageUrl.isNotEmpty) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => _FullScreenImageView(
+                            imageUrl: imageUrl,
+                            heroTag: 'artwork_${artwork['id']}',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(30),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.fullscreen,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Lihat Foto Penuh',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Layer 6: Bottom Action Bar (Like & Comment)
           Positioned(
             bottom: 0,
             left: 0,
