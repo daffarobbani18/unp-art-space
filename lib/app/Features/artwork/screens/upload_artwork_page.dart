@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_compress/video_compress.dart';
@@ -57,7 +58,7 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
         maxHeight: 1080,
         imageQuality: 85,
       );
-      
+
       if (pickedFile != null) {
         setState(() {
           _selectedMediaFile = File(pickedFile.path);
@@ -184,44 +185,64 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) throw Exception("User tidak login.");
       // 1.b Cek role user -- hanya 'artist' yang boleh mengunggah
-      final roleRow = await Supabase.instance.client.from('users').select('role').eq('id', user.id).maybeSingle();
+      final roleRow = await Supabase.instance.client
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
       final role = roleRow != null ? (roleRow['role'] as String?) : null;
       if (role != 'artist') {
         throw Exception('Akses ditolak: akun Anda bukan Artist.');
       }
-      
+
       print('User ID: ${user.id}');
       print('User Email: ${user.email}');
 
       // 2. Upload media ke Supabase Storage
       final fileExt = _selectedMediaFile!.path.split('.').last;
-      final fileName = '${user.id}${DateTime.now().millisecondsSinceEpoch}.$fileExt';
+      final fileName =
+          '${user.id}${DateTime.now().millisecondsSinceEpoch}.$fileExt';
       final mediaBytes = await _selectedMediaFile!.readAsBytes();
 
       print('Uploading media: $fileName');
       // Store media under public/<userId>/ to keep consistent with deletion logic
       final storagePath = 'public/${user.id}/$fileName';
-      await Supabase.instance.client.storage.from('artworks').uploadBinary(storagePath, mediaBytes);
+      await Supabase.instance.client.storage
+          .from('artworks')
+          .uploadBinary(storagePath, mediaBytes);
 
       // Dapatkan URL publik untuk media utama
-      final mediaUrl = Supabase.instance.client.storage.from('artworks').getPublicUrl(storagePath);
+      final mediaUrl = Supabase.instance.client.storage
+          .from('artworks')
+          .getPublicUrl(storagePath);
       print('Media URL: $mediaUrl');
 
       String? thumbnailUrl;
       if (_selectedMediaType == 'video' && _selectedThumbnailFile != null) {
         final thumbExt = _selectedThumbnailFile!.path.split('.').last;
-        final thumbName = '${user.id}_thumb_${DateTime.now().millisecondsSinceEpoch}.$thumbExt';
+        final thumbName =
+            '${user.id}_thumb_${DateTime.now().millisecondsSinceEpoch}.$thumbExt';
         final thumbBytes = await _selectedThumbnailFile!.readAsBytes();
         final thumbPath = 'public/${user.id}/$thumbName';
-        await Supabase.instance.client.storage.from('artworks').uploadBinary(thumbPath, thumbBytes);
-        thumbnailUrl = Supabase.instance.client.storage.from('artworks').getPublicUrl(thumbPath);
+        await Supabase.instance.client.storage
+            .from('artworks')
+            .uploadBinary(thumbPath, thumbBytes);
+        thumbnailUrl = Supabase.instance.client.storage
+            .from('artworks')
+            .getPublicUrl(thumbPath);
         print('Thumbnail URL: $thumbnailUrl');
       }
 
-    // 3. Ambil nama artist dari tabel 'users' (gunakan maybeSingle untuk menghindari exception bila row belum lengkap)
-    print('Fetching user data...');
-    final userResponse = await Supabase.instance.client.from('users').select('name').eq('id', user.id).maybeSingle();
-    final artistName = (userResponse != null && userResponse['name'] != null) ? userResponse['name'] : 'Nama Tidak Ditemukan';
+      // 3. Ambil nama artist dari tabel 'users' (gunakan maybeSingle untuk menghindari exception bila row belum lengkap)
+      print('Fetching user data...');
+      final userResponse = await Supabase.instance.client
+          .from('users')
+          .select('name')
+          .eq('id', user.id)
+          .maybeSingle();
+      final artistName = (userResponse != null && userResponse['name'] != null)
+          ? userResponse['name']
+          : 'Nama Tidak Ditemukan';
       print('Artist name: $artistName');
 
       // 4. Simpan semua data ke Supabase database
@@ -229,7 +250,9 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
       final artworkData = {
         'title': _judulController.text.trim(),
         'description': _deskripsiController.text.trim(),
-        'external_link': _linkController.text.trim().isEmpty ? null : _linkController.text.trim(),
+        'external_link': _linkController.text.trim().isEmpty
+            ? null
+            : _linkController.text.trim(),
         'category': _selectedKategori,
         'media_url': mediaUrl,
         'thumbnail_url': thumbnailUrl,
@@ -240,16 +263,18 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
         'likes_count': 0,
         'status': 'pending',
       };
-      
+
       print('Artwork data: $artworkData');
       await Supabase.instance.client.from('artworks').insert(artworkData);
       print('Artwork inserted successfully!');
 
       if (mounted) {
-        Navigator.of(context).pop(); 
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Karya berhasil diunggah dan sedang menunggu persetujuan.'),
+            content: const Text(
+              'Karya berhasil diunggah dan sedang menunggu persetujuan.',
+            ),
             backgroundColor: AppTheme.success,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -258,7 +283,6 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
           ),
         );
       }
-
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -284,453 +308,660 @@ class _UploadArtworkPageState extends State<UploadArtworkPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 2,
         title: Text(
           'Unggah Karya Baru',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontFamily: 'Playfair Display',
             fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: AppTheme.textPrimary),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppTheme.spaceMd),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header Info
-              FadeInAnimation(
-                child: Container(
-                  padding: const EdgeInsets.all(AppTheme.spaceMd),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    boxShadow: AppTheme.shadowMd,
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: Colors.white,
-                        size: 24,
-                      ),
-                      const SizedBox(width: AppTheme.spaceSm),
-                      Expanded(
-                        child: Text(
-                          'Karya Anda akan ditinjau oleh admin sebelum dipublikasikan',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
-              
-              // Judul Karya
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 100),
-                child: TextFormField(
-                  controller: _judulController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: InputDecoration(
-                    labelText: 'Judul Karya',
-                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.title_rounded, color: AppTheme.primary),
-                  ),
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Judul wajib diisi' : null,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-              
-              // Deskripsi
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 150),
-                child: TextFormField(
-                  controller: _deskripsiController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: InputDecoration(
-                    labelText: 'Deskripsi',
-                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.description_rounded, color: AppTheme.primary),
-                  ),
-                  maxLines: 4,
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Deskripsi wajib diisi' : null,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-              
-              // Link Eksternal
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 200),
-                child: TextFormField(
-                  controller: _linkController,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                  decoration: InputDecoration(
-                    labelText: 'Link Eksternal (Opsional)',
-                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.link_rounded, color: AppTheme.primary),
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-              
-              // Kategori
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 250),
-                child: DropdownButtonFormField<String>(
-                  value: _selectedKategori,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppTheme.textPrimary,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Kategori',
-                    labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                    filled: true,
-                    fillColor: AppTheme.surface,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.textTertiary.withOpacity(0.2)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      borderSide: BorderSide(color: AppTheme.primary, width: 2),
-                    ),
-                    prefixIcon: Icon(Icons.category_rounded, color: AppTheme.primary),
-                  ),
-                  items: _kategoriList
-                      .map((kategori) => DropdownMenuItem(
-                            value: kategori,
-                            child: Text(kategori),
-                          ))
-                      .toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedKategori = value;
-                    });
-                  },
-                  validator: (value) =>
-                      value == null || value.isEmpty ? 'Pilih kategori' : null,
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg),
-              
-              // Media Picker Section Title
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 300),
-                child: Text(
-                  'Pilih Media',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontFamily: 'Playfair Display',
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceSm),
-              
-              // Buttons to pick image or video
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 350),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: BounceAnimation(
-                        onTap: _pickImage,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppTheme.spaceMd),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Header Info - Glass Card
+                  FadeInAnimation(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
+                          padding: const EdgeInsets.all(AppTheme.spaceMd),
                           decoration: BoxDecoration(
-                            gradient: AppTheme.secondaryGradient,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                            boxShadow: AppTheme.shadowMd,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.photo_library_rounded, color: Colors.white),
-                              const SizedBox(width: AppTheme.spaceXs),
-                              Text(
-                                'Pilih Gambar',
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spaceMd),
-                    Expanded(
-                      child: BounceAnimation(
-                        onTap: _pickVideo,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd),
-                          decoration: BoxDecoration(
-                            gradient: AppTheme.primaryGradient,
-                            borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                            boxShadow: AppTheme.shadowMd,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.videocam_rounded, color: Colors.white),
-                              const SizedBox(width: AppTheme.spaceXs),
-                              Text(
-                                'Pilih Video',
-                                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceMd),
-              
-              // Preview Media
-              FadeSlideAnimation(
-                delay: const Duration(milliseconds: 400),
-                child: Container(
-                  height: 250,
-                  decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                    boxShadow: AppTheme.shadowMd,
-                  ),
-                  child: DottedBorder(
-                    color: AppTheme.primary,
-                    strokeWidth: 2,
-                    borderType: BorderType.RRect,
-                    radius: Radius.circular(AppTheme.radiusLg),
-                    dashPattern: const [8, 6],
-                    child: Center(
-                      child: _selectedMediaFile != null
-                          ? (_selectedMediaType == 'image'
-                              ? ClipRRect(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                                  child: Image.file(
-                                    _selectedMediaFile!,
-                                    height: 240,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        color: AppTheme.primary.withOpacity(0.1),
-                                      ),
-                                      child: Icon(
-                                        Icons.videocam_rounded,
-                                        size: 48,
-                                        color: AppTheme.primary,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppTheme.spaceSm),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                                      child: Text(
-                                        _selectedMediaFile!.path.split('/').last,
-                                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                          color: AppTheme.primary,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        maxLines: 2,
-                                        textAlign: TextAlign.center,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    const SizedBox(height: AppTheme.spaceXs),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: AppTheme.spaceSm,
-                                        vertical: AppTheme.spaceXs,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.accentGreen.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                      ),
-                                      child: Text(
-                                        'Video dipilih (maks 30 detik)',
-                                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                          color: AppTheme.accentGreen,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ))
-                          : Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(AppTheme.spaceMd),
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppTheme.primary.withOpacity(0.1),
-                                  ),
-                                  child: Icon(
-                                    Icons.add_photo_alternate_rounded,
-                                    size: 56,
-                                    color: AppTheme.primary,
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.spaceMd),
-                                Text(
-                                  'Pilih Gambar atau Video',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: AppTheme.primary,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: AppTheme.spaceXs),
-                                Text(
-                                  'Gunakan tombol di atas untuk memilih',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppTheme.textSecondary,
-                                  ),
-                                ),
-                              ],
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1.5,
                             ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppTheme.spaceLg * 2),
-              // Upload Button
-              ScaleInAnimation(
-                delay: const Duration(milliseconds: 450),
-                child: BounceAnimation(
-                  onTap: _isUploading ? null : _uploadArtwork,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceMd + 2),
-                    decoration: BoxDecoration(
-                      gradient: _isUploading 
-                          ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500])
-                          : AppTheme.accentGradient,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                      boxShadow: _isUploading ? [] : AppTheme.shadowLg,
-                    ),
-                    child: _isUploading
-                        ? Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                          ),
+                          child: Row(
                             children: [
-                              SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
+                              Icon(
+                                Icons.info_outline_rounded,
+                                color: Colors.white,
+                                size: 24,
                               ),
                               const SizedBox(width: AppTheme.spaceSm),
-                              Text(
-                                'Mengunggah...',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.cloud_upload_rounded, color: Colors.white),
-                              const SizedBox(width: AppTheme.spaceXs),
-                              Text(
-                                'Unggah Karya',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
+                              Expanded(
+                                child: Text(
+                                  'Karya Anda akan ditinjau oleh admin sebelum dipublikasikan',
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: Colors.white.withOpacity(0.9),
+                                      ),
                                 ),
                               ),
                             ],
                           ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: AppTheme.spaceLg),
+
+                  // Judul Karya - Glass Input
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 100),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextFormField(
+                            controller: _judulController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Judul Karya',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              hintStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                              prefixIcon: Icon(
+                                Icons.title_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'Judul wajib diisi'
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Deskripsi - Glass Input
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 150),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextFormField(
+                            controller: _deskripsiController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Deskripsi',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              hintStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                              prefixIcon: Icon(
+                                Icons.description_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                            maxLines: 4,
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'Deskripsi wajib diisi'
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Link Eksternal - Glass Input
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 200),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextFormField(
+                            controller: _linkController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Link Eksternal (Opsional)',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              hintStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.5),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                              prefixIcon: Icon(
+                                Icons.link_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                            keyboardType: TextInputType.url,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Kategori - Glass Dropdown
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 250),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1,
+                            ),
+                          ),
+                          child: DropdownButtonFormField<String>(
+                            value: _selectedKategori,
+                            style: const TextStyle(color: Colors.white),
+                            dropdownColor: const Color(0xFF1a1a2e),
+                            decoration: InputDecoration(
+                              labelText: 'Kategori',
+                              labelStyle: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding: const EdgeInsets.all(16),
+                              prefixIcon: Icon(
+                                Icons.category_rounded,
+                                color: Colors.white.withOpacity(0.7),
+                              ),
+                            ),
+                            icon: Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            items: _kategoriList
+                                .map(
+                                  (kategori) => DropdownMenuItem(
+                                    value: kategori,
+                                    child: Text(
+                                      kategori,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedKategori = value;
+                              });
+                            },
+                            validator: (value) => value == null || value.isEmpty
+                                ? 'Pilih kategori'
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceLg),
+
+                  // Media Picker Section Title
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 300),
+                    child: Text(
+                      'Pilih Media',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontFamily: 'Playfair Display',
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceSm),
+
+                  // Buttons to pick image or video - Glass Style
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 350),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: BounceAnimation(
+                            onTap: _pickImage,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppTheme.spaceMd,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.purple.withOpacity(0.4),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.photo_library_rounded,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: AppTheme.spaceXs),
+                                      Text(
+                                        'Pilih Gambar',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelLarge
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: AppTheme.spaceMd),
+                        Expanded(
+                          child: BounceAnimation(
+                            onTap: _pickVideo,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppTheme.spaceMd,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Colors.blue.withOpacity(0.4),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.videocam_rounded,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(width: AppTheme.spaceXs),
+                                      Text(
+                                        'Pilih Video',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .labelLarge
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceMd),
+
+                  // Preview Media - Glass Container
+                  FadeSlideAnimation(
+                    delay: const Duration(milliseconds: 400),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          height: 250,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.15),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Center(
+                            child: _selectedMediaFile != null
+                                ? (_selectedMediaType == 'image'
+                                      ? Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            child: Image.file(
+                                              _selectedMediaFile!,
+                                              fit: BoxFit.contain,
+                                            ),
+                                          ),
+                                        )
+                                      : Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Container(
+                                              padding: const EdgeInsets.all(
+                                                AppTheme.spaceMd,
+                                              ),
+                                              decoration: BoxDecoration(
+                                                shape: BoxShape.circle,
+                                                color: Colors.white.withOpacity(
+                                                  0.15,
+                                                ),
+                                              ),
+                                              child: Icon(
+                                                Icons.videocam_rounded,
+                                                size: 48,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              height: AppTheme.spaceSm,
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        AppTheme.spaceMd,
+                                                  ),
+                                              child: Text(
+                                                _selectedMediaFile!.path
+                                                    .split('/')
+                                                    .last,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                maxLines: 2,
+                                                textAlign: TextAlign.center,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            const SizedBox(
+                                              height: AppTheme.spaceXs,
+                                            ),
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal:
+                                                        AppTheme.spaceSm,
+                                                    vertical: AppTheme.spaceXs,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Colors.green.withOpacity(
+                                                  0.2,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(
+                                                      AppTheme.radiusSm,
+                                                    ),
+                                                border: Border.all(
+                                                  color: Colors.green
+                                                      .withOpacity(0.4),
+                                                ),
+                                              ),
+                                              child: Text(
+                                                'Video dipilih (maks 30 detik)',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .labelSmall
+                                                    ?.copyWith(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ))
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(
+                                          AppTheme.spaceMd,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: Colors.white.withOpacity(0.15),
+                                        ),
+                                        child: Icon(
+                                          Icons.add_photo_alternate_rounded,
+                                          size: 56,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: AppTheme.spaceMd),
+                                      Text(
+                                        'Pilih Gambar atau Video',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium
+                                            ?.copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                      const SizedBox(height: AppTheme.spaceXs),
+                                      Text(
+                                        'Gunakan tombol di atas untuk memilih',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.white.withOpacity(
+                                                0.7,
+                                              ),
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spaceLg * 2),
+
+                  // Upload Button - Gradient
+                  ScaleInAnimation(
+                    delay: const Duration(milliseconds: 450),
+                    child: BounceAnimation(
+                      onTap: _isUploading ? null : _uploadArtwork,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: AppTheme.spaceMd + 2,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: _isUploading
+                              ? LinearGradient(
+                                  colors: [
+                                    Colors.grey.shade600,
+                                    Colors.grey.shade700,
+                                  ],
+                                )
+                              : const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFF6B3FA0),
+                                    Color(0xFF3A7BD5),
+                                  ],
+                                ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: _isUploading
+                              ? []
+                              : [
+                                  BoxShadow(
+                                    color: Colors.purple.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
+                        ),
+                        child: _isUploading
+                            ? Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppTheme.spaceSm),
+                                  Text(
+                                    'Mengunggah...',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.cloud_upload_rounded,
+                                    color: Colors.white,
+                                  ),
+                                  const SizedBox(width: AppTheme.spaceXs),
+                                  Text(
+                                    'Unggah Karya',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
@@ -766,10 +997,7 @@ class DottedBorder extends StatelessWidget {
         radius: radius,
         dashPattern: dashPattern,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.all(radius),
-        child: child,
-      ),
+      child: ClipRRect(borderRadius: BorderRadius.all(radius), child: child),
     );
   }
 }
@@ -796,10 +1024,7 @@ class _DottedBorderPainter extends CustomPainter {
       ..strokeWidth = strokeWidth
       ..style = PaintingStyle.stroke;
 
-    final RRect rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      radius,
-    );
+    final RRect rrect = RRect.fromRectAndRadius(Offset.zero & size, radius);
 
     final Path path = Path()..addRRect(rrect);
 
