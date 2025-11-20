@@ -349,20 +349,18 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
                                   ),
                                 ),
                                 child: _imageFile != null
-                                    ? Stack(
-                                        fit: StackFit.expand,
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(16),
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(16),
+                                        child: Stack(
+                                          fit: StackFit.expand,
+                                          children: [
+                                            Padding(
+                                              padding: const EdgeInsets.all(8.0),
                                               child: Image.file(
                                                 _imageFile!,
                                                 fit: BoxFit.contain,
                                               ),
                                             ),
-                                          ),
                                           Positioned(
                                             top: AppTheme.spaceSm,
                                             right: AppTheme.spaceSm,
@@ -391,7 +389,8 @@ class _UploadEventScreenState extends State<UploadEventScreen> {
                                             ),
                                           ),
                                         ],
-                                      )
+                                      ),
+                                    )
                                     : Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
