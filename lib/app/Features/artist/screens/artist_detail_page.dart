@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import '../../profile/widgets/artist_profile_header.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
+import 'dart:ui';
 
-import '../../../../main/main_app.dart'; // Untuk akses supabase
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../main/main_app.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 
 class ArtistDetailPage extends StatefulWidget {
@@ -15,8 +15,15 @@ class ArtistDetailPage extends StatefulWidget {
 }
 
 class _ArtistDetailPageState extends State<ArtistDetailPage> {
-  late final Future<Map<String, dynamic>> _artistFuture;
-  late final Future<List<Map<String, dynamic>>> _artworksFuture;
+  late Future<Map<String, dynamic>> _artistFuture;
+  late Future<List<Map<String, dynamic>>> _artworksFuture;
+
+  // Glassmorphism gradient colors
+  static const List<Color> _bgGradient = [
+    Color(0xFF0F2027),
+    Color(0xFF203A43),
+    Color(0xFF2C5364),
+  ];
 
   @override
   void initState() {
@@ -26,7 +33,12 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
   }
 
   Future<Map<String, dynamic>> _fetchArtistProfile() async {
-    return await supabase.from('users').select().eq('id', widget.artistId).single();
+    final result = await supabase
+        .from('users')
+        .select()
+        .eq('id', widget.artistId)
+        .maybeSingle();
+    return result ?? <String, dynamic>{};
   }
 
   Future<List<Map<String, dynamic>>> _fetchArtistArtworks() async {
@@ -34,254 +46,878 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
         .from('artworks')
         .select()
         .eq('artist_id', widget.artistId)
-        .eq('status', 'approved');
+        .eq('status', 'approved')
+        .order('created_at');
+  }
+
+  void _navigateToDetail(Map<String, dynamic> artwork) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ArtworkDetailPage(artwork: artwork),
+      ),
+    );
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Widget _buildGlassCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color? iconColor,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(25),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white.withOpacity(0.3),
+                width: 1.5,
+              ),
+            ),
+            child: Icon(icon, color: iconColor ?? Colors.white, size: 22),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: color.withOpacity(0.4), width: 1.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: Colors.white, size: 18),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final coverHeight = screenHeight * 0.25;
+
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: _artistFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: CircularProgressIndicator(color: AppTheme.primary),
-            );
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.person_off_rounded, size: 64, color: AppTheme.textSecondary),
-                  const SizedBox(height: AppTheme.spaceMd),
-                  Text(
-                    'Seniman tidak ditemukan.',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          // Background Layer - Full screen gradient
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: _bgGradient,
               ),
-            );
-          }
+            ),
+          ),
 
-          final artist = snapshot.data!;
-          final socialMedia = (artist['social_media'] is Map) ? Map<String, dynamic>.from(artist['social_media']) : <String, dynamic>{};
-          final displayName = (artist['name'] as String?)?.toString() ?? 'Seniman';
-          final specialization = (artist['specialization'] as String?)?.toString() ?? '';
-          final bio = (artist['bio'] as String?)?.toString() ?? 'Seniman ini belum menambahkan bio.';
+          // Content Layer
+          SafeArea(
+            child: FutureBuilder<Map<String, dynamic>>(
+              future: _artistFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                    ),
+                  );
+                }
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.only(bottom: AppTheme.spaceLg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Artist Profile Header
-                FadeInAnimation(
-                  child: FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _artworksFuture,
-                    builder: (context, artSnap) {
-                      final artCount = artSnap.hasData ? artSnap.data!.length : 0;
-                      return ArtistProfileHeader(
-                        role: artist['role'] ?? 'viewer',
-                        artistId: artist['id'],
-                        name: displayName,
-                        specialization: specialization,
-                        bio: bio,
-                        artworkCount: artCount,
-                        likesReceived: 0, 
-                        socialMedia: socialMedia,
-                        isOwnProfile: false, 
-                        onProfileUpdated: () {  }, 
-                        userData: {}, 
-                      );
-                    },
-                  ),
-                ),
-
-                const SizedBox(height: AppTheme.spaceMd),
-
-                // Gallery Section Header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                  child: FadeSlideAnimation(
-                    delay: const Duration(milliseconds: 100),
-                    child: Text(
-                      'Galeri Karya',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontFamily: 'Playfair Display',
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
+                if (snapshot.hasError ||
+                    !snapshot.hasData ||
+                    snapshot.data!.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.red.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.person_off_rounded,
+                                  size: 64,
+                                  color: Colors.red.shade300,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Seniman tidak ditemukan',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 18,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: AppTheme.spaceMd),
+                  );
+                }
 
-                // Artworks Gallery
-                FutureBuilder<List<Map<String, dynamic>>>(
-                  future: _artworksFuture,
-                  builder: (context, artworkSnapshot) {
-                    if (artworkSnapshot.connectionState == ConnectionState.waiting) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: AppTheme.spaceLg * 2),
-                        child: Center(
-                          child: CircularProgressIndicator(color: AppTheme.primary),
-                        ),
-                      );
-                    }
-                    if (artworkSnapshot.hasError) {
-                      return Padding(
-                        padding: const EdgeInsets.all(AppTheme.spaceMd),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.error),
-                              const SizedBox(height: AppTheme.spaceSm),
-                              Text(
-                                'Gagal memuat karya.',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppTheme.error,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                    final artworks = artworkSnapshot.data ?? [];
-                    if (artworks.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.all(AppTheme.spaceLg * 2),
-                        child: Center(
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(AppTheme.spaceLg),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: AppTheme.primary.withOpacity(0.1),
-                                ),
-                                child: Icon(
-                                  Icons.palette_outlined,
-                                  size: 64,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: AppTheme.spaceMd),
-                              Text(
-                                'Seniman ini belum punya karya.',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppTheme.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
+                final artist = snapshot.data!;
+                final displayName = (artist['name'] as String?) ?? 'Seniman';
+                final role = (artist['role'] as String?) ?? 'viewer';
+                final specialization =
+                    (artist['specialization'] as String?) ?? '';
+                final department = (artist['department'] as String?) ?? '';
+                final bio =
+                    (artist['bio'] as String?) ??
+                    'Seniman ini belum menambahkan bio.';
+                final avatarUrl = (artist['avatar_url'] as String?) ?? '';
+                final coverUrl = (artist['cover_url'] as String?) ?? '';
+                final socialMedia = (artist['social_media'] is Map)
+                    ? Map<String, dynamic>.from(artist['social_media'])
+                    : <String, dynamic>{};
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMd),
-                      child: StaggeredListAnimation(
-                        children: List.generate(artworks.length, (index) {
-                          final art = artworks[index];
-                          final imageUrl = (art['media_url'] as String?) ?? (art['image_url'] as String?) ?? '';
-                          return RevealAnimation(
-                            delay: Duration(milliseconds: 50 * index),
-                            child: InkWell(
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (_) => ArtworkDetailPage(artwork: art),
-                                  ),
-                                );
-                              },
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Header with Cover Image & Avatar
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          // Cover Image with Gradient Overlay
+                          Container(
+                            height: coverHeight,
+                            decoration: BoxDecoration(
+                              image: coverUrl.isNotEmpty
+                                  ? DecorationImage(
+                                      image: NetworkImage(coverUrl),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                              gradient: coverUrl.isEmpty
+                                  ? LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        Colors.purple.shade700,
+                                        Colors.blue.shade900,
+                                      ],
+                                    )
+                                  : null,
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.3),
+                                    Colors.black.withOpacity(0.6),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+
+                          // Back Button
+                          Positioned(
+                            top: 10,
+                            left: 16,
+                            child: _buildGlassCircleButton(
+                              icon: Icons.arrow_back_rounded,
+                              onTap: () => Navigator.of(context).pop(),
+                            ),
+                          ),
+
+                          // Avatar (overlapping at bottom)
+                          Positioned(
+                            bottom: -50,
+                            left: 0,
+                            right: 0,
+                            child: Center(
                               child: Container(
                                 decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                  boxShadow: AppTheme.shadowSm,
+                                  shape: BoxShape.circle,
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.3),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
                                 ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-                                  child: AspectRatio(
-                                    aspectRatio: 3 / 4,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        Image.network(
-                                          imageUrl.isNotEmpty ? imageUrl : 'https://picsum.photos/seed/art_${art['id']}/400/600',
-                                          fit: BoxFit.cover,
-                                          loadingBuilder: (context, child, progress) {
-                                            if (progress == null) return child;
-                                            return Container(
-                                              color: AppTheme.surface,
-                                              child: Center(
-                                                child: CircularProgressIndicator(
-                                                  color: AppTheme.primary,
-                                                  strokeWidth: 2,
+                                child: ClipOval(
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 5,
+                                      sigmaY: 5,
+                                    ),
+                                    child: Container(
+                                      width: 120,
+                                      height: 120,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white.withOpacity(0.3),
+                                          width: 4,
+                                        ),
+                                      ),
+                                      child: avatarUrl.isNotEmpty
+                                          ? Image.network(
+                                              avatarUrl,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (_, __, ___) =>
+                                                  Container(
+                                                    color: Colors.white
+                                                        .withOpacity(0.1),
+                                                    child: Icon(
+                                                      Icons.person_rounded,
+                                                      size: 60,
+                                                      color: Colors.white
+                                                          .withOpacity(0.6),
+                                                    ),
+                                                  ),
+                                            )
+                                          : Container(
+                                              color: Colors.white.withOpacity(
+                                                0.1,
+                                              ),
+                                              child: Icon(
+                                                Icons.person_rounded,
+                                                size: 60,
+                                                color: Colors.white.withOpacity(
+                                                  0.6,
                                                 ),
                                               ),
-                                            );
-                                          },
-                                          errorBuilder: (_, __, ___) => Container(
-                                            color: AppTheme.surface,
-                                            child: Center(
-                                              child: Icon(
-                                                Icons.broken_image_rounded,
-                                                color: AppTheme.textTertiary,
-                                                size: 48,
-                                              ),
                                             ),
-                                          ),
-                                        ),
-                                        // Gradient overlay at bottom for title
-                                        Positioned(
-                                          bottom: 0,
-                                          left: 0,
-                                          right: 0,
-                                          child: Container(
-                                            padding: const EdgeInsets.all(AppTheme.spaceSm),
-                                            decoration: BoxDecoration(
-                                              gradient: LinearGradient(
-                                                begin: Alignment.bottomCenter,
-                                                end: Alignment.topCenter,
-                                                colors: [
-                                                  Colors.black.withOpacity(0.7),
-                                                  Colors.transparent,
-                                                ],
-                                              ),
-                                            ),
-                                            child: Text(
-                                              art['title'] ?? '',
-                                              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          );
-                        }),
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
-                const SizedBox(height: AppTheme.spaceMd),
-              ],
+
+                      const SizedBox(height: 60),
+
+                      // Artist Info
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: [
+                            Text(
+                              displayName,
+                              style: GoogleFonts.poppins(
+                                fontSize: 26,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            if (role == 'artist' &&
+                                (specialization.isNotEmpty ||
+                                    department.isNotEmpty))
+                              Text(
+                                [
+                                  specialization,
+                                  department,
+                                ].where((s) => s.isNotEmpty).join(' • '),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: role == 'artist'
+                                    ? Colors.purple.withOpacity(0.3)
+                                    : Colors.blue.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: role == 'artist'
+                                      ? Colors.purple.withOpacity(0.5)
+                                      : Colors.blue.withOpacity(0.5),
+                                ),
+                              ),
+                              child: Text(
+                                role == 'artist' ? 'Seniman' : 'Pengunjung',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Stats - Glass Card
+                      FutureBuilder<List<Map<String, dynamic>>>(
+                        future: _artworksFuture,
+                        builder: (context, artSnap) {
+                          final artCount = artSnap.hasData
+                              ? artSnap.data!.length
+                              : 0;
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(
+                                  sigmaX: 10,
+                                  sigmaY: 10,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.08),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.15),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceAround,
+                                    children: [
+                                      Column(
+                                        children: [
+                                          Text(
+                                            artCount.toString(),
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Total Karya',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              color: Colors.white.withOpacity(
+                                                0.7,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        width: 1,
+                                        height: 40,
+                                        color: Colors.white.withOpacity(0.2),
+                                      ),
+                                      Column(
+                                        children: [
+                                          Text(
+                                            '0',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 24,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Total Suka',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              color: Colors.white.withOpacity(
+                                                0.7,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Bio - Glass Card
+                      if (bio.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.15),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Bio',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      bio,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.white.withOpacity(0.8),
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 20),
+
+                      // Social Media Links
+                      if (socialMedia.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Media Sosial',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  if (socialMedia['instagram'] != null &&
+                                      socialMedia['instagram']
+                                          .toString()
+                                          .isNotEmpty)
+                                    _buildSocialButton(
+                                      icon: Icons.camera_alt_rounded,
+                                      label: 'Instagram',
+                                      onTap: () =>
+                                          _launchUrl(socialMedia['instagram']),
+                                      color: Colors.pink,
+                                    ),
+                                  if (socialMedia['twitter'] != null &&
+                                      socialMedia['twitter']
+                                          .toString()
+                                          .isNotEmpty)
+                                    _buildSocialButton(
+                                      icon: Icons.tag_rounded,
+                                      label: 'Twitter',
+                                      onTap: () =>
+                                          _launchUrl(socialMedia['twitter']),
+                                      color: Colors.blue,
+                                    ),
+                                  if (socialMedia['facebook'] != null &&
+                                      socialMedia['facebook']
+                                          .toString()
+                                          .isNotEmpty)
+                                    _buildSocialButton(
+                                      icon: Icons.facebook_rounded,
+                                      label: 'Facebook',
+                                      onTap: () =>
+                                          _launchUrl(socialMedia['facebook']),
+                                      color: Colors.blue.shade800,
+                                    ),
+                                  if (socialMedia['website'] != null &&
+                                      socialMedia['website']
+                                          .toString()
+                                          .isNotEmpty)
+                                    _buildSocialButton(
+                                      icon: Icons.language_rounded,
+                                      label: 'Website',
+                                      onTap: () =>
+                                          _launchUrl(socialMedia['website']),
+                                      color: Colors.teal,
+                                    ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      const SizedBox(height: 24),
+
+                      // Gallery Section
+                      if (role == 'artist')
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            'Galeri Karya',
+                            style: GoogleFonts.poppins(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+
+                      const SizedBox(height: 16),
+
+                      // Artworks Grid
+                      if (role == 'artist')
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _artworksFuture,
+                          builder: (context, artSnap) {
+                            if (artSnap.connectionState ==
+                                ConnectionState.waiting) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(48),
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white70,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (artSnap.hasError) {
+                              return Padding(
+                                padding: const EdgeInsets.all(20),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: BackdropFilter(
+                                    filter: ImageFilter.blur(
+                                      sigmaX: 8,
+                                      sigmaY: 8,
+                                    ),
+                                    child: Container(
+                                      padding: const EdgeInsets.all(20),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.red.withOpacity(0.2),
+                                        ),
+                                      ),
+                                      child: Column(
+                                        children: [
+                                          Icon(
+                                            Icons.error_outline_rounded,
+                                            color: Colors.red.shade400,
+                                            size: 32,
+                                          ),
+                                          const SizedBox(height: 12),
+                                          Text(
+                                            'Gagal memuat karya',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
+
+                            final artworks = artSnap.data ?? [];
+                            if (artworks.isEmpty) {
+                              return Padding(
+                                padding: const EdgeInsets.all(48),
+                                child: Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(24),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Colors.white.withOpacity(0.1),
+                                      ),
+                                      child: Icon(
+                                        Icons.palette_outlined,
+                                        size: 64,
+                                        color: Colors.white.withOpacity(0.7),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Seniman ini belum mengunggah karya',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        color: Colors.white.withOpacity(0.7),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                              ),
+                              child: GridView.builder(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                gridDelegate:
+                                    const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      childAspectRatio: 0.75,
+                                    ),
+                                itemCount: artworks.length,
+                                itemBuilder: (context, index) {
+                                  final artwork = artworks[index];
+                                  final imageUrl = artwork['media_url'] ?? '';
+                                  final title = artwork['title'] ?? '';
+
+                                  return InkWell(
+                                    onTap: () => _navigateToDetail(artwork),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: BackdropFilter(
+                                        filter: ImageFilter.blur(
+                                          sigmaX: 10,
+                                          sigmaY: 10,
+                                        ),
+                                        child: Container(
+                                          decoration: BoxDecoration(
+                                            color: Colors.white.withOpacity(
+                                              0.08,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.white.withOpacity(
+                                                0.15,
+                                              ),
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              // Image
+                                              Expanded(
+                                                child: ClipRRect(
+                                                  borderRadius:
+                                                      const BorderRadius.only(
+                                                        topLeft:
+                                                            Radius.circular(16),
+                                                        topRight:
+                                                            Radius.circular(16),
+                                                      ),
+                                                  child: imageUrl.isNotEmpty
+                                                      ? Image.network(
+                                                          imageUrl,
+                                                          fit: BoxFit.cover,
+                                                          loadingBuilder:
+                                                              (
+                                                                context,
+                                                                child,
+                                                                progress,
+                                                              ) {
+                                                                if (progress ==
+                                                                    null)
+                                                                  return child;
+                                                                return Container(
+                                                                  color: Colors
+                                                                      .white
+                                                                      .withOpacity(
+                                                                        0.05,
+                                                                      ),
+                                                                  child: Center(
+                                                                    child: CircularProgressIndicator(
+                                                                      valueColor:
+                                                                          AlwaysStoppedAnimation<
+                                                                            Color
+                                                                          >(
+                                                                            Colors.white70,
+                                                                          ),
+                                                                      strokeWidth:
+                                                                          2,
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              },
+                                                          errorBuilder:
+                                                              (
+                                                                _,
+                                                                __,
+                                                                ___,
+                                                              ) => Container(
+                                                                color: Colors
+                                                                    .white
+                                                                    .withOpacity(
+                                                                      0.05,
+                                                                    ),
+                                                                child: Center(
+                                                                  child: Icon(
+                                                                    Icons
+                                                                        .broken_image_rounded,
+                                                                    color: Colors
+                                                                        .white
+                                                                        .withOpacity(
+                                                                          0.5,
+                                                                        ),
+                                                                    size: 32,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                        )
+                                                      : Container(
+                                                          color: Colors.white
+                                                              .withOpacity(
+                                                                0.05,
+                                                              ),
+                                                          child: Center(
+                                                            child: Icon(
+                                                              Icons
+                                                                  .image_not_supported_rounded,
+                                                              color: Colors
+                                                                  .white
+                                                                  .withOpacity(
+                                                                    0.5,
+                                                                  ),
+                                                              size: 32,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                ),
+                                              ),
+
+                                              // Title
+                                              Padding(
+                                                padding: const EdgeInsets.all(
+                                                  12,
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      title,
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                            color: Colors.white,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 14,
+                                                          ),
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            );
+                          },
+                        ),
+
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                );
+              },
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
