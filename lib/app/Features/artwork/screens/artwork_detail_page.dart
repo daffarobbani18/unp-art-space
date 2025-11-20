@@ -29,6 +29,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   final ScrollController _scrollController = ScrollController();
+  bool _isZoomButtonVisible = true;
 
   @override
   void initState() {
@@ -57,6 +58,15 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
           ),
         );
+
+    _scrollController.addListener(() {
+      // Sembunyikan button zoom saat scroll melewati 50px
+      if (_scrollController.offset > 50 && _isZoomButtonVisible) {
+        setState(() => _isZoomButtonVisible = false);
+      } else if (_scrollController.offset <= 50 && !_isZoomButtonVisible) {
+        setState(() => _isZoomButtonVisible = true);
+      }
+    });
 
     _animationController.forward();
 
@@ -819,6 +829,67 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Zoom Button (Top layer above scroll)
+          Positioned(
+            top: 180,
+            right: 0,
+            left: 0,
+            child: AnimatedOpacity(
+              opacity: _isZoomButtonVisible ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 300),
+              child: IgnorePointer(
+                ignoring: !_isZoomButtonVisible,
+                child: Container(
+                  height: imageHeight,
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 10),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        if (imageUrl.isNotEmpty && artworkType == 'image') {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => _FullScreenImageView(
+                                imageUrl: imageUrl,
+                                heroTag: 'artwork_${artwork['id']}_button',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.5),
+                            width: 2,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.zoom_out_map,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
