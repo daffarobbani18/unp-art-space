@@ -269,13 +269,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: [
-                // Top spacing to show the image - card starts below the visible area
+                // Top spacing - 50% untuk foto, 50% untuk card
                 SliverToBoxAdapter(
                   child: SizedBox(
-                    height:
-                        MediaQuery.of(context).size.height -
-                        MediaQuery.of(context).padding.top -
-                        80,
+                    height: MediaQuery.of(context).size.height * 0.5,
                   ),
                 ),
 
