@@ -224,7 +224,7 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                 final bio =
                     (artist['bio'] as String?) ??
                     'Seniman ini belum menambahkan bio.';
-                final avatarUrl = (artist['avatar_url'] as String?) ?? '';
+                final avatarUrl = (artist['profile_image_url'] as String?) ?? '';
                 final coverUrl = (artist['cover_url'] as String?) ?? '';
                 final socialMedia = (artist['social_media'] is Map)
                     ? Map<String, dynamic>.from(artist['social_media'])
