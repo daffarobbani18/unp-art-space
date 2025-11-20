@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 import '../../../../main/main_app.dart';
 import 'artist_detail_page.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
 
 class ArtistListPage extends StatefulWidget {
   final String specialization; 
@@ -24,227 +23,361 @@ class _ArtistListPageState extends State<ArtistListPage> {
   Future<List<Map<String, dynamic>>> _fetchArtistsBySpecialization() async {
     final response = await supabase
         .from('users')
-        .select('id, name, specialization')
+        .select('id, name, specialization, bio, profile_image_url')
         .eq('role', 'artist')
         .eq('specialization', widget.specialization);
 
     return (response as List).cast<Map<String, dynamic>>();
   }
 
+  Widget _buildGlassContainer({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return Container(
+      margin: margin,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: padding ?? const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.15),
+                width: 1.5,
+              ),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildArtistCard(Map<String, dynamic> artist, int index) {
+    final name = artist['name'] as String? ?? 'Tanpa Nama';
+    final bio = artist['bio'] as String? ?? '';
+    final profileImage = artist['profile_image_url'] as String? ?? '';
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ArtistDetailPage(artistId: artist['id']),
+          ),
+        );
+      },
+      child: _buildGlassContainer(
+        margin: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          children: [
+            // Profile Image
+            ClipRRect(
+              borderRadius: BorderRadius.circular(50),
+              child: Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: profileImage.isNotEmpty
+                    ? Image.network(
+                        profileImage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Center(
+                          child: Text(
+                            name[0].toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Center(
+                        child: Text(
+                          name.isNotEmpty ? name[0].toUpperCase() : 'U',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(width: 16),
+            // Artist Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Text(
+                      widget.specialization,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  if (bio.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      bio,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Arrow Icon
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white.withOpacity(0.5),
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: AppTheme.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 2,
-        title: Text(
-          widget.specialization,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontFamily: 'Playfair Display',
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textPrimary,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: AppTheme.textPrimary),
-      ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _artistsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primary),
-                  ),
-                  const SizedBox(height: AppTheme.spaceMd),
-                  Text(
-                    'Memuat seniman...',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-          
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppTheme.spaceLg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      size: 64,
-                      color: AppTheme.error,
-                    ),
-                    const SizedBox(height: AppTheme.spaceMd),
-                    Text(
-                      'Terjadi Kesalahan',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: AppTheme.spaceXs),
-                    Text(
-                      '${snapshot.error}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppTheme.textSecondary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.3),
                 ),
               ),
-            );
-          }
-          
-          final artists = snapshot.data ?? [];
-
-          if (artists.isEmpty) {
-            return FadeInAnimation(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppTheme.spaceLg),
+              child: const Icon(
+                Icons.arrow_back_rounded,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          widget.specialization,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF0F2027),
+              Color(0xFF203A43),
+              Color(0xFF2C5364),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: _artistsFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(AppTheme.spaceLg),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primary.withOpacity(0.1),
-                        ),
-                        child: Icon(
-                          Icons.people_outline_rounded,
-                          size: 64,
-                          color: AppTheme.primary,
+                      CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withOpacity(0.8),
                         ),
                       ),
-                      const SizedBox(height: AppTheme.spaceMd),
+                      const SizedBox(height: 16),
                       Text(
-                        'Belum Ada Seniman',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontFamily: 'Playfair Display',
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textPrimary,
+                        'Memuat seniman...',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.8),
+                          fontSize: 15,
                         ),
-                      ),
-                      const SizedBox(height: AppTheme.spaceXs),
-                      Text(
-                        'Belum ada seniman dengan spesialisasi ${widget.specialization}',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
-                ),
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(AppTheme.spaceMd),
-            itemCount: artists.length,
-            itemBuilder: (context, index) {
-              final artist = artists[index];
-              final name = artist['name'] as String? ?? 'Tanpa Nama';
+                );
+              }
               
-              return FadeSlideAnimation(
-                delay: Duration(milliseconds: index * 50),
-                child: BounceAnimation(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => ArtistDetailPage(artistId: artist['id']),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: AppTheme.spaceMd),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surface,
-                      borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-                      boxShadow: AppTheme.shadowMd,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppTheme.spaceMd),
-                      child: Row(
+              if (snapshot.hasError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildGlassContainer(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: AppTheme.primaryGradient,
-                            ),
-                            child: CircleAvatar(
-                              radius: 28,
-                              backgroundColor: AppTheme.surface,
-                              child: Text(
-                                name.isNotEmpty ? name[0].toUpperCase() : 'U',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: AppTheme.primary,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: AppTheme.spaceMd),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  name,
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: AppTheme.textPrimary,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppTheme.spaceXs,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppTheme.secondary.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(AppTheme.radiusSm),
-                                  ),
-                                  child: Text(
-                                    widget.specialization,
-                                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                      color: AppTheme.secondary,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                           Icon(
-                            Icons.arrow_forward_ios_rounded,
-                            color: AppTheme.textTertiary,
-                            size: 16,
+                            Icons.error_outline_rounded,
+                            size: 64,
+                            color: Colors.redAccent.withOpacity(0.8),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Terjadi Kesalahan',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${snapshot.error}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
                     ),
                   ),
-                ),
+                );
+              }
+              
+              final artists = snapshot.data ?? [];
+
+              if (artists.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: _buildGlassContainer(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.people_outline_rounded,
+                            size: 64,
+                            color: Colors.white.withOpacity(0.5),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Belum Ada Seniman',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Belum ada seniman dengan spesialisasi ${widget.specialization}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: [
+                  // Header Summary
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildGlassContainer(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.people_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${artists.length} Seniman Ditemukan',
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Artist List
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                      itemCount: artists.length,
+                      itemBuilder: (context, index) {
+                        final artist = artists[index];
+                        return _buildArtistCard(artist, index);
+                      },
+                    ),
+                  ),
+                ],
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
