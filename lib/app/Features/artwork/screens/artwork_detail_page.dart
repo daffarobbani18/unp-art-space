@@ -29,7 +29,6 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   final ScrollController _scrollController = ScrollController();
-  bool _showFullImageButton = true;
 
   @override
   void initState() {
@@ -58,19 +57,6 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
           ),
         );
-
-    _animationController.forward();
-
-    // Scroll listener for full image button visibility
-    _scrollController.addListener(() {
-      final offset = _scrollController.offset;
-      final shouldShow = offset < 100;
-      if (shouldShow != _showFullImageButton) {
-        setState(() {
-          _showFullImageButton = shouldShow;
-        });
-      }
-    });
 
     _animationController.forward();
 
@@ -157,276 +143,241 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     final isApproved = status.toLowerCase() == 'approved';
     final statusText = isApproved ? 'Terverifikasi' : 'Pending';
 
+    final screenHeight = MediaQuery.of(context).size.height;
+    final headerHeight = screenHeight * 0.45;
+
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: const Color(0xFF0F2027),
       body: Stack(
         children: [
-          // Layer 1: Fixed Background Image (stays in place while scrolling)
-          Positioned.fill(
-            child: Hero(
-              tag: 'artwork_${artwork['id']}',
-              child: artworkType == 'image'
-                  ? (imageUrl.isNotEmpty
-                        ? Image.network(
-                            imageUrl,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              decoration: const BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    Color(0xFF1E3A8A),
-                                    Color(0xFF9333EA),
-                                  ],
-                                ),
-                              ),
-                              child: Icon(
-                                Icons.image,
-                                size: 120,
-                                color: Colors.white.withOpacity(0.3),
-                              ),
-                            ),
-                          )
-                        : Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.image,
-                              size: 120,
-                              color: Colors.white.withOpacity(0.3),
-                            ),
-                          ))
-                  : artworkType == 'video' && _videoController != null
-                  ? Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.cover,
-                          child: SizedBox(
-                            width: _videoController!.value.size.width,
-                            height: _videoController!.value.size.height,
-                            child: VideoPlayer(_videoController!),
-                          ),
-                        ),
-                        if (!_isVideoInitialized)
-                          const Center(child: CircularProgressIndicator()),
-                        Center(
-                          child: Material(
-                            color: Colors.transparent,
-                            child: IconButton(
-                              icon: Icon(
-                                _isVideoPlaying
-                                    ? Icons.pause_circle_filled
-                                    : Icons.play_circle_fill,
-                                size: 64,
-                                color: Colors.white,
-                              ),
-                              onPressed: _togglePlayPause,
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  : Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.video_library,
-                        size: 120,
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-            ),
-          ),
-
-          // Layer 2: Gradient Overlay
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.3),
-                    Colors.black.withOpacity(0.7),
-                    const Color(0xFF0F2027),
-                  ],
-                  stops: const [0.0, 0.3, 0.6, 0.9],
-                ),
-              ),
-            ),
-          ),
-
-          // Layer 3: Scrollable Content Card
-          SafeArea(
-            child: CustomScrollView(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                // Top spacing - 50% untuk foto, 50% untuk card
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: MediaQuery.of(context).size.height * 0.5,
-                  ),
-                ),
-
-                // Main Content Card
-                SliverToBoxAdapter(
-                  child: FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: SlideTransition(
-                      position: _slideAnimation,
-                      child: Container(
-                        margin: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          bottom: 16,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(32),
-                            topRight: Radius.circular(32),
-                          ),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(32),
-                            topRight: Radius.circular(32),
-                          ),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF0F2027,
-                                ).withOpacity(0.95),
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(32),
-                                  topRight: Radius.circular(32),
-                                ),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Title
-                                    Text(
-                                      title,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        height: 1.3,
-                                        letterSpacing: -0.5,
+          // Main Content with SliverAppBar
+          CustomScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Header Image with SliverAppBar
+              SliverAppBar(
+                expandedHeight: headerHeight,
+                pinned: true,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                leading: const SizedBox.shrink(),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Hero Image
+                      Hero(
+                        tag: 'artwork_${artwork['id']}',
+                        child: artworkType == 'image'
+                            ? (imageUrl.isNotEmpty
+                                  ? Image.network(
+                                      imageUrl,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (_, __, ___) => Container(
+                                        decoration: const BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [
+                                              Color(0xFF1E3A8A),
+                                              Color(0xFF9333EA),
+                                            ],
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.image,
+                                          size: 120,
+                                          color: Colors.white.withOpacity(0.3),
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(height: 16),
-
-                                    // Artist Info (clickable row with avatar)
-                                    InkWell(
-                                      onTap: () {
-                                        if (artistId.isNotEmpty) {
-                                          Navigator.of(context).push(
-                                            MaterialPageRoute(
-                                              builder: (_) => ArtistDetailPage(
-                                                artistId: artistId,
-                                              ),
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      borderRadius: BorderRadius.circular(12),
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(8.0),
-                                        child: Row(
-                                          children: [
-                                            CircleAvatar(
-                                              radius: 20,
-                                              backgroundColor: Colors.white
-                                                  .withOpacity(0.2),
-                                              backgroundImage:
-                                                  artistAvatar.isNotEmpty
-                                                  ? NetworkImage(artistAvatar)
-                                                  : null,
-                                              child: artistAvatar.isEmpty
-                                                  ? const Icon(
-                                                      Icons.person,
-                                                      size: 22,
-                                                      color: Colors.white70,
-                                                    )
-                                                  : null,
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    'Karya oleh',
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 11,
-                                                      color: Colors.white60,
-                                                    ),
-                                                  ),
-                                                  Text(
-                                                    artistName,
-                                                    style: GoogleFonts.poppins(
-                                                      fontSize: 15,
-                                                      fontWeight:
-                                                          FontWeight.w600,
-                                                      color: Colors.white,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                            Icon(
-                                              Icons.arrow_forward_ios,
-                                              size: 16,
-                                              color: Colors.white60,
-                                            ),
+                                    )
+                                  : Container(
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF1E3A8A),
+                                            Color(0xFF9333EA),
                                           ],
                                         ),
                                       ),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 120,
+                                        color: Colors.white.withOpacity(0.3),
+                                      ),
+                                    ))
+                            : artworkType == 'video' && _videoController != null
+                            ? Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  FittedBox(
+                                    fit: BoxFit.cover,
+                                    child: SizedBox(
+                                      width: _videoController!.value.size.width,
+                                      height:
+                                          _videoController!.value.size.height,
+                                      child: VideoPlayer(_videoController!),
                                     ),
-                                    const SizedBox(height: 16),
+                                  ),
+                                  if (!_isVideoInitialized)
+                                    const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  Center(
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          _isVideoPlaying
+                                              ? Icons.pause_circle_filled
+                                              : Icons.play_circle_fill,
+                                          size: 64,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: _togglePlayPause,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Container(
+                                decoration: const BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Color(0xFF1E3A8A),
+                                      Color(0xFF9333EA),
+                                    ],
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.video_library,
+                                  size: 120,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                              ),
+                      ),
+                      // Gradient overlay at bottom of image
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          height: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.transparent,
+                                Colors.black.withOpacity(0.7),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
-                                    // Stats Row (Likes + Comments badges)
-                                    Row(
+              // Main Content Card (Overlapping Sheet)
+              SliverToBoxAdapter(
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Container(
+                      constraints: BoxConstraints(
+                        minHeight: screenHeight * 0.6,
+                      ),
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                        child: BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF0F2027).withOpacity(0.95),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(30),
+                                topRight: Radius.circular(30),
+                              ),
+                            ),
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Title
+                                Text(
+                                  title,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    height: 1.3,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+
+                                // Artist Info (clickable row with avatar)
+                                InkWell(
+                                  onTap: () {
+                                    if (artistId.isNotEmpty) {
+                                      Navigator.of(context).push(
+                                        MaterialPageRoute(
+                                          builder: (_) => ArtistDetailPage(
+                                            artistId: artistId,
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Row(
                                       children: [
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
+                                        CircleAvatar(
+                                          radius: 20,
+                                          backgroundColor: Colors.white
+                                              .withOpacity(0.2),
+                                          backgroundImage:
+                                              artistAvatar.isNotEmpty
+                                              ? NetworkImage(artistAvatar)
+                                              : null,
+                                          child: artistAvatar.isEmpty
+                                              ? const Icon(
+                                                  Icons.person,
+                                                  size: 22,
+                                                  color: Colors.white70,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
-                                              const Icon(
-                                                Icons.favorite,
-                                                color: Colors.redAccent,
-                                                size: 18,
-                                              ),
-                                              const SizedBox(width: 6),
                                               Text(
-                                                '$likesCount',
+                                                'Karya oleh',
                                                 style: GoogleFonts.poppins(
+                                                  fontSize: 11,
+                                                  color: Colors.white60,
+                                                ),
+                                              ),
+                                              Text(
+                                                artistName,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 15,
                                                   fontWeight: FontWeight.w600,
                                                   color: Colors.white,
                                                 ),
@@ -434,339 +385,363 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.white.withOpacity(
-                                              0.1,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              const Icon(
-                                                Icons.comment,
-                                                color: Colors.blueAccent,
-                                                size: 18,
-                                              ),
-                                              const SizedBox(width: 6),
-                                              Text(
-                                                '$commentsCount',
-                                                style: GoogleFonts.poppins(
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                        Icon(
+                                          Icons.arrow_forward_ios,
+                                          size: 16,
+                                          color: Colors.white60,
                                         ),
                                       ],
                                     ),
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
 
-                                    // Divider
-                                    Padding(
+                                // Stats Row (Likes + Comments badges)
+                                Row(
+                                  children: [
+                                    Container(
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 20,
+                                        horizontal: 12,
+                                        vertical: 6,
                                       ),
-                                      child: Divider(
-                                        color: Colors.white.withOpacity(0.15),
-                                        thickness: 1,
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
                                       ),
-                                    ),
-
-                                    // Detail Informasi Header with icon
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFF8B5CF6),
-                                                Color(0xFFA78BFA),
-                                              ],
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.favorite,
+                                            color: Colors.redAccent,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$likesCount',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
                                             ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.white.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.comment,
+                                            color: Colors.blueAccent,
+                                            size: 18,
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            '$commentsCount',
+                                            style: GoogleFonts.poppins(
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.white,
                                             ),
                                           ),
-                                          child: const Icon(
-                                            Icons.info_outline_rounded,
-                                            color: Colors.white,
-                                            size: 20,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Detail Informasi',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: 16),
+                                  ],
+                                ),
 
-                                    // 3-Column Row
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildInfoColumn(
-                                            icon: Icons.category_outlined,
-                                            label: 'Kategori',
-                                            value: categoryName,
-                                          ),
+                                // Divider
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
+                                  child: Divider(
+                                    color: Colors.white.withOpacity(0.15),
+                                    thickness: 1,
+                                  ),
+                                ),
+
+                                // Detail Informasi Header with icon
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF8B5CF6),
+                                            Color(0xFFA78BFA),
+                                          ],
                                         ),
-                                        Expanded(
-                                          child: _buildInfoColumn(
-                                            icon: Icons.calendar_today_outlined,
-                                            label: 'Diupload',
-                                            value: uploadDate,
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: _buildInfoColumn(
-                                            icon: Icons.verified_outlined,
-                                            label: 'Status',
-                                            value: statusText,
-                                            isStatus: true,
-                                            statusApproved: isApproved,
-                                          ),
-                                        ),
-                                      ],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.info_outline_rounded,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
                                     ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Detail Informasi',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
 
-                                    // Divider
-                                    if (description.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 20,
+                                // 3-Column Row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildInfoColumn(
+                                        icon: Icons.category_outlined,
+                                        label: 'Kategori',
+                                        value: categoryName,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildInfoColumn(
+                                        icon: Icons.calendar_today_outlined,
+                                        label: 'Diupload',
+                                        value: uploadDate,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: _buildInfoColumn(
+                                        icon: Icons.verified_outlined,
+                                        label: 'Status',
+                                        value: statusText,
+                                        isStatus: true,
+                                        statusApproved: isApproved,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Divider
+                                if (description.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 20,
+                                    ),
+                                    child: Divider(
+                                      color: Colors.white.withOpacity(0.15),
+                                      thickness: 1,
+                                    ),
+                                  ),
+
+                                // Deskripsi Karya section
+                                if (description.isNotEmpty) ...[
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFEC4899),
+                                              Color(0xFFF472B6),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
-                                        child: Divider(
-                                          color: Colors.white.withOpacity(0.15),
-                                          thickness: 1,
+                                        child: const Icon(
+                                          Icons.description_outlined,
+                                          color: Colors.white,
+                                          size: 20,
                                         ),
                                       ),
+                                      const SizedBox(width: 12),
+                                      Text(
+                                        'Deskripsi Karya',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    description,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                      height: 1.6,
+                                    ),
+                                  ),
+                                ],
 
-                                    // Deskripsi Karya section
-                                    if (description.isNotEmpty) ...[
-                                      Row(
+                                // Divider
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 20,
+                                  ),
+                                  child: Divider(
+                                    color: Colors.white.withOpacity(0.15),
+                                    thickness: 1,
+                                  ),
+                                ),
+
+                                // Tentang Seniman section with social links
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF3B82F6),
+                                            Color(0xFF60A5FA),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.person_outline,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Tentang Seniman',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  artistBio,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                    height: 1.6,
+                                  ),
+                                ),
+                                if (social.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      if ((social['instagram'] as String?)
+                                              ?.isNotEmpty ??
+                                          false)
+                                        _buildSocialButton(
+                                          icon: Icons.camera_alt,
+                                          onTap: () => _openUrl(
+                                            social['instagram'] as String,
+                                          ),
+                                        ),
+                                      if ((social['behance'] as String?)
+                                              ?.isNotEmpty ??
+                                          false)
+                                        _buildSocialButton(
+                                          icon: Icons.work,
+                                          onTap: () => _openUrl(
+                                            social['behance'] as String,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ],
+
+                                // External Link section
+                                if (externalLink.isNotEmpty) ...[
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 20,
+                                    ),
+                                    child: Divider(
+                                      color: Colors.white.withOpacity(0.15),
+                                      thickness: 1,
+                                    ),
+                                  ),
+                                  InkWell(
+                                    onTap: () => _openUrl(externalLink),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(8.0),
+                                      child: Row(
                                         children: [
                                           Container(
                                             padding: const EdgeInsets.all(10),
                                             decoration: BoxDecoration(
                                               gradient: const LinearGradient(
                                                 colors: [
-                                                  Color(0xFFEC4899),
-                                                  Color(0xFFF472B6),
+                                                  Color(0xFF10B981),
+                                                  Color(0xFF34D399),
                                                 ],
                                               ),
                                               borderRadius:
                                                   BorderRadius.circular(12),
                                             ),
                                             child: const Icon(
-                                              Icons.description_outlined,
+                                              Icons.link,
                                               color: Colors.white,
                                               size: 20,
                                             ),
                                           ),
                                           const SizedBox(width: 12),
-                                          Text(
-                                            'Deskripsi Karya',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Text(
-                                        description,
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: Colors.white70,
-                                          height: 1.6,
-                                        ),
-                                      ),
-                                    ],
-
-                                    // Divider
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 20,
-                                      ),
-                                      child: Divider(
-                                        color: Colors.white.withOpacity(0.15),
-                                        thickness: 1,
-                                      ),
-                                    ),
-
-                                    // Tentang Seniman section with social links
-                                    Row(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(10),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFF3B82F6),
-                                                Color(0xFF60A5FA),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Tautan Eksternal',
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 13,
+                                                    color: Colors.white60,
+                                                  ),
+                                                ),
+                                                Text(
+                                                  externalLink,
+                                                  style: GoogleFonts.poppins(
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.blueAccent,
+                                                    decoration: TextDecoration
+                                                        .underline,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ),
                                               ],
                                             ),
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
                                           ),
-                                          child: const Icon(
-                                            Icons.person_outline,
-                                            color: Colors.white,
+                                          Icon(
+                                            Icons.open_in_new,
+                                            color: Colors.white60,
                                             size: 20,
                                           ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Tentang Seniman',
-                                          style: GoogleFonts.poppins(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      artistBio,
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 14,
-                                        color: Colors.white70,
-                                        height: 1.6,
-                                      ),
-                                    ),
-                                    if (social.isNotEmpty) ...[
-                                      const SizedBox(height: 12),
-                                      Row(
-                                        children: [
-                                          if ((social['instagram'] as String?)
-                                                  ?.isNotEmpty ??
-                                              false)
-                                            _buildSocialButton(
-                                              icon: Icons.camera_alt,
-                                              onTap: () => _openUrl(
-                                                social['instagram'] as String,
-                                              ),
-                                            ),
-                                          if ((social['behance'] as String?)
-                                                  ?.isNotEmpty ??
-                                              false)
-                                            _buildSocialButton(
-                                              icon: Icons.work,
-                                              onTap: () => _openUrl(
-                                                social['behance'] as String,
-                                              ),
-                                            ),
                                         ],
                                       ),
-                                    ],
-
-                                    // External Link section
-                                    if (externalLink.isNotEmpty) ...[
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 20,
-                                        ),
-                                        child: Divider(
-                                          color: Colors.white.withOpacity(0.15),
-                                          thickness: 1,
-                                        ),
-                                      ),
-                                      InkWell(
-                                        onTap: () => _openUrl(externalLink),
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Row(
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(
-                                                  10,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  gradient:
-                                                      const LinearGradient(
-                                                        colors: [
-                                                          Color(0xFF10B981),
-                                                          Color(0xFF34D399),
-                                                        ],
-                                                      ),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                child: const Icon(
-                                                  Icons.link,
-                                                  color: Colors.white,
-                                                  size: 20,
-                                                ),
-                                              ),
-                                              const SizedBox(width: 12),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      'Tautan Eksternal',
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                            fontSize: 13,
-                                                            color:
-                                                                Colors.white60,
-                                                          ),
-                                                    ),
-                                                    Text(
-                                                      externalLink,
-                                                      style:
-                                                          GoogleFonts.poppins(
-                                                            fontSize: 14,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color: Colors
-                                                                .blueAccent,
-                                                            decoration:
-                                                                TextDecoration
-                                                                    .underline,
-                                                          ),
-                                                      maxLines: 1,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                              Icon(
-                                                Icons.open_in_new,
-                                                color: Colors.white60,
-                                                size: 20,
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                              ),
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ),
@@ -774,14 +749,14 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                     ),
                   ),
                 ),
+              ),
 
-                // Bottom Padding for action bar
-                SliverToBoxAdapter(child: const SizedBox(height: 100)),
-              ],
-            ),
+              // Bottom Padding for action bar
+              SliverToBoxAdapter(child: const SizedBox(height: 100)),
+            ],
           ),
 
-          // Layer 4: Top Navigation Buttons (Back & Share)
+          // Top Navigation Buttons (Back & Share)
           SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -801,75 +776,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             ),
           ),
 
-          // Layer 5: "Lihat Foto Penuh" Button
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            bottom: _showFullImageButton ? 120 : -100,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    if (imageUrl.isNotEmpty) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => _FullScreenImageView(
-                            imageUrl: imageUrl,
-                            heroTag: 'artwork_${artwork['id']}',
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(30),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 14,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(30),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.3),
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.fullscreen,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Lihat Foto Penuh',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-          // Layer 6: Bottom Action Bar (Like & Comment)
+          // Bottom Action Bar (Like & Comment)
           Positioned(
             bottom: 0,
             left: 0,
