@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../../../main/main_app.dart';
-import '../../artwork/screens/upload_artwork_page.dart';
-import '../../events/upload_event_screen.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 import '../../events/event_detail_screen.dart';
-import '../../../shared/theme/app_theme.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -32,14 +29,12 @@ class _HomePageState extends State<HomePage> {
 
   String _selectedCategory = 'Semua';
   late Future<List<Map<String, dynamic>>> _artworksFuture;
-  String? _currentUserRole;
 
   @override
   void initState() {
     super.initState();
     _loadEvents();
     _artworksFuture = _loadArtworks();
-    _loadCurrentUserRole();
   }
 
   Future<void> _loadEvents() async {
@@ -62,29 +57,6 @@ class _HomePageState extends State<HomePage> {
       if (mounted) {
         setState(() => _isLoadingEvents = false);
       }
-    }
-  }
-
-  Future<void> _loadCurrentUserRole() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
-      if (mounted) setState(() => _currentUserRole = null);
-      return;
-    }
-
-    try {
-      final result = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .maybeSingle();
-      if (mounted) {
-        setState(() {
-          _currentUserRole = result != null ? (result['role'] as String?) : null;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _currentUserRole = null);
     }
   }
 
@@ -111,189 +83,6 @@ class _HomePageState extends State<HomePage> {
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (e) {
       return dateString;
-    }
-  }
-
-  void _openUploadPage() async {
-    if (_currentUserRole != 'artist') {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Hanya akun Artist yang dapat mengunggah karya.'),
-          ),
-        );
-      }
-      return;
-    }
-
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(24),
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Pilih Jenis Upload',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
-              ),
-              const SizedBox(height: 24),
-              // Upload Artwork Option
-              InkWell(
-                onTap: () => Navigator.pop(context, 'artwork'),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.secondaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.palette_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Unggah Karya',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Upload artwork/karya seni Anda',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              // Upload Event Option
-              InkWell(
-                onTap: () => Navigator.pop(context, 'event'),
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.event_rounded,
-                          color: Colors.white,
-                          size: 28,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Ajukan Event',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Ajukan event atau pameran seni',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (choice == 'artwork' && mounted) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
-      );
-      setState(() {
-        _artworksFuture = _loadArtworks();
-      });
-    } else if (choice == 'event' && mounted) {
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadEventScreen()),
-      );
     }
   }
 
@@ -922,37 +711,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: _currentUserRole == 'artist'
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: FloatingActionButton.extended(
-                    onPressed: _openUploadPage,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                    label: const Text(
-                      'Upload',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : null,
     );
   }
 

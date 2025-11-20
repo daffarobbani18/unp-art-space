@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../main/main_app.dart';
-import '../../artwork/screens/upload_artwork_page.dart';
-import '../../events/upload_event_screen.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 import '../../events/event_detail_screen.dart';
 
@@ -32,14 +30,12 @@ class _HomePageGlassState extends State<HomePageGlass> {
 
   String _selectedCategory = 'Semua';
   late Future<List<Map<String, dynamic>>> _artworksFuture;
-  String? _currentUserRole;
 
   @override
   void initState() {
     super.initState();
     _loadEvents();
     _artworksFuture = _loadArtworks();
-    _loadCurrentUserRole();
   }
 
   Future<void> _loadEvents() async {
@@ -61,26 +57,6 @@ class _HomePageGlassState extends State<HomePageGlass> {
       print('Error loading events: $e');
       if (mounted) {
         setState(() => _isLoadingEvents = false);
-      }
-    }
-  }
-
-  Future<void> _loadCurrentUserRole() async {
-    final user = supabase.auth.currentUser;
-    if (user != null) {
-      try {
-        final response = await supabase
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-        if (mounted) {
-          setState(() {
-            _currentUserRole = response['role'] as String?;
-          });
-        }
-      } catch (e) {
-        print('Error loading user role: $e');
       }
     }
   }
@@ -108,160 +84,6 @@ class _HomePageGlassState extends State<HomePageGlass> {
     } catch (e) {
       return dateString;
     }
-  }
-
-  void _openUploadPage() async {
-    if (_currentUserRole != 'artist') {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Hanya artist yang dapat mengunggah karya'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: const Color(0xFF0F2027).withOpacity(0.95),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(
-                  top: BorderSide(color: Colors.white.withOpacity(0.2)),
-                ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  const Text(
-                    'Pilih Jenis Unggahan',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _buildUploadOption(
-                    icon: Icons.palette_rounded,
-                    title: 'Unggah Karya Seni',
-                    subtitle: 'Bagikan karya seni Anda',
-                    onTap: () => Navigator.pop(context, 'artwork'),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildUploadOption(
-                    icon: Icons.event_rounded,
-                    title: 'Buat Event Seni',
-                    subtitle: 'Adakan pameran atau workshop',
-                    onTap: () => Navigator.pop(context, 'event'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-
-    if (result == 'artwork' && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
-      );
-    } else if (result == 'event' && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const UploadEventScreen()),
-      );
-    }
-  }
-
-  Widget _buildUploadOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.2),
-                width: 1.5,
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 28),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  color: Colors.white.withOpacity(0.5),
-                  size: 18,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildGlassIconButton({
@@ -829,37 +651,6 @@ class _HomePageGlassState extends State<HomePageGlass> {
           ],
         ),
       ),
-      floatingActionButton: _currentUserRole == 'artist'
-          ? ClipRRect(
-              borderRadius: BorderRadius.circular(30),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(30),
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: FloatingActionButton.extended(
-                    onPressed: _openUploadPage,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    icon: const Icon(Icons.add_rounded, color: Colors.white),
-                    label: const Text(
-                      'Upload',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            )
-          : null,
     );
   }
 }
