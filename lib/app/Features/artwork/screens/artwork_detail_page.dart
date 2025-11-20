@@ -1,49 +1,92 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:photo_view/photo_view.dart';
 import 'package:video_player/video_player.dart';
 import '../../artist/screens/artist_detail_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../shared/theme/app_theme.dart';
-import '../../../shared/theme/app_animations.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ArtworkDetailPage extends StatefulWidget {
   final Map<String, dynamic> artwork;
 
-  const ArtworkDetailPage({
-    Key? key,
-    required this.artwork,
-  }) : super(key: key);
+  const ArtworkDetailPage({Key? key, required this.artwork}) : super(key: key);
 
   @override
   State<ArtworkDetailPage> createState() => _ArtworkDetailPageState();
 }
 
-class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
+class _ArtworkDetailPageState extends State<ArtworkDetailPage>
+    with SingleTickerProviderStateMixin {
   bool _isLiking = false;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   bool _isVideoPlaying = false;
 
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+  final ScrollController _scrollController = ScrollController();
+  bool _isZoomButtonVisible = true;
+
   @override
   void initState() {
     super.initState();
+
+    // Setup animation
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    // Scroll listener untuk zoom button visibility
+    _scrollController.addListener(() {
+      if (_scrollController.offset > 50 && _isZoomButtonVisible) {
+        setState(() => _isZoomButtonVisible = false);
+      } else if (_scrollController.offset <= 50 && !_isZoomButtonVisible) {
+        setState(() => _isZoomButtonVisible = true);
+      }
+    });
+
+    _animationController.forward();
+
+    // Video setup
     final artwork = widget.artwork;
     final artworkType = (artwork['artwork_type'] as String?) ?? 'image';
     if (artworkType == 'video') {
-      final mediaUrl = (artwork['media_url'] as String?) ?? (artwork['image_url'] as String?) ?? '';
+      final mediaUrl =
+          (artwork['media_url'] as String?) ??
+          (artwork['image_url'] as String?) ??
+          '';
       if (mediaUrl.isNotEmpty) {
         _videoController = VideoPlayerController.network(mediaUrl);
-        _videoController!.initialize().then((_) {
-          if (!mounted) return;
-          setState(() {
-            _isVideoInitialized = true;
-            _isVideoPlaying = _videoController!.value.isPlaying;
-          });
-        }).catchError((e) {
-          debugPrint('Error initializing video: $e');
-        });
+        _videoController!
+            .initialize()
+            .then((_) {
+              if (!mounted) return;
+              setState(() {
+                _isVideoInitialized = true;
+                _isVideoPlaying = _videoController!.value.isPlaying;
+              });
+            })
+            .catchError((e) {
+              debugPrint('Error initializing video: $e');
+            });
         _videoController!.addListener(() {
           if (!mounted) return;
           setState(() {
@@ -54,17 +97,17 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
     }
   }
 
-  // Colors removed - now using AppTheme
-
   Future<void> _openUrl(String url) async {
     final uri = Uri.tryParse(url) ?? Uri();
     if (uri.toString().isEmpty) return;
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tidak dapat membuka tautan.')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tidak dapat membuka tautan.')),
+        );
+      }
     }
   }
 
@@ -73,82 +116,127 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
     final artwork = widget.artwork;
     final artworkType = (artwork['artwork_type'] as String?) ?? 'image';
     final title = (artwork['title'] as String?) ?? 'Untitled';
-  final imageUrl = (artwork['media_url'] as String?) ?? (artwork['image_url'] as String?) ?? '';
+    final imageUrl =
+        (artwork['media_url'] as String?) ??
+        (artwork['image_url'] as String?) ??
+        '';
     final likesCount = (artwork['likes_count'] ?? 0) as int;
-    // user info might be nested under 'users' (per spec) or use artist_name fallback
+    final commentsCount = (artwork['comments_count'] ?? 0) as int;
+
+    // User/Artist info
     final users = (artwork['users'] as Map<String, dynamic>?) ?? {};
-    final artistName = (users['name'] as String?) ??
+    final artistName =
+        (users['name'] as String?) ??
         (artwork['artist_name'] as String?) ??
         'Unknown Artist';
     final artistId = (artwork['artist_id'] as String?) ?? '';
-    final artistBio = (users['bio'] as String?) ?? 'Seniman ini belum memiliki bio.';
+    final artistAvatar = (users['avatar_url'] as String?) ?? '';
+    final artistBio =
+        (users['bio'] as String?) ?? 'Seniman ini belum memiliki bio.';
     final social = (users['social_media'] as Map<String, dynamic>?) ?? {};
+
     final description = (artwork['description'] as String?) ?? '';
     final externalLink = (artwork['external_link'] as String?) ?? '';
 
-    // specs placeholder (if artwork contains a 'specs' map use it)
-    final specs = (artwork['specs'] as Map<String, dynamic>?) ?? {
-      'Tahun': artwork['year']?.toString() ?? '—',
-      'Medium': artwork['medium'] ?? '—',
-      'Ukuran': artwork['dimensions'] ?? '—',
-    };
+    // Specs
+    final specs =
+        (artwork['specs'] as Map<String, dynamic>?) ??
+        {
+          'Tahun': artwork['year']?.toString() ?? '—',
+          'Medium': artwork['medium'] ?? '—',
+          'Ukuran': artwork['dimensions'] ?? '—',
+        };
+
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = screenHeight * 0.45;
 
     return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            pinned: true,
-            expandedHeight: 400.0,
-            backgroundColor: AppTheme.primary,
-            leading: IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: () => Navigator.of(context).pop(),
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Layer 1: Dark Gradient Background (Full Screen)
+          Container(
+            height: double.infinity,
+            width: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF0F2027), // Deep Blue Dark
+                  Color(0xFF203A43),
+                  Color(0xFF2C5364),
+                ],
+              ),
             ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  Icons.favorite_border_rounded,
-                  color: AppTheme.error,
-                ),
-                onPressed: _isLiking ? null : _likeArtwork,
-              ),
-              IconButton(
-                icon: const Icon(Icons.share_rounded),
-                onPressed: () => _shareArtwork(title, imageUrl),
-              ),
-              const SizedBox(width: AppTheme.spaceXs),
-            ],
-            flexibleSpace: FlexibleSpaceBar(
-              collapseMode: CollapseMode.parallax,
-              // title: Text(
-              //   title,
-              //   maxLines: 1,
-              //   overflow: TextOverflow.ellipsis,
-              //   style: GoogleFonts.poppins(
-              //     color: const Color.fromARGB(255, 199, 12, 237),
-              //     fontSize: 16,
-              //     fontWeight: FontWeight.w600,
-              //   ),
-              // ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (artworkType == 'image')
-                    if (imageUrl.isNotEmpty)
-                      PhotoView(
-                        imageProvider: NetworkImage(imageUrl),
-                        minScale: PhotoViewComputedScale.contained,
-                        maxScale: PhotoViewComputedScale.covered * 2.0,
-                        heroAttributes: PhotoViewHeroAttributes(tag: artwork['id'].toString()),
-                        backgroundDecoration: const BoxDecoration(color: Colors.white),
-                        loadingBuilder: (context, progress) => const Center(child: CircularProgressIndicator()),
-                      )
-                    else
-                      Container(color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, size: 60)))
-                  else if (artworkType == 'video')
-                    Center(
-                      child: _videoController != null
+          ),
+
+          // Layer 2: Hero Image with Gradient Overlay
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: GestureDetector(
+              onTap: () {
+                if (artworkType == 'image' && imageUrl.isNotEmpty) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => _FullScreenImageView(
+                        imageUrl: imageUrl,
+                        heroTag: 'artwork_${artwork['id']}',
+                      ),
+                    ),
+                  );
+                }
+              },
+              behavior: HitTestBehavior.translucent,
+              child: SizedBox(
+                height: imageHeight,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Hero Image
+                    Hero(
+                      tag: 'artwork_${artwork['id']}',
+                      child: artworkType == 'image'
+                          ? (imageUrl.isNotEmpty
+                                ? Image.network(
+                                    imageUrl,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      decoration: const BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Color(0xFF1E3A8A),
+                                            Color(0xFF9333EA),
+                                          ],
+                                        ),
+                                      ),
+                                      child: Icon(
+                                        Icons.image,
+                                        size: 120,
+                                        color: Colors.white.withOpacity(0.3),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    decoration: const BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [
+                                          Color(0xFF1E3A8A),
+                                          Color(0xFF9333EA),
+                                        ],
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.image,
+                                      size: 120,
+                                      color: Colors.white.withOpacity(0.3),
+                                    ),
+                                  ))
+                          : artworkType == 'video' && _videoController != null
                           ? AspectRatio(
                               aspectRatio: _videoController!.value.aspectRatio,
                               child: Stack(
@@ -156,329 +244,812 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
                                 children: [
                                   VideoPlayer(_videoController!),
                                   if (!_isVideoInitialized)
-                                    const Center(child: CircularProgressIndicator()),
+                                    const Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
                                   Positioned(
                                     bottom: 12,
+                                    child: Material(
+                                      color: Colors.transparent,
+                                      child: IconButton(
+                                        icon: Icon(
+                                          _isVideoPlaying
+                                              ? Icons.pause_circle_filled
+                                              : Icons.play_circle_fill,
+                                          size: 52,
+                                          color: Colors.white,
+                                        ),
+                                        onPressed: _togglePlayPause,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Container(
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF1E3A8A),
+                                    Color(0xFF9333EA),
+                                  ],
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.video_library,
+                                size: 120,
+                                color: Colors.white.withOpacity(0.3),
+                              ),
+                            ),
+                    ),
+                    // Gradient Overlay
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.3),
+                              const Color(0xFF0F2027).withOpacity(0.8),
+                              const Color(0xFF0F2027),
+                            ],
+                            stops: const [0.0, 0.5, 0.85, 1.0],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Layer 3: Scrollable Content
+          SingleChildScrollView(
+            controller: _scrollController,
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              children: [
+                // Spacing untuk foto - konten dimulai tepat di bawah foto
+                SizedBox(height: imageHeight),
+
+                // Content with Animation
+                FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title & Artist Info Glass Card
+                        _buildGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  height: 1.3,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              // Artist Info
+                              InkWell(
+                                onTap: () {
+                                  if (artistId.isNotEmpty) {
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (_) => ArtistDetailPage(
+                                          artistId: artistId,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                borderRadius: BorderRadius.circular(12),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 18,
+                                        backgroundColor: Colors.white
+                                            .withOpacity(0.2),
+                                        backgroundImage: artistAvatar.isNotEmpty
+                                            ? NetworkImage(artistAvatar)
+                                            : null,
+                                        child: artistAvatar.isEmpty
+                                            ? const Icon(
+                                                Icons.person,
+                                                size: 20,
+                                                color: Colors.white70,
+                                              )
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Karya oleh',
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 11,
+                                                color: Colors.white60,
+                                              ),
+                                            ),
+                                            Text(
+                                              artistName,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Icons.arrow_forward_ios,
+                                        size: 16,
+                                        color: Colors.white60,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              // Stats Row
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        IconButton(
-                                          icon: Icon(_isVideoPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill, size: 42, color: Colors.white),
-                                          onPressed: _togglePlayPause,
+                                        const Icon(
+                                          Icons.favorite,
+                                          color: Colors.redAccent,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '$likesCount',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.comment,
+                                          color: Colors.blueAccent,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          '$commentsCount',
+                                          style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ],
                               ),
-                            )
-                          : Container(color: Colors.black12, child: const Center(child: Icon(Icons.play_circle_fill, size: 72))),
-                    )
-                  else
-                    Container(color: Colors.grey[200], child: const Center(child: Icon(Icons.image_not_supported, size: 60))),
-                  // gradient overlay bottom for readability
-                  // Positioned(
-                  //   left: 0,
-                  //   right: 0,
-                  //   bottom: 0,
-                  //   height: 160,
-                  //   child: Container(
-                  //     decoration: BoxDecoration(
-                  //       gradient: LinearGradient(
-                  //         begin: Alignment.topCenter,
-                  //         end: Alignment.bottomCenter,
-                  //         colors: [
-                  //           Colors.transparent,
-                  //           // ignore: deprecated_member_use
-                  //           Colors.black.withOpacity(0.65),
-                  //         ],
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
-                  // small badge at bottom-left: UNP ART SPACE
-                  // Positioned(
-                  //   left: 16,
-                  //   bottom: 20,
-                  //   child: Text(
-                  //     'UNP ART SPACE',
-                  //     style: GoogleFonts.playfairDisplay(
-                  //       color: AppTheme.secondary,
-                  //       fontWeight: FontWeight.w700,
-                  //       fontSize: 18,
-                  //       shadows: [
-                  //         const Shadow(color: Colors.black38, blurRadius: 6, offset: Offset(0, 2)),
-                  //       ],
-                  //     ),
-                  //   ),
-                  // ),
-                ],
-              ),
-            ),
-          ),
-
-          // content
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header summary: title, artist, quick stats
-                      Text(
-                        title,
-                        style: GoogleFonts.playfairDisplay(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      GestureDetector(
-                        onTap: () {
-                          if (artistId.isNotEmpty) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => ArtistDetailPage(artistId: artistId)),
-                            );
-                          }
-                        },
-                        child: Text(
-                          'oleh $artistName',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: Colors.grey[700],
-                            fontWeight: FontWeight.w500,
+                            ],
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.favorite_border, color: Colors.red[400]),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$likesCount',
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+
+                        const SizedBox(height: 16),
+
+                        // Specs Glass Card
+                        _buildInfoGlassCard(
+                          icon: Icons.info_outline_rounded,
+                          iconGradient: const LinearGradient(
+                            colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
                           ),
-                          const SizedBox(width: 16),
-                          Icon(Icons.comment_outlined, color: AppTheme.primary),
-                          const SizedBox(width: 6),
-                          Text(
-                            '${artwork['comments_count'] ?? 0} Komentar',
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
+                          title: 'Spesifikasi Karya',
+                          content: specs.entries
+                              .map((e) => '${e.key}: ${e.value}')
+                              .join('\n'),
+                        ),
 
-                      const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
-                      // Card with details
-                      Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(18.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Deskripsi Karya
-                              Text(
-                                'Deskripsi Karya',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.primary,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              if (description.isNotEmpty)
-                                Text(
-                                  description,
-                                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[800], height: 1.5),
-                                )
-                              else
-                                Text(
-                                  '-',
-                                  style: GoogleFonts.poppins(color: Colors.grey[600]),
-                                ),
-                              const SizedBox(height: 16),
-                              const Divider(),
-                              const SizedBox(height: 8),
-
-                              // Spesifikasi
-                              Text(
-                                'Spesifikasi',
-                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primary),
-                              ),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 12,
-                                runSpacing: 8,
-                                children: specs.entries.map((e) {
-                                  return Chip(
-                                    backgroundColor: Colors.grey[100],
-                                    label: Text('${e.key}: ${e.value}', style: GoogleFonts.poppins(fontSize: 13)),
-                                  );
-                                }).toList(),
-                              ),
-                              const SizedBox(height: 16),
-                              const Divider(),
-                              const SizedBox(height: 8),
-
-                              // Tentang Seniman
-                              Text(
-                                'Tentang Seniman',
-                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w700, color: AppTheme.primary),
-                              ),
-                              const SizedBox(height: 12),
-                              InkWell(
-                                onTap: (){
-                                  final artistId = artwork['artist_id'] as String?;
-                                  if (artistId == null) return; 
-                                  Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => ArtistDetailPage(artistId: artistId),
-                                  ),
-                                  );
-                                },
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                        // Description Glass Card
+                        if (description.isNotEmpty)
+                          _buildGlassCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
                                   children: [
-                                    CircleAvatar(
-                                      radius: 28,
-                                      backgroundColor: AppTheme.secondary.withOpacity(0.12),
-                                      child: Text(
-                                        artistName.isNotEmpty ? artistName[0].toUpperCase() : 'A',
-                                        style: GoogleFonts.poppins(color: AppTheme.secondary, fontWeight: FontWeight.w700, fontSize: 20),
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFEC4899),
+                                            Color(0xFFF472B6),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.description_outlined,
+                                        color: Colors.white,
+                                        size: 20,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            artistName,
-                                            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700),
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Text(
-                                            artistBio,
-                                            style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
-                                          ),
-                                          const SizedBox(height: 10),
-                                          if (social.isNotEmpty)
-                                          Row(
-                                            children: [
-                                              if ((social['instagram'] as String?)?.isNotEmpty ?? false)
-                                                IconButton(
-                                                  icon: const Icon(Icons.camera_alt),
-                                                  color: AppTheme.primary,
-                                                  onPressed: () => _openUrl(social['instagram'] as String),
-                                                ),
-                                              if ((social['behance'] as String?)?.isNotEmpty ?? false)
-                                                IconButton(
-                                                  icon: const Icon(Icons.work),
-                                                  color: AppTheme.secondary,
-                                                  onPressed: () => _openUrl(social['behance'] as String),
-                                                ),
-                                              // add more platforms if present
-                                            ],
-                                          ),
-                                        ],
+                                    Text(
+                                      'Deskripsi Karya',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                    const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                                   ],
                                 ),
-                              ),
-
-                              const SizedBox(height: 12),
-                              if (externalLink.isNotEmpty) ...[
-                                const Divider(),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
                                 Text(
-                                  'Tautan Eksternal',
-                                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w700),
+                                  description,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.white70,
+                                    height: 1.6,
+                                  ),
                                 ),
-                                const SizedBox(height: 8),
-                                InkWell(
-                                  onTap: () => _openUrl(externalLink),
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.link, color: AppTheme.primary),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          externalLink,
-                                          style: GoogleFonts.poppins(color: Colors.blue[700], decoration: TextDecoration.underline),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                              ],
+                            ),
+                          ),
+
+                        const SizedBox(height: 16),
+
+                        // About Artist Glass Card
+                        _buildGlassCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF3B82F6),
+                                          Color(0xFF60A5FA),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(
+                                      Icons.person_outline,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Tentang Seniman',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                artistBio,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.white70,
+                                  height: 1.6,
+                                ),
+                              ),
+                              if (social.isNotEmpty) ...[
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    if ((social['instagram'] as String?)
+                                            ?.isNotEmpty ??
+                                        false)
+                                      _buildSocialButton(
+                                        icon: Icons.camera_alt,
+                                        onTap: () => _openUrl(
+                                          social['instagram'] as String,
                                         ),
                                       ),
-                                      const SizedBox(width: 8),
-                                      Icon(Icons.open_in_new, color: Colors.grey[700]),
-                                    ],
-                                  ),
+                                    if ((social['behance'] as String?)
+                                            ?.isNotEmpty ??
+                                        false)
+                                      _buildSocialButton(
+                                        icon: Icons.work,
+                                        onTap: () => _openUrl(
+                                          social['behance'] as String,
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ],
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 24),
-
-                      // Action buttons: Like & Comment (large)
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              onPressed: _isLiking ? null : _likeArtwork,
-                              icon: const Icon(Icons.favorite, color: Colors.white),
-                              label: Text('Suka', style: GoogleFonts.poppins(color: Colors.white)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primary,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur komentar akan segera hadir!')));
-                              },
-                              icon: const Icon(Icons.comment_outlined),
-                              label: Text('Komentar', style: GoogleFonts.poppins(color: AppTheme.primary)),
-                              style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                side: BorderSide(color: AppTheme.primary),
+                        // External Link
+                        if (externalLink.isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          _buildGlassCard(
+                            child: InkWell(
+                              onTap: () => _openUrl(externalLink),
+                              borderRadius: BorderRadius.circular(16),
+                              child: Padding(
+                                padding: const EdgeInsets.all(4.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF10B981),
+                                            Color(0xFF34D399),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.link,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Tautan Eksternal',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 13,
+                                              color: Colors.white60,
+                                            ),
+                                          ),
+                                          Text(
+                                            externalLink,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.blueAccent,
+                                              decoration:
+                                                  TextDecoration.underline,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.open_in_new,
+                                      color: Colors.white60,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ],
-                      ),
 
-                      const SizedBox(height: 40),
-                    ],
+                        // Bottom Padding untuk action bar
+                        const SizedBox(height: 100),
+                      ],
+                    ),
                   ),
-                );
-              },
-              childCount: 1,
+                ),
+              ],
             ),
           ),
+
+          // Layer 4: Top Navigation (Back & Share)
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildGlassCircleButton(
+                    icon: Icons.arrow_back,
+                    onTap: () => Navigator.pop(context),
+                  ),
+                  _buildGlassCircleButton(
+                    icon: Icons.share,
+                    onTap: () => _shareArtwork(title, imageUrl),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Layer 5: Bottom Action Bar (Like & Comment)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F2027).withOpacity(0.95),
+                border: Border(
+                  top: BorderSide(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.15),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        // Like Button
+                        Expanded(
+                          flex: 3,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isLiking ? null : _likeArtwork,
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFFEC4899),
+                                      Color(0xFFF472B6),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.favorite,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Suka',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 15,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Comment Button
+                        Expanded(
+                          flex: 2,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Fitur komentar akan segera hadir!',
+                                    ),
+                                  ),
+                                );
+                              },
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                decoration: BoxDecoration(
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.3),
+                                    width: 1.5,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.comment,
+                                      color: Colors.white.withOpacity(0.9),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Komentar',
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.white.withOpacity(0.9),
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Layer 6: Zoom Button (for images only, scroll-aware visibility)
+          if (artworkType == 'image' && imageUrl.isNotEmpty)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              left: 0,
+              child: AnimatedOpacity(
+                opacity: _isZoomButtonVisible ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 300),
+                child: IgnorePointer(
+                  ignoring: !_isZoomButtonVisible,
+                  child: Container(
+                    height: imageHeight,
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => _FullScreenImageView(
+                                imageUrl: imageUrl,
+                                heroTag: 'artwork_${artwork['id']}',
+                              ),
+                            ),
+                          );
+                        },
+                        customBorder: const CircleBorder(),
+                        child: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.black.withOpacity(0.5),
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: const Icon(
+                            Icons.zoom_out_map,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+
+  // Glass Components Helper Methods
+  Widget _buildGlassCard({required Widget child}) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoGlassCard({
+    required IconData icon,
+    required Gradient iconGradient,
+    required String title,
+    required String content,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: iconGradient,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: Colors.white60,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        content,
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassCircleButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: ClipOval(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.25),
+                  width: 1.5,
+                ),
+              ),
+              child: Icon(icon, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSocialButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: Colors.white, size: 20),
+        ),
       ),
     );
   }
 
   @override
   void dispose() {
+    _animationController.dispose();
+    _scrollController.dispose();
     _videoController?.removeListener(() {});
     _videoController?.dispose();
     super.dispose();
@@ -504,12 +1075,20 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user != null) {
-        final roleRow = await Supabase.instance.client.from('users').select('role').eq('id', user.id).maybeSingle();
+        final roleRow = await Supabase.instance.client
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
         final role = roleRow != null ? (roleRow['role'] as String?) : null;
         if (role == 'artist') {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Akun Artist tidak dapat memberikan like.')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Akun Artist tidak dapat memberikan like.'),
+              ),
+            );
+          }
           return;
         }
       }
@@ -525,9 +1104,14 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
       });
     } catch (e) {
       debugPrint('Error liking artwork: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memberikan like: $e'), backgroundColor: Colors.red),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memberikan like: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } finally {
       setState(() {
         _isLiking = false;
@@ -536,19 +1120,91 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage> {
   }
 
   void _shareArtwork(String title, String imageUrl) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Bagikan Karya'),
-        content: Text('Bagikan "$title" ke media sosial?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Batal')),
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur share akan segera hadir!')));
-            },
-            child: const Text('Bagikan'),
+    final shareText =
+        '''
+🎨 $title
+
+Lihat karya seni ini di UNP Art Space!
+
+#UNPArtSpace #KaryaSeni
+    ''';
+
+    Share.share(shareText, subject: title);
+  }
+}
+
+// Full Screen Image View Widget
+class _FullScreenImageView extends StatelessWidget {
+  final String imageUrl;
+  final String heroTag;
+
+  const _FullScreenImageView({required this.imageUrl, required this.heroTag});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Interactive Image Viewer with Zoom
+          Center(
+            child: Hero(
+              tag: heroTag,
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.black,
+                    child: Icon(
+                      Icons.broken_image,
+                      size: 100,
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Close Button
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Align(
+                alignment: Alignment.topRight,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    customBorder: const CircleBorder(),
+                    child: ClipOval(
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                        child: Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ],
       ),
