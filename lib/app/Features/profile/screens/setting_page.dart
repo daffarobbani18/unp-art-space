@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../core/navigation/auth_gate.dart';
 import 'edit_profile_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -44,36 +45,33 @@ class SettingsPage extends StatelessWidget {
         );
 
         // Small delay to ensure cleanup
-        await Future.delayed(const Duration(milliseconds: 300));
+        await Future.delayed(const Duration(milliseconds: 200));
 
         // Navigate back to login and remove all previous routes
         if (context.mounted) {
           Navigator.of(context).pop(); // Close loading dialog
           
-          // Use pushReplacementNamed for better performance
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/',
+          // Navigate to AuthGate to trigger auth state check
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const AuthGate(),
+            ),
             (route) => false,
           );
         }
       } catch (e) {
+        debugPrint('Logout error: $e');
+        
         // Close loading dialog if still open
         if (context.mounted) {
           Navigator.of(context).pop();
           
-          // Even on error, try to navigate (local logout)
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            '/',
-            (route) => false,
-          );
-          
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout lokal berhasil. Error: $e'),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 2),
+          // Even on error, navigate to AuthGate (local logout)
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const AuthGate(),
             ),
+            (route) => false,
           );
         }
       }
