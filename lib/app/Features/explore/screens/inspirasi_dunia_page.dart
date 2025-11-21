@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:http/http.dart' as http;
-import '../../../shared/widgets/custom_network_image.dart';
 
 class InspirasiDuniaPage extends StatefulWidget {
   const InspirasiDuniaPage({super.key});
@@ -21,18 +20,32 @@ class _InspirasiDuniaPageState extends State<InspirasiDuniaPage> {
   }
 
   Future<List<Map<String, dynamic>>> _fetchArtworksFromAIC() async {
-    // Kita cari karya-karya impresionis sebagai contoh
-    final url = Uri.parse('https://api.artic.edu/api/v1/artworks/search?q=impressionism&fields=id,title,image_id,artist_title,date_display&limit=30');
-    final response = await http.get(url);
+    try {
+      // Menggunakan endpoint artworks langsung dengan filter has_not_been_viewed_much = false
+      final url = Uri.parse(
+        'https://api.artic.edu/api/v1/artworks?fields=id,title,image_id,artist_title,date_display,thumbnail&limit=50'
+      );
+      
+      final response = await http.get(url);
 
-    if (response.statusCode == 200) {
-      final jsonData = json.decode(response.body);
-      // API mengembalikan data dalam List, kita langsung gunakan
-      final artworks = List<Map<String, dynamic>>.from(jsonData['data']);
-      // Filter hanya yang punya image_id
-      return artworks.where((artwork) => artwork['image_id'] != null).toList();
-    } else {
-      throw Exception('Gagal mengambil data dari API.');
+      if (response.statusCode == 200) {
+        final jsonData = json.decode(response.body);
+        final artworks = List<Map<String, dynamic>>.from(jsonData['data']);
+        
+        // Filter hanya yang punya image_id yang valid
+        final validArtworks = artworks.where((artwork) {
+          final imageId = artwork['image_id'];
+          return imageId != null && imageId.toString().isNotEmpty;
+        }).toList();
+        
+        print('Loaded ${validArtworks.length} artworks with images');
+        return validArtworks;
+      } else {
+        throw Exception('Gagal mengambil data: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching artworks: $e');
+      rethrow;
     }
   }
 
@@ -66,10 +79,28 @@ class _InspirasiDuniaPageState extends State<InspirasiDuniaPage> {
                 Flexible(
                   child: ClipRRect(
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                    child: CustomNetworkImage(
-                      imageUrl: imageUrl,
+                    child: Image.network(
+                      imageUrl.replaceAll('/400,/', '/843,/'), // Gunakan resolusi lebih tinggi untuk detail
                       fit: BoxFit.contain,
-                      borderRadius: 0,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Center(
+                            child: Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -154,13 +185,19 @@ class _InspirasiDuniaPageState extends State<InspirasiDuniaPage> {
             itemBuilder: (context, index) {
               final artwork = artworks[index];
               final imageId = artwork['image_id'];
+              
+              // Gunakan format URL yang lebih sederhana dan reliable
               final imageUrl = imageId != null 
-                  ? 'https://www.artic.edu/iiif/2/$imageId/full/843,/0/default.jpg'
+                  ? 'https://www.artic.edu/iiif/2/$imageId/full/400,/0/default.jpg'
                   : '';
+              
+              print('Image URL for ${artwork['title']}: $imageUrl');
 
                 return InkWell(
                 onTap: () {
-                  _showArtworkDetail(context, artwork, imageUrl);
+                  if (imageUrl.isNotEmpty) {
+                    _showArtworkDetail(context, artwork, imageUrl);
+                  }
                 },
                 child: Card(
                   clipBehavior: Clip.antiAlias,
@@ -173,10 +210,41 @@ class _InspirasiDuniaPageState extends State<InspirasiDuniaPage> {
                       if (imageUrl.isNotEmpty)
                         AspectRatio(
                           aspectRatio: 1.0,
-                          child: CustomNetworkImage(
-                            imageUrl: imageUrl,
+                          child: Image.network(
+                            imageUrl,
                             fit: BoxFit.cover,
-                            borderRadius: 0,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: Colors.grey[200],
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              print('Error loading image: $error');
+                              return Container(
+                                color: Colors.grey[300],
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(Icons.broken_image, size: 48, color: Colors.grey),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Gambar tidak dapat dimuat',
+                                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
                         )
                       else
