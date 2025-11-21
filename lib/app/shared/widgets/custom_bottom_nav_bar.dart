@@ -165,6 +165,12 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                             )
                           : null,
                       color: isSelected ? null : Colors.transparent,
+                      border: isSelected
+                          ? Border.all(
+                              color: Colors.white.withOpacity(0.5),
+                              width: 2.0,
+                            )
+                          : null,
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
