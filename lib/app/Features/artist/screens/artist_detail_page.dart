@@ -198,28 +198,6 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                   ),
                 ),
               ),
-              // Close button (top right)
-              Positioned(
-                top: 10,
-                right: 10,
-                child: SafeArea(
-                  child: ClipOval(
-                    child: BackdropFilter(
-                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          shape: BoxShape.circle,
-                        ),
-                        child: IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                          onPressed: () => Navigator.of(context).pop(),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
               // Artist name overlay
               Positioned(
                 bottom: 20,
