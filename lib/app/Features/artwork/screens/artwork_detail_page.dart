@@ -1325,7 +1325,7 @@ class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
       await Supabase.instance.client.from('comments').insert({
         'artwork_id': widget.artworkId,
         'user_id': user.id,
-        'comment_text': _commentController.text.trim(),
+        'content': _commentController.text.trim(),
       });
 
       _commentController.clear();
@@ -1590,7 +1590,7 @@ class _CommentItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = comment['user_id'] as String?;
-    final commentText = comment['comment_text'] as String? ?? '';
+    final commentText = comment['content'] as String? ?? '';
     final createdAt = comment['created_at'] as String?;
 
     return FutureBuilder<Map<String, dynamic>?>(
