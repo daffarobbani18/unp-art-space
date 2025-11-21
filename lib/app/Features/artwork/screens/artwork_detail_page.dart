@@ -141,7 +141,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         (artwork['artist_name'] as String?) ??
         'Unknown Artist';
     final artistId = (artwork['artist_id'] as String?) ?? '';
-    final artistAvatar = (users['avatar_url'] as String?) ?? '';
+    final artistAvatar = (users['profile_image_url'] as String?) ?? '';
     final artistBio =
         (users['bio'] as String?) ?? 'Seniman ini belum memiliki bio.';
     final social = (users['social_media'] as Map<String, dynamic>?) ?? {};
@@ -1597,7 +1597,9 @@ class _CommentItem extends StatelessWidget {
       future: _fetchUserProfile(userId),
       builder: (context, snapshot) {
         final userName = snapshot.data?['name'] as String? ?? 'User';
-        final avatarUrl = snapshot.data?['avatar_url'] as String? ?? '';
+        final avatarUrl = snapshot.data?['profile_image_url'] as String? ?? '';
+        final userRole = snapshot.data?['role'] as String? ?? '';
+        final isArtist = userRole == 'artist';
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -1613,19 +1615,31 @@ class _CommentItem extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Avatar
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.white.withOpacity(0.1),
-                backgroundImage:
-                    avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
-                child: avatarUrl.isEmpty
-                    ? Icon(
-                        Icons.person,
-                        color: Colors.white.withOpacity(0.5),
-                        size: 20,
-                      )
-                    : null,
+              // Avatar (Clickable)
+              GestureDetector(
+                onTap: () {
+                  if (userId != null && isArtist) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ArtistDetailPage(artistId: userId),
+                      ),
+                    );
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  backgroundImage:
+                      avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl.isEmpty
+                      ? Icon(
+                          Icons.person,
+                          color: Colors.white.withOpacity(0.5),
+                          size: 20,
+                        )
+                      : null,
+                ),
               ),
               const SizedBox(width: 12),
               // Comment Content
@@ -1635,14 +1649,54 @@ class _CommentItem extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          userName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            userName,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (isArtist) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF8B5CF6),
+                                  Color(0xFF6366F1),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.verified,
+                                  color: Colors.white,
+                                  size: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Artist',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(width: 8),
                         if (createdAt != null)
                           Text(
@@ -1677,7 +1731,7 @@ class _CommentItem extends StatelessWidget {
     try {
       final response = await Supabase.instance.client
           .from('users')
-          .select('name, avatar_url')
+          .select('name, profile_image_url, role')
           .eq('id', userId)
           .maybeSingle();
       return response;
