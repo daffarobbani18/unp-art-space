@@ -177,10 +177,10 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                 ),
               ),
               // Back button (top left)
-              SafeArea(
-                child: Positioned(
-                  top: 10,
-                  left: 10,
+              Positioned(
+                top: 10,
+                left: 10,
+                child: SafeArea(
                   child: ClipOval(
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -199,10 +199,10 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                 ),
               ),
               // Close button (top right)
-              SafeArea(
-                child: Positioned(
-                  top: 10,
-                  right: 10,
+              Positioned(
+                top: 10,
+                right: 10,
+                child: SafeArea(
                   child: ClipOval(
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
@@ -221,11 +221,11 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                 ),
               ),
               // Artist name overlay
-              SafeArea(
-                child: Positioned(
-                  bottom: 20,
-                  left: 20,
-                  right: 20,
+              Positioned(
+                bottom: 20,
+                left: 20,
+                right: 20,
+                child: SafeArea(
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: BackdropFilter(
