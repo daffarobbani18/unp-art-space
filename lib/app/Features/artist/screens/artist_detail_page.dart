@@ -176,7 +176,29 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                   ),
                 ),
               ),
-              // Close button
+              // Back button (top left)
+              SafeArea(
+                child: Positioned(
+                  top: 10,
+                  left: 10,
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Close button (top right)
               SafeArea(
                 child: Positioned(
                   top: 10,
