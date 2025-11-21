@@ -4,6 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 // Toggle this to true to show a visible debug border and console logs for the camera button
 const bool _kDebugCameraArea = true;
@@ -234,13 +235,13 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            Container(
+            SizedBox(
               height: 200,
               width: double.infinity,
-              color: Colors.grey[200],
-              child: Image.network(
-                'https://picsum.photos/seed/${widget.artistId}/800/400',
+              child: CustomNetworkImage(
+                imageUrl: 'https://picsum.photos/seed/${widget.artistId}/800/400',
                 fit: BoxFit.cover,
+                borderRadius: 0,
               ),
             ),
             if (!widget.isOwnProfile)
@@ -488,20 +489,10 @@ class _ArtistProfileHeaderState extends State<ArtistProfileHeader> {
                   panEnabled: true,
                   minScale: 1.0,
                   maxScale: 4.0,
-                  child: Image.network(
-                    _profileImageUrl!,
+                  child: CustomNetworkImage(
+                    imageUrl: _profileImageUrl!,
                     fit: BoxFit.contain,
-                    loadingBuilder: (context, child, progress) {
-                      if (progress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    errorBuilder: (context, err, st) => const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        color: Colors.white,
-                        size: 64,
-                      ),
-                    ),
+                    borderRadius: 0,
                   ),
                 ),
               ),

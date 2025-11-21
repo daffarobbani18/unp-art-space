@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:http/http.dart' as http;
+import '../../../shared/widgets/custom_network_image.dart';
 
 class InspirasiDuniaPage extends StatefulWidget {
   const InspirasiDuniaPage({super.key});
@@ -82,23 +83,11 @@ class _InspirasiDuniaPageState extends State<InspirasiDuniaPage> {
                     children: [
                       // Tampilkan gambar jika URL ada
                       if (imageUrl.isNotEmpty)
-                        Image.network(
-                          imageUrl,
+                        CustomNetworkImage(
+                          imageUrl: imageUrl,
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) => 
-                              progress == null ? child : Container(height: 150, color: Colors.grey[200]),
-                          // 
-                          errorBuilder: (context, error, stackTrace) {
-                            // LETAKKAN PRINT DI SINI
-                            print('IMAGE LOAD ERROR: ${error.toString()}'); 
-                            
-                            // KEMUDIAN KEMBALIKAN WIDGET-NYA
-                            return Container(
-                              height: 150, 
-                              color: Colors.grey[200], 
-                              child: const Icon(Icons.broken_image)
-                            );
-                          },
+                          height: 150,
+                          borderRadius: 10,
                         ),
                       
                       // Tampilkan teks di bawah gambar

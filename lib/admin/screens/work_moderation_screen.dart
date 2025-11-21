@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../app/shared/widgets/custom_network_image.dart';
 
 class ModerationScreen extends StatefulWidget {
   const ModerationScreen({super.key});
@@ -406,13 +407,10 @@ class _ModerationScreenState extends State<ModerationScreen> {
                 child: AspectRatio(
                   aspectRatio: 1,
                   child: artwork['media_url'] != null
-                      ? Image.network(
-                          artwork['media_url'],
+                      ? CustomNetworkImage(
+                          imageUrl: artwork['media_url'],
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey[200],
-                            child: Icon(Icons.image, size: 48, color: Colors.grey[400]),
-                          ),
+                          borderRadius: 12,
                         )
                       : Container(
                           color: Colors.grey[200],

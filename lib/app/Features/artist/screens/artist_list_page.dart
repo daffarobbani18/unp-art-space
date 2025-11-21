@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../../../main/main_app.dart';
 import 'artist_detail_page.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class ArtistListPage extends StatefulWidget {
   final String specialization; 
@@ -90,19 +91,10 @@ class _ArtistListPageState extends State<ArtistListPage> {
                   ),
                 ),
                 child: profileImage.isNotEmpty
-                    ? Image.network(
-                        profileImage,
+                    ? CustomNetworkImage(
+                        imageUrl: profileImage,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(
-                            name[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        borderRadius: 50,
                       )
                     : Center(
                         child: Text(

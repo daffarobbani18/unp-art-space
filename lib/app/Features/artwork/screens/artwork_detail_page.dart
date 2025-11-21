@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class ArtworkDetailPage extends StatefulWidget {
   final Map<String, dynamic> artwork;
@@ -208,24 +209,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                       tag: 'artwork_${artwork['id']}',
                       child: artworkType == 'image'
                           ? (imageUrl.isNotEmpty
-                                ? Image.network(
-                                    imageUrl,
+                                ? CustomNetworkImage(
+                                    imageUrl: imageUrl,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => Container(
-                                      decoration: const BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Color(0xFF1E3A8A),
-                                            Color(0xFF9333EA),
-                                          ],
-                                        ),
-                                      ),
-                                      child: Icon(
-                                        Icons.image,
-                                        size: 120,
-                                        color: Colors.white.withOpacity(0.3),
-                                      ),
-                                    ),
+                                    borderRadius: 0,
                                   )
                                 : Container(
                                     decoration: const BoxDecoration(
@@ -1157,17 +1144,10 @@ class _FullScreenImageView extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
+                child: CustomNetworkImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.black,
-                    child: Icon(
-                      Icons.broken_image,
-                      size: 100,
-                      color: Colors.white.withOpacity(0.3),
-                    ),
-                  ),
+                  borderRadius: 0,
                 ),
               ),
             ),

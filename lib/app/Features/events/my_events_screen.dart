@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'upload_event_screen.dart';
+import '../../shared/widgets/custom_network_image.dart';
 
 class MyEventsScreen extends StatefulWidget {
   const MyEventsScreen({super.key});
@@ -293,19 +294,12 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           if (event['image_url'] != null)
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    event['image_url'],
-                    width: double.infinity,
-                    height: 180,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 180,
-                      color: Colors.grey[200],
-                      child: Icon(Icons.event, size: 64, color: Colors.grey[400]),
-                    ),
-                  ),
+                CustomNetworkImage(
+                  imageUrl: event['image_url'],
+                  width: double.infinity,
+                  height: 180,
+                  fit: BoxFit.cover,
+                  borderRadius: 16,
                 ),
                 // Status Badge
                 Positioned(

@@ -6,6 +6,7 @@ import '../../artist/screens/artist_list_page.dart';
 import '../../artist/screens/artist_detail_page.dart';
 import 'search_results_page.dart';
 import '../../explore/screens/inspirasi_dunia_page.dart';
+import '../../../../shared/widgets/custom_network_image.dart';
 
 // Glassmorphism-styled SearchPage using SingleChildScrollView
 class SearchPage extends StatefulWidget {
@@ -309,22 +310,15 @@ class _SearchPageState extends State<SearchPage> {
                         borderRadius: BorderRadius.circular(20),
                         child: Stack(
                           children: [
-                            Container(
+                            SizedBox(
                               height: 140,
-                              color: Colors.white.withOpacity(0.04),
-                              child: Image.network(
-                                'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
+                              width: double.infinity,
+                              child: CustomNetworkImage(
+                                imageUrl: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80',
                                 fit: BoxFit.cover,
-                                width: double.infinity,
                                 height: 140,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.white.withOpacity(0.04),
-                                  child: const Icon(
-                                    Icons.image,
-                                    color: Colors.white38,
-                                    size: 48,
-                                  ),
-                                ),
+                                width: double.infinity,
+                                borderRadius: 20,
                               ),
                             ),
                             Positioned.fill(
@@ -517,30 +511,11 @@ class _SearchPageState extends State<SearchPage> {
                                         child:
                                             (avatarUrl != null &&
                                                 avatarUrl.isNotEmpty)
-                                            ? ClipOval(
-                                                child: Image.network(
-                                                  avatarUrl,
+                                            ? CustomNetworkImage(
+                                                  imageUrl: avatarUrl,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) =>
-                                                      Center(
-                                                        child: Text(
-                                                          name.isNotEmpty
-                                                              ? name[0]
-                                                                    .toUpperCase()
-                                                              : 'U',
-                                                          style:
-                                                              const TextStyle(
-                                                                color: Colors
-                                                                    .white,
-                                                                fontSize: 20,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold,
-                                                              ),
-                                                        ),
-                                                      ),
-                                                ),
-                                              )
+                                                  borderRadius: 50,
+                                                )
                                             : Center(
                                                 child: Text(
                                                   name.isNotEmpty

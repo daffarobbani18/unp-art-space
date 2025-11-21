@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../app/shared/widgets/custom_network_image.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -288,13 +289,10 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                       Hero(
                         tag: 'event_${widget.event['id']}',
                         child: widget.event['image_url'] != null
-                            ? Image.network(
-                                widget.event['image_url'],
+                            ? CustomNetworkImage(
+                                imageUrl: widget.event['image_url'],
                                 fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => Container(
-                                  color: Colors.grey[300],
-                                  child: Icon(Icons.event, size: 80, color: Colors.grey[400]),
-                                ),
+                                borderRadius: 0,
                               )
                             : Container(
                                 color: Colors.grey[300],

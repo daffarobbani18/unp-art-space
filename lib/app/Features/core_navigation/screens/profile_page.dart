@@ -8,6 +8,7 @@ import '../../artwork/screens/edit_artwork_page.dart';
 import '../../profile/screens/setting_page.dart';
 import '../../profile/widgets/artist_profile_header.dart';
 import '../../profile/screens/edit_profile_page.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class ProfilePage extends StatefulWidget {
   // If userId is provided, this page shows that user's public profile.
@@ -611,59 +612,15 @@ class _ProfilePageState extends State<ProfilePage> {
                                                             child:
                                                                 imageUrl
                                                                     .isNotEmpty
-                                                                ? Image.network(
-                                                                    imageUrl,
+                                                                ? CustomNetworkImage(
+                                                                    imageUrl: imageUrl,
                                                                     width: double
                                                                         .infinity,
                                                                     height: double
                                                                         .infinity,
                                                                     fit: BoxFit
                                                                         .cover,
-                                                                    loadingBuilder:
-                                                                        (
-                                                                          context,
-                                                                          child,
-                                                                          progress,
-                                                                        ) {
-                                                                          if (progress ==
-                                                                              null) {
-                                                                            return child;
-                                                                          }
-                                                                          return Container(
-                                                                            color: Colors.white.withOpacity(
-                                                                              0.05,
-                                                                            ),
-                                                                            child: Center(
-                                                                              child: CircularProgressIndicator(
-                                                                                valueColor:
-                                                                                    AlwaysStoppedAnimation<
-                                                                                      Color
-                                                                                    >(
-                                                                                      Colors.white70,
-                                                                                    ),
-                                                                                strokeWidth: 2,
-                                                                              ),
-                                                                            ),
-                                                                          );
-                                                                        },
-                                                                    errorBuilder: (_, __, ___) => Container(
-                                                                      color: Colors
-                                                                          .white
-                                                                          .withOpacity(
-                                                                            0.05,
-                                                                          ),
-                                                                      child: Center(
-                                                                        child: Icon(
-                                                                          Icons
-                                                                              .broken_image_rounded,
-                                                                          color: Colors.white.withOpacity(
-                                                                            0.5,
-                                                                          ),
-                                                                          size:
-                                                                              32,
-                                                                        ),
-                                                                      ),
-                                                                    ),
+                                                                    borderRadius: 16,
                                                                   )
                                                                 : Container(
                                                                     color: Colors

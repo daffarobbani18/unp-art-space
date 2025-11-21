@@ -2,6 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import '../../shared/widgets/custom_network_image.dart';
 
 class EventDetailScreen extends StatefulWidget {
   final Map<String, dynamic> event;
@@ -213,24 +214,10 @@ ${widget.event['content'] ?? ''}
                     Hero(
                       tag: 'event_${widget.event['id']}',
                       child: widget.event['image_url'] != null
-                          ? Image.network(
-                              widget.event['image_url'],
+                          ? CustomNetworkImage(
+                              imageUrl: widget.event['image_url'],
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) => Container(
-                                decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      const Color(0xFF1E3A8A),
-                                      const Color(0xFF9333EA),
-                                    ],
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.event,
-                                  size: 120,
-                                  color: Colors.white.withOpacity(0.3),
-                                ),
-                              ),
+                              borderRadius: 0,
                             )
                           : Container(
                               decoration: BoxDecoration(
@@ -751,19 +738,10 @@ class _FullScreenImageView extends StatelessWidget {
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 4.0,
-                child: Image.network(
-                  imageUrl,
+                child: CustomNetworkImage(
+                  imageUrl: imageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.black,
-                    child: const Center(
-                      child: Icon(
-                        Icons.broken_image,
-                        size: 100,
-                        color: Colors.white54,
-                      ),
-                    ),
-                  ),
+                  borderRadius: 0,
                 ),
               ),
             ),

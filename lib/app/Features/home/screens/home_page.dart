@@ -3,6 +3,7 @@ import 'dart:ui';
 import '../../../../main/main_app.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
 import '../../events/event_detail_screen.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -256,19 +257,10 @@ class _HomePageState extends State<HomePage> {
                                     // Background Image
                                     Positioned.fill(
                                       child: imageUrl.isNotEmpty
-                                          ? Image.network(
-                                              imageUrl,
+                                          ? CustomNetworkImage(
+                                              imageUrl: imageUrl,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Container(
-                                                color: Colors.white
-                                                    .withOpacity(0.05),
-                                                child: const Icon(
-                                                  Icons.event_rounded,
-                                                  size: 60,
-                                                  color: Colors.white38,
-                                                ),
-                                              ),
+                                              borderRadius: 24,
                                             )
                                           : Container(
                                               color: Colors.white
@@ -605,18 +597,10 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     // Artwork Image
                                     if (imageUrl.isNotEmpty)
-                                      Image.network(
-                                        imageUrl,
+                                      CustomNetworkImage(
+                                        imageUrl: imageUrl,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            Container(
-                                          color: Colors.white.withOpacity(0.05),
-                                          child: const Icon(
-                                            Icons.broken_image_outlined,
-                                            size: 50,
-                                            color: Colors.white38,
-                                          ),
-                                        ),
+                                        borderRadius: 20,
                                       )
                                     else
                                       Container(

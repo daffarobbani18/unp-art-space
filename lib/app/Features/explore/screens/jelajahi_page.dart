@@ -6,6 +6,7 @@ import '../../search/screens/search_results_page.dart';
 import 'inspirasi_dunia_page.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../../shared/theme/app_animations.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class JelajahiPage extends StatefulWidget {
   const JelajahiPage({super.key});
@@ -259,9 +260,10 @@ class _JelajahiPageState extends State<JelajahiPage> {
                       child: Stack(
                         fit: StackFit.expand,
                         children: [
-                          Image.network(
-                            'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43',
+                          CustomNetworkImage(
+                            imageUrl: 'https://images.unsplash.com/photo-1567095761054-7a02e69e5c43',
                             fit: BoxFit.cover,
+                            borderRadius: AppTheme.radiusXl,
                           ),
                           Container(
                             decoration: BoxDecoration(

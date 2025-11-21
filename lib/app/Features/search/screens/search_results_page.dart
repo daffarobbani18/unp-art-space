@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../../artist/screens/artist_detail_page.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class SearchResultsPage extends StatelessWidget {
   final String query;
@@ -75,19 +76,10 @@ class SearchResultsPage extends StatelessWidget {
                   ),
                 ),
                 child: profileImage.isNotEmpty
-                    ? Image.network(
-                        profileImage,
+                    ? CustomNetworkImage(
+                        imageUrl: profileImage,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Center(
-                          child: Text(
-                            name[0].toUpperCase(),
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
+                        borderRadius: 50,
                       )
                     : Center(
                         child: Text(
@@ -174,14 +166,10 @@ class SearchResultsPage extends StatelessWidget {
                 height: 100,
                 color: Colors.white.withOpacity(0.05),
                 child: imageUrl.isNotEmpty
-                    ? Image.network(
-                        imageUrl,
+                    ? CustomNetworkImage(
+                        imageUrl: imageUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => const Icon(
-                          Icons.broken_image_outlined,
-                          size: 40,
-                          color: Colors.white38,
-                        ),
+                        borderRadius: 0,
                       )
                     : const Icon(
                         Icons.image_not_supported_outlined,

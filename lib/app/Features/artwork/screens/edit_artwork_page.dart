@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:project1/main/main_app.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class EditArtworkPage extends StatefulWidget {
   final Map<String, dynamic> artwork;
@@ -204,7 +205,11 @@ Future<void> _updateArtwork() async {
               ),
               const SizedBox(height: 24),
               // Preview media (prefer media_url)
-              Image.network(widget.artwork['media_url'] ?? widget.artwork['image_url'] ?? ''),
+              CustomNetworkImage(
+                imageUrl: widget.artwork['media_url'] ?? widget.artwork['image_url'] ?? '',
+                fit: BoxFit.cover,
+                borderRadius: 12,
+              ),
               
               const SizedBox(height: 32),
               

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'event_detail_screen.dart';
+import '../../app/shared/widgets/custom_network_image.dart';
 
 class EventModerationScreen extends StatefulWidget {
   const EventModerationScreen({super.key});
@@ -471,20 +472,19 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
                 children: [
                   Hero(
                     tag: 'event_${event['id']}',
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: Image.network(
-                        event['image_url'],
-                        width: double.infinity,
-                        height: 200,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          height: 200,
-                          color: Colors.grey[200],
-                          child: Icon(Icons.event, size: 64, color: Colors.grey[400]),
-                        ),
-                      ),
-                    ),
+                    child: event['image_url'] != null
+                        ? CustomNetworkImage(
+                            imageUrl: event['image_url'],
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                            borderRadius: 16,
+                          )
+                        : Container(
+                            height: 200,
+                            color: Colors.grey[200],
+                            child: Icon(Icons.event, size: 64, color: Colors.grey[400]),
+                          ),
                   ),
                   if (isProcessing)
                   Positioned.fill(

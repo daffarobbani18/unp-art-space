@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../main/main_app.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 class ArtistDetailPage extends StatefulWidget {
   final String artistId;
@@ -317,20 +318,10 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                         ),
                                       ),
                                       child: avatarUrl.isNotEmpty
-                                          ? Image.network(
-                                              avatarUrl,
+                                          ? CustomNetworkImage(
+                                              imageUrl: avatarUrl,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (_, __, ___) =>
-                                                  Container(
-                                                    color: Colors.white
-                                                        .withOpacity(0.1),
-                                                    child: Icon(
-                                                      Icons.person_rounded,
-                                                      size: 60,
-                                                      color: Colors.white
-                                                          .withOpacity(0.6),
-                                                    ),
-                                                  ),
+                                              borderRadius: 100,
                                             )
                                           : Container(
                                               color: Colors.white.withOpacity(
@@ -786,73 +777,13 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                             children: [
                                               // Image
                                               Expanded(
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      const BorderRadius.only(
-                                                        topLeft:
-                                                            Radius.circular(16),
-                                                        topRight:
-                                                            Radius.circular(16),
-                                                      ),
-                                                  child: imageUrl.isNotEmpty
-                                                      ? Image.network(
-                                                          imageUrl,
-                                                          fit: BoxFit.cover,
-                                                          loadingBuilder:
-                                                              (
-                                                                context,
-                                                                child,
-                                                                progress,
-                                                              ) {
-                                                                if (progress ==
-                                                                    null)
-                                                                  return child;
-                                                                return Container(
-                                                                  color: Colors
-                                                                      .white
-                                                                      .withOpacity(
-                                                                        0.05,
-                                                                      ),
-                                                                  child: Center(
-                                                                    child: CircularProgressIndicator(
-                                                                      valueColor:
-                                                                          AlwaysStoppedAnimation<
-                                                                            Color
-                                                                          >(
-                                                                            Colors.white70,
-                                                                          ),
-                                                                      strokeWidth:
-                                                                          2,
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                          errorBuilder:
-                                                              (
-                                                                _,
-                                                                __,
-                                                                ___,
-                                                              ) => Container(
-                                                                color: Colors
-                                                                    .white
-                                                                    .withOpacity(
-                                                                      0.05,
-                                                                    ),
-                                                                child: Center(
-                                                                  child: Icon(
-                                                                    Icons
-                                                                        .broken_image_rounded,
-                                                                    color: Colors
-                                                                        .white
-                                                                        .withOpacity(
-                                                                          0.5,
-                                                                        ),
-                                                                    size: 32,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                        )
-                                                      : Container(
+                                                child: imageUrl.isNotEmpty
+                                                    ? CustomNetworkImage(
+                                                        imageUrl: imageUrl,
+                                                        fit: BoxFit.cover,
+                                                        borderRadius: 16,
+                                                      )
+                                                    : Container(
                                                           color: Colors.white
                                                               .withOpacity(
                                                                 0.05,
