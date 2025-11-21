@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -87,162 +88,343 @@ Future<void> _login() async {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFF8F7FA);
-    const deepBlue = Color(0xFF1E3A8A);
-
     return Scaffold(
-      backgroundColor: bg,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // Gradient Wave Header
-            SizedBox(
-              height: 280,
-              child: ClipPath(
-                clipper: _HeaderWaveClipper(),
-                child: Container(
-                  height: 280,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
+      body: Stack(
+        children: [
+          // Background gradient
+          Container(
+            height: double.infinity,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1E1E2C),
+                  Color(0xFF2D1B69),
+                  Color(0xFF1E1E2C),
+                ],
+              ),
+            ),
+          ),
+          // Content
+          Center(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: SlideTransition(
+                    position: _slideAnim,
+                    child: _buildGlassCard(context),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlassCard(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(32),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 1.5,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Logo
+              Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(60),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 2,
+                      ),
+                    ),
+                    child: Image.asset(
+                      'assets/images/logo_unp_art_space - cut.jpg',
+                      height: 80,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
               ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Center(
-                        child: Image.asset(
-                          'assets/images/logo_unp_art_space - cut.jpg',
-                          height: 120,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Selamat Datang Kembali',
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.playfairDisplay(fontSize: 24, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 18),
-
-                      Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: InputDecoration(
-                                prefixIcon: const Icon(Icons.email, color: Color(0xFF1E3A8A)),
-                                labelText: 'Email',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              keyboardType: TextInputType.emailAddress,
-                              validator: (v) => v == null || v.isEmpty ? 'Email wajib diisi' : null,
-                            ),
-                            const SizedBox(height: 12),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: InputDecoration(
-                                prefixIcon: const Icon(Icons.lock, color: Color(0xFF1E3A8A)),
-                                labelText: 'Password',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              validator: (v) => v == null || v.length < 6 ? 'Minimal 6 karakter' : null,
-                            ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: TextButton(
-                                onPressed: () {},
-                                child: const Text('Lupa Kata Sandi?'),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-
-                            ElevatedButton(
-                              onPressed: _isLoading ? null : _login,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: deepBlue,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              child: _isLoading
-                                  ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                                  : const Text('Login', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            ),
-
-                            const SizedBox(height: 12),
-                            Row(
-                              children: const [
-                                Expanded(child: Divider()),
-                                Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 8.0),
-                                  child: Text('atau'),
-                                ),
-                                Expanded(child: Divider()),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-
-                            OutlinedButton.icon(
-                              onPressed: () {},
-                              icon: Image.asset('assets/images/logo_google.png', height: 20),
-                              label: const Text('Login dengan Google'),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Colors.grey),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                            ),
-
-                            const SizedBox(height: 12),
-                            TextButton(
-                              onPressed: _goToRegister,
-                              child: const Text('Belum punya akun? Daftar'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+              const SizedBox(height: 24),
+              Text(
+                'Selamat Datang',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 32),
+
+              // Form
+              Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _buildGlassTextField(
+                      controller: _emailController,
+                      label: 'Email',
+                      icon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => v == null || v.isEmpty ? 'Email wajib diisi' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildGlassTextField(
+                      controller: _passwordController,
+                      label: 'Password',
+                      icon: Icons.lock_outline,
+                      obscureText: true,
+                      validator: (v) => v == null || v.length < 6 ? 'Minimal 6 karakter' : null,
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'Lupa Kata Sandi?',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white70,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Login Button (Gradient)
+                    _buildGradientButton(
+                      onPressed: _isLoading ? null : _login,
+                      label: 'Login',
+                      isLoading: _isLoading,
+                    ),
+
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Divider(
+                            color: Colors.white.withOpacity(0.3),
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Text(
+                            'atau',
+                            style: GoogleFonts.poppins(
+                              color: Colors.white70,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Divider(
+                            color: Colors.white.withOpacity(0.3),
+                            thickness: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Google Button (White Glass)
+                    _buildGlassGoogleButton(),
+
+                    const SizedBox(height: 16),
+                    Center(
+                      child: TextButton(
+                        onPressed: _goToRegister,
+                        child: RichText(
+                          text: TextSpan(
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white70,
+                            ),
+                            children: [
+                              const TextSpan(text: 'Belum punya akun? '),
+                              TextSpan(
+                                text: 'Daftar',
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
 
-// Custom clipper for wave header
-class _HeaderWaveClipper extends CustomClipper<Path> {
-  @override
-  Path getClip(Size size) {
-    final path = Path();
-    path.lineTo(0, size.height - 60);
-    path.quadraticBezierTo(size.width * 0.25, size.height, size.width * 0.5, size.height - 40);
-    path.quadraticBezierTo(size.width * 0.75, size.height - 80, size.width, size.height - 40);
-    path.lineTo(size.width, 0);
-    path.close();
-    return path;
+  Widget _buildGlassTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      style: GoogleFonts.poppins(
+        color: Colors.white,
+        fontSize: 15,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.poppins(
+          color: Colors.white70,
+          fontSize: 14,
+        ),
+        prefixIcon: Icon(icon, color: Colors.white, size: 20),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.5), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        errorStyle: GoogleFonts.poppins(
+          color: Colors.red[200],
+          fontSize: 12,
+        ),
+      ),
+      validator: validator,
+    );
   }
 
-  @override
-  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+  Widget _buildGradientButton({
+    required VoidCallback? onPressed,
+    required String label,
+    required bool isLoading,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF9333EA), Color(0xFF3B82F6)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: isLoading
+              ? const Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  ),
+                )
+              : Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassGoogleButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {},
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/logo_google.png',
+                height: 22,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Login dengan Google',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
