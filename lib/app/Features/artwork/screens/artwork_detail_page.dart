@@ -22,6 +22,9 @@ class ArtworkDetailPage extends StatefulWidget {
 class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     with SingleTickerProviderStateMixin {
   bool _isLiking = false;
+  bool _isLiked = false;
+  int _likeCount = 0;
+  int _commentCount = 0;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   bool _isVideoPlaying = false;
@@ -38,6 +41,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
     // Initialize Indonesian locale for date formatting
     initializeDateFormatting('id_ID', null);
+
+    // Initialize like status and counts
+    _initializeLikeStatus();
+    _loadCommentCount();
 
     // Setup animation
     _animationController = AnimationController(
@@ -126,8 +133,6 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         (artwork['media_url'] as String?) ??
         (artwork['image_url'] as String?) ??
         '';
-    final likesCount = (artwork['likes_count'] ?? 0) as int;
-    final commentsCount = (artwork['comments_count'] ?? 0) as int;
 
     // User/Artist info
     final users = (artwork['users'] as Map<String, dynamic>?) ?? {};
@@ -408,7 +413,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                           ),
                           title: 'Interaksi',
                           content:
-                              '$likesCount Likes • $commentsCount Komentar',
+                              '$_likeCount Likes • $_commentCount Komentar',
                         ),
 
                         const SizedBox(height: 12),
@@ -710,23 +715,29 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: _isLiking ? null : _likeArtwork,
+                            onTap: _isLiking ? null : _toggleLike,
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                               decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFFEC4899), // Pink
-                                    Color(0xFFF472B6),
-                                  ],
+                                gradient: LinearGradient(
+                                  colors: _isLiked
+                                      ? [
+                                          const Color(0xFFDC2626), // Red
+                                          const Color(0xFFEF4444),
+                                        ]
+                                      : [
+                                          const Color(0xFFEC4899), // Pink
+                                          const Color(0xFFF472B6),
+                                        ],
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(
-                                      0xFFEC4899,
-                                    ).withOpacity(0.4),
+                                    color: (_isLiked
+                                            ? const Color(0xFFDC2626)
+                                            : const Color(0xFFEC4899))
+                                        .withOpacity(0.4),
                                     blurRadius: 20,
                                     offset: const Offset(0, 8),
                                   ),
@@ -735,14 +746,16 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
-                                    Icons.favorite_rounded,
+                                  Icon(
+                                    _isLiked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
                                     color: Colors.white,
                                     size: 22,
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
-                                    'Suka',
+                                    _isLiked ? 'Disukai' : 'Suka',
                                     style: GoogleFonts.poppins(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
@@ -762,15 +775,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Fitur komentar akan segera hadir!',
-                                  ),
-                                ),
-                              );
-                            },
+                            onTap: _showCommentsModal,
                             borderRadius: BorderRadius.circular(16),
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -1058,56 +1063,133 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
   }
 
-  Future<void> _likeArtwork() async {
+  Future<void> _initializeLikeStatus() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final artworkId = widget.artwork['id'];
+
+      // Check if user already liked this artwork
+      final likeResponse = await Supabase.instance.client
+          .from('likes')
+          .select()
+          .eq('user_id', user.id)
+          .eq('artwork_id', artworkId)
+          .maybeSingle();
+
+      // Count total likes
+      final countResponse = await Supabase.instance.client
+          .from('likes')
+          .select()
+          .eq('artwork_id', artworkId);
+
+      if (mounted) {
+        setState(() {
+          _isLiked = likeResponse != null;
+          _likeCount = countResponse.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing like status: $e');
+    }
+  }
+
+  Future<void> _loadCommentCount() async {
+    try {
+      final artworkId = widget.artwork['id'];
+      final response = await Supabase.instance.client
+          .from('comments')
+          .select()
+          .eq('artwork_id', artworkId);
+
+      if (mounted) {
+        setState(() {
+          _commentCount = response.length;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading comment count: $e');
+    }
+  }
+
+  Future<void> _toggleLike() async {
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan login terlebih dahulu'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Optimistic UI update
+    final previousLiked = _isLiked;
+    final previousCount = _likeCount;
+    
     setState(() {
       _isLiking = true;
+      _isLiked = !_isLiked;
+      _likeCount = _isLiked ? _likeCount + 1 : _likeCount - 1;
     });
 
     try {
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user != null) {
-        final roleRow = await Supabase.instance.client
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-        final role = roleRow != null ? (roleRow['role'] as String?) : null;
-        if (role == 'artist') {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Akun Artist tidak dapat memberikan like.'),
-              ),
-            );
-          }
-          return;
-        }
+      final artworkId = widget.artwork['id'];
+
+      if (previousLiked) {
+        // Unlike: Delete from likes table
+        await Supabase.instance.client
+            .from('likes')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('artwork_id', artworkId);
+      } else {
+        // Like: Insert to likes table
+        await Supabase.instance.client.from('likes').insert({
+          'user_id': user.id,
+          'artwork_id': artworkId,
+        });
       }
-
-      final currentLikes = widget.artwork['likes_count'] ?? 0;
-      await Supabase.instance.client
-          .from('artworks')
-          .update({'likes_count': currentLikes + 1})
-          .eq('id', widget.artwork['id']);
-
-      setState(() {
-        widget.artwork['likes_count'] = currentLikes + 1;
-      });
     } catch (e) {
-      debugPrint('Error liking artwork: $e');
+      debugPrint('Error toggling like: $e');
+      // Revert on error
       if (mounted) {
+        setState(() {
+          _isLiked = previousLiked;
+          _likeCount = previousCount;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memberikan like: $e'),
+            content: Text('Gagal: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      setState(() {
-        _isLiking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLiking = false;
+        });
+      }
     }
+  }
+
+  void _showCommentsModal() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _CommentsBottomSheet(
+        artworkId: widget.artwork['id'],
+        onCommentAdded: () {
+          _loadCommentCount();
+        },
+      ),
+    );
   }
 
   void _shareArtwork(String title, String imageUrl) {
@@ -1193,5 +1275,431 @@ class _FullScreenImageView extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// Comments Bottom Sheet Widget
+class _CommentsBottomSheet extends StatefulWidget {
+  final String artworkId;
+  final VoidCallback onCommentAdded;
+
+  const _CommentsBottomSheet({
+    required this.artworkId,
+    required this.onCommentAdded,
+  });
+
+  @override
+  State<_CommentsBottomSheet> createState() => _CommentsBottomSheetState();
+}
+
+class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
+  final TextEditingController _commentController = TextEditingController();
+  bool _isSending = false;
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendComment() async {
+    if (_commentController.text.trim().isEmpty) return;
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Silakan login terlebih dahulu'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() => _isSending = true);
+
+    try {
+      await Supabase.instance.client.from('comments').insert({
+        'artwork_id': widget.artworkId,
+        'user_id': user.id,
+        'comment_text': _commentController.text.trim(),
+      });
+
+      _commentController.clear();
+      widget.onCommentAdded();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Komentar berhasil dikirim'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error sending comment: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal mengirim komentar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.7,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      builder: (context, scrollController) {
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E1E2C).withOpacity(0.95),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1.5,
+                ),
+              ),
+              child: Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Komentar',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white70,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Comments List
+                  Expanded(
+                    child: StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: Supabase.instance.client
+                          .from('comments')
+                          .stream(primaryKey: ['id'])
+                          .eq('artwork_id', widget.artworkId)
+                          .order('created_at', ascending: false),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text(
+                              'Error: ${snapshot.error}',
+                              style: const TextStyle(color: Colors.white70),
+                            ),
+                          );
+                        }
+
+                        if (!snapshot.hasData) {
+                          return const Center(
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          );
+                        }
+
+                        final comments = snapshot.data!;
+
+                        if (comments.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  size: 64,
+                                  color: Colors.white.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Belum ada komentar',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(16),
+                          itemCount: comments.length,
+                          itemBuilder: (context, index) {
+                            return _CommentItem(comment: comments[index]);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  // Input Bar
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.3),
+                      border: Border(
+                        top: BorderSide(
+                          color: Colors.white.withOpacity(0.1),
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: SafeArea(
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.05),
+                                borderRadius: BorderRadius.circular(25),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: TextField(
+                                controller: _commentController,
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                ),
+                                decoration: InputDecoration(
+                                  hintText: 'Tulis komentar...',
+                                  hintStyle: GoogleFonts.poppins(
+                                    color: Colors.white.withOpacity(0.5),
+                                    fontSize: 14,
+                                  ),
+                                  border: InputBorder.none,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                    vertical: 12,
+                                  ),
+                                ),
+                                maxLines: null,
+                                textInputAction: TextInputAction.send,
+                                onSubmitted: (_) => _sendComment(),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: _isSending ? null : _sendComment,
+                              borderRadius: BorderRadius.circular(25),
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF3B82F6),
+                                      Color(0xFF60A5FA),
+                                    ],
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: _isSending
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                            Colors.white,
+                                          ),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.send,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Comment Item Widget
+class _CommentItem extends StatelessWidget {
+  final Map<String, dynamic> comment;
+
+  const _CommentItem({required this.comment});
+
+  @override
+  Widget build(BuildContext context) {
+    final userId = comment['user_id'] as String?;
+    final commentText = comment['comment_text'] as String? ?? '';
+    final createdAt = comment['created_at'] as String?;
+
+    return FutureBuilder<Map<String, dynamic>?>(
+      future: _fetchUserProfile(userId),
+      builder: (context, snapshot) {
+        final userName = snapshot.data?['name'] as String? ?? 'User';
+        final avatarUrl = snapshot.data?['avatar_url'] as String? ?? '';
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: Colors.white.withOpacity(0.1),
+                backgroundImage:
+                    avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                child: avatarUrl.isEmpty
+                    ? Icon(
+                        Icons.person,
+                        color: Colors.white.withOpacity(0.5),
+                        size: 20,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              // Comment Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          userName,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (createdAt != null)
+                          Text(
+                            _formatTimeAgo(DateTime.parse(createdAt)),
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.white.withOpacity(0.5),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      commentText,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<Map<String, dynamic>?> _fetchUserProfile(String? userId) async {
+    if (userId == null) return null;
+    try {
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('name, avatar_url')
+          .eq('id', userId)
+          .maybeSingle();
+      return response;
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+      return null;
+    }
+  }
+
+  String _formatTimeAgo(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inDays > 7) {
+      return DateFormat('d MMM', 'id_ID').format(dateTime);
+    } else if (difference.inDays > 0) {
+      return '${difference.inDays}h lalu';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}j lalu';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m lalu';
+    } else {
+      return 'Baru saja';
+    }
   }
 }
