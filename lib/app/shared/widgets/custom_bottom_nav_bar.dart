@@ -49,20 +49,21 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(20),
-      height: 75,
+      margin: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+      height: 70,
       child: Stack(
+        clipBehavior: Clip.none, // Penting untuk item yang pop-up
         children: [
           // Background Glass Container
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(35),
+              borderRadius: BorderRadius.circular(0),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                 child: Container(
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E2C).withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(35),
+                    borderRadius: BorderRadius.circular(0),
                     border: Border.all(
                       color: Colors.white.withOpacity(0.1),
                       width: 1.5,
@@ -127,86 +128,82 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
   }) {
     final isSelected = widget.selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () => widget.onItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Animated Icon with Pop-up Effect
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeInOut,
-              transform: Matrix4.translationValues(
-                0,
-                isSelected ? -28 : 0,
-                0,
-              ),
-              child: ScaleTransition(
-                scale: isSelected ? _scaleAnimation : const AlwaysStoppedAnimation(1.0),
-                child: Container(
-                  width: isCenter ? 65 : 55,
-                  height: isCenter ? 65 : 55,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: isSelected
-                        ? const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFFF6B6B),
-                              Color(0xFFFF8E53),
-                            ],
-                          )
-                        : null,
-                    color: isSelected ? null : Colors.transparent,
-                    boxShadow: isSelected
-                        ? [
-                            BoxShadow(
-                              color: const Color(0xFFFF6B6B).withOpacity(0.4),
-                              blurRadius: 20,
-                              spreadRadius: 2,
-                              offset: const Offset(0, 5),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
-                      size: isCenter ? 32 : 26,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // Label (only show when not selected to save space)
-            AnimatedOpacity(
-              duration: const Duration(milliseconds: 200),
-              opacity: isSelected ? 0.0 : 1.0,
-              child: AnimatedContainer(
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => widget.onItemTapped(index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Animated Icon with Pop-up Effect
+              AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
                 transform: Matrix4.translationValues(
                   0,
-                  isSelected ? 10 : 0,
+                  isSelected ? -25 : 0,
                   0,
                 ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.white.withOpacity(0.5),
-                    fontWeight: FontWeight.w500,
+                child: ScaleTransition(
+                  scale: isSelected ? _scaleAnimation : const AlwaysStoppedAnimation(1.0),
+                  child: Container(
+                    width: isCenter ? 57 : 47,
+                    height: isCenter ? 57 : 47,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: isSelected
+                          ? const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFFF6B6B),
+                                Color(0xFFFF8E53),
+                              ],
+                            )
+                          : null,
+                      color: isSelected ? null : Colors.transparent,
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: const Color(0xFFFF6B6B).withOpacity(0.4),
+                                blurRadius: 20,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 5),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Center(
+                      child: Icon(
+                        icon,
+                        color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
+                        size: isCenter ? 26 : 22,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+
+              // Label (only show when not selected to save space)
+              if (!isSelected)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: Colors.white.withOpacity(0.5),
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

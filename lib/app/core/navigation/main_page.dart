@@ -48,12 +48,14 @@ class _MainPageState extends State<MainPage> {
 
           // Custom Bottom Navigation Bar dengan animasi pop-up
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNavBar(
-              selectedIndex: _selectedIndex,
-              onItemTapped: _onItemTapped,
+            left: -11,
+            right: -11,
+            bottom: -35,
+            child: SafeArea(
+              child: CustomBottomNavBar(
+                selectedIndex: _selectedIndex,
+                onItemTapped: _onItemTapped,
+              ),
             ),
           ),
         ],
