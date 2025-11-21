@@ -15,43 +15,64 @@ class SettingsPage extends StatelessWidget {
     );
 
     if (shouldLogout == true && context.mounted) {
-      try {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
+      // Show loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           ),
+        ),
+      );
+
+      try {
+        // Perform logout with timeout to prevent freeze
+        await Supabase.instance.client.auth.signOut().timeout(
+          const Duration(seconds: 10),
+          onTimeout: () {
+            // Force logout even on timeout
+            debugPrint('Logout timeout, forcing navigation');
+          },
         );
 
-        // Perform logout
-        await Supabase.instance.client.auth.signOut();
+        // Small delay to ensure cleanup
+        await Future.delayed(const Duration(milliseconds: 300));
 
         // Navigate back to login and remove all previous routes
         if (context.mounted) {
           Navigator.of(context).pop(); // Close loading dialog
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
+          
+          // Use pushReplacementNamed for better performance
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
+          );
         }
       } catch (e) {
         // Close loading dialog if still open
         if (context.mounted) {
           Navigator.of(context).pop();
           
+          // Even on error, try to navigate (local logout)
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            '/',
+            (route) => false,
+          );
+          
           // Show error message
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error saat logout: $e'),
-              backgroundColor: Colors.red,
+              content: Text('Logout lokal berhasil. Error: $e'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
             ),
           );
         }

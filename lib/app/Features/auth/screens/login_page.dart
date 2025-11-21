@@ -43,24 +43,39 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
 Future<void> _login() async {
   if (!_formKey.currentState!.validate()) return;
+  if (!mounted) return;
+  
   setState(() => _isLoading = true);
 
   try {
     final supabase = Supabase.instance.client;
+    
+    // Add timeout to prevent infinite loading
     final response = await supabase.auth.signInWithPassword(
       email: _emailController.text.trim(),
       password: _passwordController.text,
+    ).timeout(
+      const Duration(seconds: 15),
+      onTimeout: () {
+        throw Exception('Koneksi timeout. Periksa koneksi internet Anda.');
+      },
     );
+
+    if (!mounted) return;
 
     final user = response.user;
     if (user != null && user.emailConfirmedAt == null) {
       // Jika login berhasil tapi email belum diverifikasi,
-      // kita harus logout lagi dan beri tahu pengguna.
-      await supabase.auth.signOut();
+      // logout secara asynchronous tanpa await untuk mencegah freeze
+      supabase.auth.signOut().catchError((error) {
+        debugPrint('Error saat logout: $error');
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Akun belum aktif. Silakan verifikasi email Anda.'),
-            backgroundColor: Colors.orange,
+          content: Text('Akun belum aktif. Silakan verifikasi email Anda.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
         ));
       }
     }
@@ -68,13 +83,21 @@ Future<void> _login() async {
   } on AuthException catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Looin Gagal: ${e.message}')),
+        SnackBar(
+          content: Text('Login Gagal: ${e.message}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   } catch (e) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi error: ${e.toString()}')),
+        SnackBar(
+          content: Text('Terjadi error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
     }
   } finally {
