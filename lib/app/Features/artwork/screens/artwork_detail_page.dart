@@ -1068,7 +1068,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      final artworkId = widget.artwork['id'];
+      final artworkId = widget.artwork['id'].toString();
 
       // Check if user already liked this artwork
       final likeResponse = await Supabase.instance.client
@@ -1097,7 +1097,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
   Future<void> _loadCommentCount() async {
     try {
-      final artworkId = widget.artwork['id'];
+      final artworkId = widget.artwork['id'].toString();
       final response = await Supabase.instance.client
           .from('comments')
           .select()
@@ -1138,7 +1138,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
 
     try {
-      final artworkId = widget.artwork['id'];
+      final artworkId = widget.artwork['id'].toString();
 
       if (previousLiked) {
         // Unlike: Delete from likes table
@@ -1179,12 +1179,13 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   }
 
   void _showCommentsModal() {
+    final artworkId = widget.artwork['id'];
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _CommentsBottomSheet(
-        artworkId: widget.artwork['id'],
+        artworkId: artworkId.toString(),
         onCommentAdded: () {
           _loadCommentCount();
         },
