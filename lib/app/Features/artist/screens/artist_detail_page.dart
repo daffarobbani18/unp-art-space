@@ -801,7 +801,6 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                                                             ),
                                                           ),
                                                         ),
-                                                ),
                                               ),
 
                                               // Title
