@@ -134,6 +134,110 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
     );
   }
 
+  void _showFullImage(BuildContext context, String imageUrl, String artistName) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => Scaffold(
+          backgroundColor: Colors.black,
+          body: Stack(
+            children: [
+              // Full screen image with zoom capability
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Hero(
+                    tag: 'profile_image_$imageUrl',
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.contain,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 100,
+                            color: Colors.white54,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              // Close button
+              SafeArea(
+                child: Positioned(
+                  top: 10,
+                  right: 10,
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          shape: BoxShape.circle,
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              // Artist name overlay
+              SafeArea(
+                child: Positioned(
+                  bottom: 20,
+                  left: 20,
+                  right: 20,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.2),
+                          ),
+                        ),
+                        child: Text(
+                          artistName,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
@@ -290,51 +394,61 @@ class _ArtistDetailPageState extends State<ArtistDetailPage> {
                             left: 0,
                             right: 0,
                             child: Center(
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.3),
-                                      blurRadius: 20,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: ClipOval(
-                                  child: BackdropFilter(
-                                    filter: ImageFilter.blur(
-                                      sigmaX: 5,
-                                      sigmaY: 5,
-                                    ),
-                                    child: Container(
-                                      width: 120,
-                                      height: 120,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                          color: Colors.white.withOpacity(0.3),
-                                          width: 4,
-                                        ),
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (avatarUrl.isNotEmpty) {
+                                    _showFullImage(context, avatarUrl, displayName);
+                                  }
+                                },
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        spreadRadius: 5,
                                       ),
-                                      child: avatarUrl.isNotEmpty
-                                          ? CustomNetworkImage(
-                                              imageUrl: avatarUrl,
-                                              fit: BoxFit.cover,
-                                              borderRadius: 100,
-                                            )
-                                          : Container(
-                                              color: Colors.white.withOpacity(
-                                                0.1,
-                                              ),
-                                              child: Icon(
-                                                Icons.person_rounded,
-                                                size: 60,
+                                    ],
+                                  ),
+                                  child: ClipOval(
+                                    child: BackdropFilter(
+                                      filter: ImageFilter.blur(
+                                        sigmaX: 5,
+                                        sigmaY: 5,
+                                      ),
+                                      child: Container(
+                                        width: 120,
+                                        height: 120,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                            color: Colors.white.withOpacity(0.3),
+                                            width: 4,
+                                          ),
+                                        ),
+                                        child: avatarUrl.isNotEmpty
+                                            ? Hero(
+                                                tag: 'profile_image_$avatarUrl',
+                                                child: CustomNetworkImage(
+                                                  imageUrl: avatarUrl,
+                                                  fit: BoxFit.cover,
+                                                  borderRadius: 100,
+                                                ),
+                                              )
+                                            : Container(
                                                 color: Colors.white.withOpacity(
-                                                  0.6,
+                                                  0.1,
+                                                ),
+                                                child: Icon(
+                                                  Icons.person_rounded,
+                                                  size: 60,
+                                                  color: Colors.white.withOpacity(
+                                                    0.6,
+                                                  ),
                                                 ),
                                               ),
-                                            ),
+                                      ),
                                     ),
                                   ),
                                 ),
