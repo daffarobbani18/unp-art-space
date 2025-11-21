@@ -6,7 +6,7 @@ import '../../artist/screens/artist_list_page.dart';
 import '../../artist/screens/artist_detail_page.dart';
 import 'search_results_page.dart';
 import '../../explore/screens/inspirasi_dunia_page.dart';
-import '../../../../shared/widgets/custom_network_image.dart';
+import '../../../shared/widgets/custom_network_image.dart';
 
 // Glassmorphism-styled SearchPage using SingleChildScrollView
 class SearchPage extends StatefulWidget {
