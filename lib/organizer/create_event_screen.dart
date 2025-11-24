@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:image_cropper/image_cropper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -37,9 +36,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   Future<void> _pickImage() async {
     try {
-      // Step 1: Pick image from gallery
+      // Pick image from gallery dengan aspect ratio 16:9 suggestion
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
+        maxWidth: 1920,  // 16:9 resolution
+        maxHeight: 1080,
         imageQuality: 85,
       );
 
@@ -47,7 +48,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
       final file = File(image.path);
       
-      // Step 2: Check file size (max 5MB)
+      // Check file size (max 5MB)
       final fileSize = await file.length();
       if (fileSize > 5 * 1024 * 1024) {
         if (mounted) {
@@ -61,44 +62,22 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         return;
       }
 
-      // Step 3: Crop with 16:9 ratio
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: image.path,
-        compressQuality: 85,
-        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Sesuaikan Banner',
-            toolbarColor: const Color(0xFF1E1E2C),
-            toolbarWidgetColor: Colors.white,
-            backgroundColor: const Color(0xFF0F2027),
-            activeControlsWidgetColor: const Color(0xFF8B5CF6),
-            initAspectRatio: CropAspectRatioPreset.ratio16x9,
-            lockAspectRatio: true,
-            hideBottomControls: false,
-            showCropGrid: true,
+      // Set the selected image
+      setState(() {
+        _selectedImage = file;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✓ Gambar berhasil dipilih'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
           ),
-          IOSUiSettings(
-            title: 'Sesuaikan Banner',
-            aspectRatioLockEnabled: true,
-            resetAspectRatioEnabled: false,
-          ),
-        ],
-      );
-
-      // Step 4: Set image (cropped or original if cancelled)
-      if (croppedFile != null) {
-        setState(() {
-          _selectedImage = File(croppedFile.path);
-        });
-      } else {
-        // User cancelled crop
-        setState(() {
-          _selectedImage = file;
-        });
+        );
       }
     } catch (e) {
-      debugPrint('Error picking/cropping image: $e');
+      debugPrint('Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
