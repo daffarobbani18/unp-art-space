@@ -12,7 +12,7 @@ class RegisterPage extends StatefulWidget {
   State<RegisterPage> createState() => _RegisterPageState();
 }
 
-enum UserRole { artist, viewer }
+enum UserRole { artist, viewer, organizer }
 
 class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
@@ -53,6 +53,8 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
 
   Future<void> _register() async {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() => _isLoading = true);
+      
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -62,12 +64,26 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       try {
         final userName = _namaController.text.trim();
         final userEmail = _emailController.text.trim();
-        final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
+        
+        // Konversi enum ke string
+        String roleString;
+        if (_selectedRole == UserRole.artist) {
+          roleString = 'artist';
+        } else if (_selectedRole == UserRole.organizer) {
+          roleString = 'organizer';
+        } else {
+          roleString = 'viewer';
+        }
 
-        // 1. Buat user baru di Supabase Authentication
+        // 1. Buat user baru di Supabase Authentication dengan metadata
         final authResponse = await supabase.auth.signUp(
           email: userEmail,
           password: _passwordController.text.trim(),
+          data: {
+            'full_name': userName,
+            'role': roleString,
+            'username': userName,
+          },
         );
 
         // Jika pendaftaran di Auth berhasil & ada user yang dibuat
@@ -84,17 +100,32 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
             'specialization': _selectedSpecialization,
           });
 
-          Navigator.of(context).pop(); 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Registrasi berhasil! Silakan cek email untuk verifikasi.'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 4),
-            ),
-          );
+          Navigator.of(context).pop();
+          
+          // 3. Navigasi otomatis sesuai role
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Selamat datang, $userName!'),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+
+            // Tunggu sebentar agar user melihat pesan sukses
+            await Future.delayed(const Duration(milliseconds: 500));
+
+            // Navigasi ke halaman sesuai role
+            if (roleString == 'organizer') {
+              Navigator.of(context).pushReplacementNamed('/organizer_home');
+            } else {
+              Navigator.of(context).pushReplacementNamed('/home');
+            }
+          }
         }
       } on AuthException catch (e) {
-        Navigator.of(context).pop(); 
+        Navigator.of(context).pop();
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Registrasi Gagal: ${e.message}'),
@@ -102,7 +133,8 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
           ),
         );
       } catch (e) {
-        Navigator.of(context).pop(); 
+        Navigator.of(context).pop();
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Terjadi error: ${e.toString()}'),
@@ -281,6 +313,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             value: UserRole.viewer,
                             groupValue: _selectedRole,
                             label: 'Viewer',
+                            subtitle: 'Penikmat Seni',
                             icon: Icons.visibility_outlined,
                             onChanged: (value) => setState(() => _selectedRole = value),
                           ),
@@ -291,7 +324,19 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                             value: UserRole.artist,
                             groupValue: _selectedRole,
                             label: 'Artist',
+                            subtitle: 'Kreator Karya',
                             icon: Icons.palette_outlined,
+                            onChanged: (value) => setState(() => _selectedRole = value),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildCustomRadioTile(
+                            value: UserRole.organizer,
+                            groupValue: _selectedRole,
+                            label: 'Event Or',
+                            subtitle: 'Panitia Event',
+                            icon: Icons.event_outlined,
                             onChanged: (value) => setState(() => _selectedRole = value),
                           ),
                         ),
@@ -406,6 +451,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
     required UserRole value,
     required UserRole? groupValue,
     required String label,
+    required String subtitle,
     required IconData icon,
     required ValueChanged<UserRole?> onChanged,
   }) {
@@ -416,7 +462,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
         onTap: () => onChanged(value),
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           decoration: BoxDecoration(
             color: isSelected
                 ? const Color(0xFF9333EA).withOpacity(0.2)
@@ -430,20 +476,34 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 icon,
                 color: isSelected ? const Color(0xFF9333EA) : Colors.white70,
-                size: 28,
+                size: 26,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
                 label,
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                  fontSize: 13,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                   color: isSelected ? Colors.white : Colors.white70,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.normal,
+                  color: isSelected ? Colors.white60 : Colors.white38,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),
