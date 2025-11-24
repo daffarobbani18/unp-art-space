@@ -193,10 +193,14 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
                         width: 2,
                       ),
                     ),
-                    child: Image.asset(
-                      'assets/images/logo_unp_art_space - cut.jpg',
-                      height: 80,
-                      fit: BoxFit.contain,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(50),
+                      child: Image.asset(
+                        'assets/images/logo_app.png',
+                        height: 80,
+                        width: 80,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),

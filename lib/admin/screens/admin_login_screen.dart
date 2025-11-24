@@ -143,7 +143,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
                         children: [
                           ConstrainedBox(
                             constraints: const BoxConstraints(maxHeight: 100, maxWidth: 100),
-                            child: Image.asset('assets/images/logo_unp_art_space - cut.jpg', fit: BoxFit.contain),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(40),
+                              child: Image.asset(
+                                'assets/images/logo_app.png',
+                                fit: BoxFit.cover,
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
                           RichText(
