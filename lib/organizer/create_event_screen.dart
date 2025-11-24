@@ -40,45 +40,15 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       // Step 1: Pick image from gallery
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        imageQuality: 100, // Use max quality before crop
+        imageQuality: 85,
       );
 
       if (image == null) return;
 
-      // Step 2: Crop image with 16:9 aspect ratio
-      final CroppedFile? croppedFile = await ImageCropper().cropImage(
-        sourcePath: image.path,
-        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
-        aspectRatioPresets: [
-          CropAspectRatioPreset.ratio16x9,
-        ],
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Sesuaikan Banner',
-            toolbarColor: const Color(0xFF1E1E2C),
-            toolbarWidgetColor: Colors.white,
-            backgroundColor: const Color(0xFF0F2027),
-            activeControlsWidgetColor: const Color(0xFF8B5CF6),
-            initAspectRatio: CropAspectRatioPreset.ratio16x9,
-            lockAspectRatio: true, // Lock to 16:9 ratio
-            hideBottomControls: false,
-            showCropGrid: true,
-          ),
-          IOSUiSettings(
-            title: 'Sesuaikan Banner',
-            aspectRatioLockEnabled: true, // Lock to 16:9 ratio
-            resetAspectRatioEnabled: false,
-            aspectRatioPickerButtonHidden: true,
-          ),
-        ],
-      );
-
-      if (croppedFile == null) return;
-
-      // Step 3: Check file size of cropped image (max 5MB)
-      final file = File(croppedFile.path);
+      final file = File(image.path);
+      
+      // Step 2: Check file size (max 5MB)
       final fileSize = await file.length();
-
       if (fileSize > 5 * 1024 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -91,10 +61,55 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         return;
       }
 
-      // Step 4: Set the cropped image
-      setState(() {
-        _selectedImage = file;
-      });
+      // Step 3: Try to crop with 16:9 ratio
+      try {
+        final CroppedFile? croppedFile = await ImageCropper().cropImage(
+          sourcePath: image.path,
+          compressQuality: 85,
+          aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+          uiSettings: [
+            AndroidUiSettings(
+              toolbarTitle: 'Sesuaikan Banner',
+              toolbarColor: const Color(0xFF1E1E2C),
+              toolbarWidgetColor: Colors.white,
+              backgroundColor: const Color(0xFF0F2027),
+              activeControlsWidgetColor: const Color(0xFF8B5CF6),
+              initAspectRatio: CropAspectRatioPreset.ratio16x9,
+              lockAspectRatio: true,
+            ),
+            IOSUiSettings(
+              title: 'Sesuaikan Banner',
+              aspectRatioLockEnabled: true,
+            ),
+          ],
+        );
+
+        if (croppedFile != null) {
+          setState(() {
+            _selectedImage = File(croppedFile.path);
+          });
+        } else {
+          // User cancelled crop, use original
+          setState(() {
+            _selectedImage = file;
+          });
+        }
+      } catch (cropError) {
+        // If crop fails, use original image
+        debugPrint('Crop failed, using original: $cropError');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Crop tidak tersedia, menggunakan foto asli'),
+              backgroundColor: Colors.orange,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        setState(() {
+          _selectedImage = file;
+        });
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
