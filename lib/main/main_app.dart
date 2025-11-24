@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../app/core/navigation/auth_gate.dart';
 import '../app/core/screens/splash_screen.dart';
+import '../organizer/organizer_main_screen.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
@@ -37,7 +38,10 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         useMaterial3: true,
       ),
-      home: const SplashScreen(), 
+      home: const SplashScreen(),
+      routes: {
+        '/organizer_home': (context) => const OrganizerMainScreen(),
+      },
     );
   }
 }
