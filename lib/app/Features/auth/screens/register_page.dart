@@ -69,32 +69,55 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
         // Jika pendaftaran di Auth berhasil & ada user yang dibuat
         if (authResponse.user != null) {
           final user = authResponse.user!;
+          final userName = _namaController.text.trim();
+          final userEmail = _emailController.text.trim();
           // Perbaiki: enum UserRole hanya punya 'artist' dan 'viewer'
           final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
 
           // 2. Simpan data tambahan ke tabel 'users' di database
-          await supabase.from('users').insert({
+          final usersResponse = await supabase.from('users').insert({
             'id': user.id, // Gunakan ID dari Auth sebagai Primary Key
-            'name': _namaController.text.trim(),
-            'email': _emailController.text.trim(),
+            'name': userName,
+            'email': userEmail,
             'role': roleString,
             'specialization': _selectedSpecialization,
-          });
+          }).select();
+
+          // Pastikan insert ke users berhasil sebelum insert ke profiles
+          if (usersResponse.isNotEmpty) {
+            // 3. Simpan data ke tabel 'profiles' untuk konsistensi sistem
+            await supabase.from('profiles').insert({
+              'id': user.id, // Same ID as auth user
+              'role': roleString,
+              'username': userName, // Use name as username
+              // created_at akan auto-generated oleh database
+            });
+          }
 
           Navigator.of(context).pop(); 
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Registrasi berhasil! Silakan cek email untuk verifikasi.')),
+            const SnackBar(
+              content: Text('Registrasi berhasil! Silakan cek email untuk verifikasi.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
+            ),
           );
         }
       } on AuthException catch (e) {
         Navigator.of(context).pop(); 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registrasi Gagal: ${e.message}')),
+          SnackBar(
+            content: Text('Registrasi Gagal: ${e.message}'),
+            backgroundColor: Colors.red,
+          ),
         );
       } catch (e) {
         Navigator.of(context).pop(); 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi error: ${e.toString()}')),
+          SnackBar(
+            content: Text('Terjadi error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
