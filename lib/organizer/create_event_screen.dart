@@ -36,54 +36,40 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   Future<void> _pickImage() async {
     try {
-      // Pick image from gallery dengan aspect ratio 16:9 suggestion
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,  // 16:9 resolution
-        maxHeight: 1080,
+        maxWidth: 1200,
+        maxHeight: 1200,
         imageQuality: 85,
       );
 
-      if (image == null) return;
+      if (image != null) {
+        final file = File(image.path);
+        final fileSize = await file.length();
 
-      final file = File(image.path);
-      
-      // Check file size (max 5MB)
-      final fileSize = await file.length();
-      if (fileSize > 5 * 1024 * 1024) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ukuran file maksimal 5MB'),
-              backgroundColor: Colors.red,
-            ),
-          );
+        // Check file size (max 5MB)
+        if (fileSize > 5 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Ukuran file maksimal 5MB'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+          return;
         }
-        return;
-      }
 
-      // Set the selected image
-      setState(() {
-        _selectedImage = file;
-      });
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✓ Gambar berhasil dipilih'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 1),
-          ),
-        );
+        setState(() {
+          _selectedImage = file;
+        });
       }
     } catch (e) {
-      debugPrint('Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('Gagal memilih gambar: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
           ),
         );
       }

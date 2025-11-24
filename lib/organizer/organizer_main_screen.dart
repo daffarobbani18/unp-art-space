@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../app/core/navigation/auth_gate.dart';
 import 'create_event_screen.dart';
+import 'organizer_event_curation_page.dart';
 
 class OrganizerMainScreen extends StatefulWidget {
   const OrganizerMainScreen({Key? key}) : super(key: key);
@@ -641,6 +642,41 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                          const SizedBox(height: 16),
+                          // Kurasi Karya Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OrganizerEventCurationPage(
+                                      eventId: event['id'],
+                                      eventTitle: title,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.rate_review_rounded, size: 18),
+                              label: Text(
+                                'Kurasi Karya',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF8B5CF6).withOpacity(0.9),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
                           ),
                         ],
                       ),

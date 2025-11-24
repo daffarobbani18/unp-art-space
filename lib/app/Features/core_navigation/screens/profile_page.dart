@@ -80,20 +80,11 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<List<Map<String, dynamic>>> _fetchMyArtworks() async {
     if (_userId.isEmpty) return [];
-    
-    try {
-      final result = await supabase
-          .from('artworks')
-          .select()
-          .eq('artist_id', _userId)
-          .order('created_at');
-      
-      return List<Map<String, dynamic>>.from(result as List);
-    } catch (e) {
-      debugPrint('Error fetching artworks: $e');
-      // Return empty list if error occurs (user might not be an artist or no artworks yet)
-      return [];
-    }
+    return await supabase
+        .from('artworks')
+        .select()
+        .eq('artist_id', _userId)
+        .order('created_at');
   }
 
   //FUNGSI UNTUK LIHAT

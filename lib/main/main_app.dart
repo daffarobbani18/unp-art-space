@@ -1,10 +1,13 @@
 //File main untuk aplikasi mobile (pengguna)
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:url_strategy/url_strategy.dart';
 import '../app/core/screens/splash_screen.dart';
 import '../organizer/organizer_main_screen.dart';
+import '../app/Features/artwork/screens/artwork_detail_page.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
@@ -12,6 +15,11 @@ late final SupabaseClient supabase;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Remove # from URL for web
+  if (kIsWeb) {
+    setPathUrlStrategy();
+  }
 
   HttpOverrides.global = MyHttpOverrides();
 
@@ -44,6 +52,23 @@ class MyApp extends StatelessWidget {
       home: const SplashScreen(),
       routes: {
         '/organizer_home': (context) => const OrganizerMainScreen(),
+      },
+      onGenerateRoute: (settings) {
+        // Handle deep linking for /artwork/{id}
+        if (settings.name != null && settings.name!.startsWith('/artwork/')) {
+          final artworkIdString = settings.name!.replaceFirst('/artwork/', '');
+          final artworkId = int.tryParse(artworkIdString);
+          
+          if (artworkId != null) {
+            return MaterialPageRoute(
+              builder: (context) => ArtworkDetailPage.fromId(artworkId: artworkId),
+              settings: settings,
+            );
+          }
+        }
+        
+        // Return null for other routes (will use default routing)
+        return null;
       },
     );
   }

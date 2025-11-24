@@ -11,9 +11,16 @@ import 'package:intl/date_symbol_data_local.dart';
 import '../../../shared/widgets/custom_network_image.dart';
 
 class ArtworkDetailPage extends StatefulWidget {
-  final Map<String, dynamic> artwork;
+  final Map<String, dynamic>? artwork;
+  final int? artworkId;
 
-  const ArtworkDetailPage({Key? key, required this.artwork}) : super(key: key);
+  const ArtworkDetailPage({Key? key, required this.artwork})
+      : artworkId = null,
+        super(key: key);
+
+  const ArtworkDetailPage.fromId({Key? key, required this.artworkId})
+      : artwork = null,
+        super(key: key);
 
   @override
   State<ArtworkDetailPage> createState() => _ArtworkDetailPageState();
@@ -23,6 +30,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     with SingleTickerProviderStateMixin {
   bool _isLiking = false;
   bool _isLiked = false;
+  Map<String, dynamic>? _loadedArtwork;
+  bool _isLoading = false;
+  bool _isGuestMode = false;
   int _likeCount = 0;
   int _commentCount = 0;
   VideoPlayerController? _videoController;
@@ -42,9 +52,22 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     // Initialize Indonesian locale for date formatting
     initializeDateFormatting('id_ID', null);
 
-    // Initialize like status and counts
-    _initializeLikeStatus();
-    _loadCommentCount();
+    // Check if user is logged in (Guest Mode)
+    final user = Supabase.instance.client.auth.currentUser;
+    _isGuestMode = user == null;
+
+    // Fetch artwork if coming from artworkId (Deep Link)
+    if (widget.artworkId != null) {
+      _fetchArtworkData();
+    } else {
+      _loadedArtwork = widget.artwork;
+    }
+
+    // Initialize like status and counts (only if logged in)
+    if (!_isGuestMode) {
+      _initializeLikeStatus();
+      _loadCommentCount();
+    }
 
     // Setup animation
     _animationController = AnimationController(
@@ -78,8 +101,14 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
     _animationController.forward();
 
-    // Video setup
-    final artwork = widget.artwork;
+    // Video setup - only if artwork data is available
+    _initializeVideoPlayer();
+  }
+
+  void _initializeVideoPlayer() {
+    final artwork = _loadedArtwork ?? widget.artwork;
+    if (artwork == null) return;
+
     final artworkType = (artwork['artwork_type'] as String?) ?? 'image';
     if (artworkType == 'video') {
       final mediaUrl =
@@ -126,7 +155,71 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
   @override
   Widget build(BuildContext context) {
-    final artwork = widget.artwork;
+    // Show loading indicator while fetching data
+    if (_isLoading) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0F2027),
+                Color(0xFF203A43),
+                Color(0xFF2C5364),
+              ],
+            ),
+          ),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF8B5CF6),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final artwork = _loadedArtwork ?? widget.artwork;
+    
+    // Show error if no artwork data
+    if (artwork == null) {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF0F2027),
+                Color(0xFF203A43),
+                Color(0xFF2C5364),
+              ],
+            ),
+          ),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: Colors.white54,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Karya tidak ditemukan',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final artworkType = (artwork['artwork_type'] as String?) ?? 'image';
     final title = (artwork['title'] as String?) ?? 'Untitled';
     final imageUrl =
@@ -707,97 +800,99 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                       ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      // Like Button
-                      Expanded(
-                        flex: 3,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _isLiking ? null : _toggleLike,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: _isLiked
-                                      ? [
-                                          const Color(0xFFDC2626), // Red
-                                          const Color(0xFFEF4444),
-                                        ]
-                                      : [
-                                          const Color(0xFFEC4899), // Pink
-                                          const Color(0xFFF472B6),
-                                        ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (_isLiked
-                                            ? const Color(0xFFDC2626)
-                                            : const Color(0xFFEC4899))
-                                        .withOpacity(0.4),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    _isLiked
-                                        ? Icons.favorite
-                                        : Icons.favorite_border,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    _isLiked ? 'Disukai' : 'Suka',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                  child: _isGuestMode
+                      ? _buildGuestModeBanner()
+                      : Row(
+                          children: [
+                            // Like Button
+                            Expanded(
+                              flex: 3,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _isLiking ? null : _toggleLike,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: _isLiked
+                                            ? [
+                                                const Color(0xFFDC2626), // Red
+                                                const Color(0xFFEF4444),
+                                              ]
+                                            : [
+                                                const Color(0xFFEC4899), // Pink
+                                                const Color(0xFFF472B6),
+                                              ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: (_isLiked
+                                                  ? const Color(0xFFDC2626)
+                                                  : const Color(0xFFEC4899))
+                                              .withOpacity(0.4),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          _isLiked
+                                              ? Icons.favorite
+                                              : Icons.favorite_border,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Text(
+                                          _isLiked ? 'Disukai' : 'Suka',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Comment Button
-                      Expanded(
-                        flex: 2,
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: _showCommentsModal,
-                            borderRadius: BorderRadius.circular(16),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                gradient: const LinearGradient(
-                                  colors: [
-                                    Color(0xFF3B82F6), // Blue
-                                    Color(0xFF60A5FA),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(16),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(
-                                      0xFF3B82F6,
-                                    ).withOpacity(0.4),
-                                    blurRadius: 20,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
+                            const SizedBox(width: 12),
+                            // Comment Button
+                            Expanded(
+                              flex: 2,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: _showCommentsModal,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    decoration: BoxDecoration(
+                                      gradient: const LinearGradient(
+                                        colors: [
+                                          Color(0xFF3B82F6), // Blue
+                                          Color(0xFF60A5FA),
+                                        ],
+                                      ),
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(
+                                            0xFF3B82F6,
+                                          ).withOpacity(0.4),
+                                          blurRadius: 20,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   const Icon(
@@ -1063,12 +1158,54 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
   }
 
+  Future<void> _fetchArtworkData() async {
+    if (widget.artworkId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await Supabase.instance.client
+          .from('artworks')
+          .select('*, users(*)')
+          .eq('id', widget.artworkId!)
+          .single();
+
+      if (mounted) {
+        setState(() {
+          _loadedArtwork = response;
+          _isLoading = false;
+        });
+
+        // Initialize video player if artwork is video type
+        _initializeVideoPlayer();
+
+        // Initialize like status and comments if user is logged in
+        if (!_isGuestMode) {
+          _initializeLikeStatus();
+          _loadCommentCount();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching artwork: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _initializeLikeStatus() async {
     try {
       final user = Supabase.instance.client.auth.currentUser;
       if (user == null) return;
 
-      final artworkId = widget.artwork['id'].toString();
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'].toString();
 
       // Check if user already liked this artwork
       final likeResponse = await Supabase.instance.client
@@ -1097,7 +1234,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
   Future<void> _loadCommentCount() async {
     try {
-      final artworkId = widget.artwork['id'].toString();
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'].toString();
       final response = await Supabase.instance.client
           .from('comments')
           .select()
@@ -1138,7 +1278,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
 
     try {
-      final artworkId = widget.artwork['id'].toString();
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'].toString();
 
       if (previousLiked) {
         // Unlike: Delete from likes table
@@ -1179,7 +1322,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   }
 
   void _showCommentsModal() {
-    final artworkId = widget.artwork['id'];
+    final artwork = _loadedArtwork ?? widget.artwork;
+    if (artwork == null) return;
+
+    final artworkId = artwork['id'];
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1189,6 +1335,86 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         onCommentAdded: () {
           _loadCommentCount();
         },
+      ),
+    );
+  }
+
+  Widget _buildGuestModeBanner() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // TODO: Link ke Play Store / App Store
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Download aplikasi UNP Art Space untuk berinteraksi!',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: const Color(0xFF8B5CF6),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF8B5CF6), // Purple
+                Color(0xFF3B82F6), // Blue
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF8B5CF6).withOpacity(0.4),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.download_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Download Aplikasi',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Untuk like, comment & interaksi lainnya',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.arrow_forward_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
