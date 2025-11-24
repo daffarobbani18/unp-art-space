@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../app/core/navigation/auth_gate.dart';
+import 'create_event_screen.dart';
 
 class OrganizerMainScreen extends StatefulWidget {
   const OrganizerMainScreen({Key? key}) : super(key: key);
@@ -714,11 +715,10 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // TODO: Navigate to CreateEventScreen
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Create Event Screen - Coming Soon!'),
-                backgroundColor: Color(0xFF8B5CF6),
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const CreateEventScreen(),
               ),
             );
           },
