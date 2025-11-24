@@ -47,44 +47,63 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<Map<String, dynamic>> _fetchUserProfile() async {
-    // Use maybeSingle to avoid throwing if row not found
-    final result = await supabase
-        .from('users')
-        .select()
-        .eq('id', _userId)
-        .maybeSingle();
-    if (result != null) return result;
-
-    // Jika baris profil belum ada di tabel 'users', coba bangun profil dari Auth
-    final authUser = supabase.auth.currentUser;
-    if (authUser == null) return <String, dynamic>{};
-
-    final fallback = <String, dynamic>{
-      'id': authUser.id,
-      'name': authUser.userMetadata?['name'] ?? '',
-      'email': authUser.email ?? '',
-      'role': 'viewer',
-      'specialization': null,
-    };
-
-    // Coba insert row users agar profil tersedia untuk ke depannya (jika policy mengizinkan)
     try {
-      await supabase.from('users').insert(fallback);
-    } catch (e) {
-      // Jangan crash app jika insert gagal; masih tampilkan fallback
-      debugPrint('Gagal membuat row users otomatis: $e');
-    }
+      // Use maybeSingle to avoid throwing if row not found
+      final result = await supabase
+          .from('users')
+          .select()
+          .eq('id', _userId)
+          .maybeSingle();
+      if (result != null) return result;
 
-    return fallback;
+      // Jika baris profil belum ada di tabel 'users', coba bangun profil dari Auth
+      final authUser = supabase.auth.currentUser;
+      if (authUser == null) return <String, dynamic>{};
+
+      final fallback = <String, dynamic>{
+        'id': authUser.id,
+        'name': authUser.userMetadata?['name'] ?? '',
+        'email': authUser.email ?? '',
+        'role': 'viewer',
+        'specialization': null,
+      };
+
+      // Coba insert row users agar profil tersedia untuk ke depannya (jika policy mengizinkan)
+      try {
+        await supabase.from('users').insert(fallback);
+      } catch (e) {
+        // Jangan crash app jika insert gagal; masih tampilkan fallback
+        debugPrint('Gagal membuat row users otomatis: $e');
+      }
+
+      return fallback;
+    } catch (e) {
+      debugPrint('Error fetching user profile: $e');
+      // Return minimal profile data if error
+      return <String, dynamic>{
+        'id': _userId,
+        'name': 'User',
+        'role': 'viewer',
+      };
+    }
   }
 
   Future<List<Map<String, dynamic>>> _fetchMyArtworks() async {
     if (_userId.isEmpty) return [];
-    return await supabase
-        .from('artworks')
-        .select()
-        .eq('artist_id', _userId)
-        .order('created_at');
+    
+    try {
+      final result = await supabase
+          .from('artworks')
+          .select()
+          .eq('artist_id', _userId)
+          .order('created_at', ascending: false);
+      
+      return List<Map<String, dynamic>>.from(result as List);
+    } catch (e) {
+      debugPrint('Error fetching artworks: $e');
+      // Return empty list if error occurs (user might not be an artist or no artworks yet)
+      return [];
+    }
   }
 
   //FUNGSI UNTUK LIHAT

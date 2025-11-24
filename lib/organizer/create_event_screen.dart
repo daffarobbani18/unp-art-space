@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 
@@ -36,34 +37,64 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
 
   Future<void> _pickImage() async {
     try {
+      // Step 1: Pick image from gallery
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1200,
-        maxHeight: 1200,
-        imageQuality: 85,
+        imageQuality: 100, // Use max quality before crop
       );
 
-      if (image != null) {
-        final file = File(image.path);
-        final fileSize = await file.length();
+      if (image == null) return;
 
-        // Check file size (max 5MB)
-        if (fileSize > 5 * 1024 * 1024) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Ukuran file maksimal 5MB'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return;
+      // Step 2: Crop image with 16:9 aspect ratio
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        aspectRatioPresets: [
+          CropAspectRatioPreset.ratio16x9,
+        ],
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Sesuaikan Banner',
+            toolbarColor: const Color(0xFF1E1E2C),
+            toolbarWidgetColor: Colors.white,
+            backgroundColor: const Color(0xFF0F2027),
+            activeControlsWidgetColor: const Color(0xFF8B5CF6),
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: true, // Lock to 16:9 ratio
+            hideBottomControls: false,
+            showCropGrid: true,
+          ),
+          IOSUiSettings(
+            title: 'Sesuaikan Banner',
+            aspectRatioLockEnabled: true, // Lock to 16:9 ratio
+            resetAspectRatioEnabled: false,
+            aspectRatioPickerButtonHidden: true,
+          ),
+        ],
+      );
+
+      if (croppedFile == null) return;
+
+      // Step 3: Check file size of cropped image (max 5MB)
+      final file = File(croppedFile.path);
+      final fileSize = await file.length();
+
+      if (fileSize > 5 * 1024 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Ukuran file maksimal 5MB'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
-
-        setState(() {
-          _selectedImage = file;
-        });
+        return;
       }
+
+      // Step 4: Set the cropped image
+      setState(() {
+        _selectedImage = file;
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
