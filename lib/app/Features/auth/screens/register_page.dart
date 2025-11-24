@@ -74,25 +74,22 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
           // Perbaiki: enum UserRole hanya punya 'artist' dan 'viewer'
           final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
 
-          // 2. Simpan data tambahan ke tabel 'users' di database
-          final usersResponse = await supabase.from('users').insert({
+          // 2. Insert ke 'profiles' terlebih dahulu (FK ke auth.users)
+          await supabase.from('profiles').insert({
+            'id': user.id, // Same ID as auth user
+            'role': roleString,
+            'username': userName, // Use name as username
+            // created_at akan auto-generated oleh database
+          });
+
+          // 3. Insert ke tabel 'users' (tabel aplikasi)
+          await supabase.from('users').insert({
             'id': user.id, // Gunakan ID dari Auth sebagai Primary Key
             'name': userName,
             'email': userEmail,
             'role': roleString,
             'specialization': _selectedSpecialization,
-          }).select();
-
-          // Pastikan insert ke users berhasil sebelum insert ke profiles
-          if (usersResponse.isNotEmpty) {
-            // 3. Simpan data ke tabel 'profiles' untuk konsistensi sistem
-            await supabase.from('profiles').insert({
-              'id': user.id, // Same ID as auth user
-              'role': roleString,
-              'username': userName, // Use name as username
-              // created_at akan auto-generated oleh database
-            });
-          }
+          });
 
           Navigator.of(context).pop(); 
           ScaffoldMessenger.of(context).showSnackBar(
