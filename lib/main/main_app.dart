@@ -2,7 +2,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../app/core/navigation/auth_gate.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import '../app/core/screens/splash_screen.dart';
 import '../organizer/organizer_main_screen.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
@@ -14,6 +14,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   HttpOverrides.global = MyHttpOverrides();
+
+  // Inisialisasi locale Indonesian untuk intl package
+  await initializeDateFormatting('id_ID', null);
 
   // Inisialisasi Supabase
   await Supabase.initialize(
