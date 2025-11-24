@@ -61,61 +61,50 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         return;
       }
 
-      // Step 3: Try to crop with 16:9 ratio
-      try {
-        final CroppedFile? croppedFile = await ImageCropper().cropImage(
-          sourcePath: image.path,
-          compressQuality: 85,
-          aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
-          uiSettings: [
-            AndroidUiSettings(
-              toolbarTitle: 'Sesuaikan Banner',
-              toolbarColor: const Color(0xFF1E1E2C),
-              toolbarWidgetColor: Colors.white,
-              backgroundColor: const Color(0xFF0F2027),
-              activeControlsWidgetColor: const Color(0xFF8B5CF6),
-              initAspectRatio: CropAspectRatioPreset.ratio16x9,
-              lockAspectRatio: true,
-            ),
-            IOSUiSettings(
-              title: 'Sesuaikan Banner',
-              aspectRatioLockEnabled: true,
-            ),
-          ],
-        );
+      // Step 3: Crop with 16:9 ratio
+      final CroppedFile? croppedFile = await ImageCropper().cropImage(
+        sourcePath: image.path,
+        compressQuality: 85,
+        aspectRatio: const CropAspectRatio(ratioX: 16, ratioY: 9),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Sesuaikan Banner',
+            toolbarColor: const Color(0xFF1E1E2C),
+            toolbarWidgetColor: Colors.white,
+            backgroundColor: const Color(0xFF0F2027),
+            activeControlsWidgetColor: const Color(0xFF8B5CF6),
+            initAspectRatio: CropAspectRatioPreset.ratio16x9,
+            lockAspectRatio: true,
+            hideBottomControls: false,
+            showCropGrid: true,
+          ),
+          IOSUiSettings(
+            title: 'Sesuaikan Banner',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+          ),
+        ],
+      );
 
-        if (croppedFile != null) {
-          setState(() {
-            _selectedImage = File(croppedFile.path);
-          });
-        } else {
-          // User cancelled crop, use original
-          setState(() {
-            _selectedImage = file;
-          });
-        }
-      } catch (cropError) {
-        // If crop fails, use original image
-        debugPrint('Crop failed, using original: $cropError');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Crop tidak tersedia, menggunakan foto asli'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
+      // Step 4: Set image (cropped or original if cancelled)
+      if (croppedFile != null) {
+        setState(() {
+          _selectedImage = File(croppedFile.path);
+        });
+      } else {
+        // User cancelled crop
         setState(() {
           _selectedImage = file;
         });
       }
     } catch (e) {
+      debugPrint('Error picking/cropping image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Gagal memilih gambar: $e'),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
