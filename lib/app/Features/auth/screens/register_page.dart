@@ -65,15 +65,9 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
         final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
 
         // 1. Buat user baru di Supabase Authentication
-        // Kirim data lewat parameter 'data' agar trigger database bisa menangkap
         final authResponse = await supabase.auth.signUp(
           email: userEmail,
           password: _passwordController.text.trim(),
-          data: {
-            'full_name': userName,
-            'role': roleString,
-            'username': userName,
-          },
         );
 
         // Jika pendaftaran di Auth berhasil & ada user yang dibuat
@@ -81,6 +75,7 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
           final user = authResponse.user!;
 
           // 2. Insert ke tabel 'users' (tabel aplikasi)
+          // Trigger akan otomatis insert ke profiles setelah ini
           await supabase.from('users').insert({
             'id': user.id,
             'name': userName,

@@ -21,6 +21,7 @@ ON DELETE CASCADE;
 
 -- LANGKAH 3: Buat function untuk auto-populate profiles
 -- ========================================================
+-- OPSI A: Jika profiles TIDAK punya FK ke public.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -28,24 +29,61 @@ BEGIN
   INSERT INTO public.profiles (id, role, username, created_at)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'viewer'), -- Ambil role dari metadata
-    COALESCE(NEW.raw_user_meta_data->>'username', NEW.email), -- Ambil username dari metadata
+    COALESCE(NEW.raw_user_meta_data->>'role', 'viewer'),
+    COALESCE(NEW.raw_user_meta_data->>'username', NEW.email),
     NOW()
   )
-  ON CONFLICT (id) DO NOTHING; -- Jika sudah ada, skip
+  ON CONFLICT (id) DO UPDATE SET
+    role = COALESCE(NEW.raw_user_meta_data->>'role', 'viewer'),
+    username = COALESCE(NEW.raw_user_meta_data->>'username', NEW.email);
   
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- LANGKAH 4: Buat trigger yang akan dijalankan setiap kali user baru dibuat
--- ===========================================================================
+-- OPSI B: Jika profiles PUNYA FK ke public.users (GUNAKAN INI!)
+-- Ganti function di atas dengan yang ini:
+CREATE OR REPLACE FUNCTION public.handle_new_user_with_users_fk()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Jangan insert ke profiles dulu, biarkan Flutter yang handle
+  -- Karena profiles butuh data dari public.users dulu
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- LANGKAH 4: Buat trigger yang akan dijalankan SETELAH insert ke public.users
+-- ================================================================================
+-- Hapus trigger lama dari auth.users
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
+-- Buat trigger baru pada public.users (lebih aman!)
+DROP TRIGGER IF EXISTS on_users_insert ON public.users;
+
+CREATE TRIGGER on_users_insert
+  AFTER INSERT ON public.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+-- Update function untuk ambil data dari public.users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Insert ke profiles dengan data dari public.users
+  INSERT INTO public.profiles (id, role, username, created_at)
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.role, 'viewer'), -- Ambil role dari tabel users
+    COALESCE(NEW.name, SPLIT_PART(NEW.email, '@', 1)), -- Ambil name dari tabel users
+    NOW()
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    role = COALESCE(NEW.role, profiles.role),
+    username = COALESCE(NEW.name, profiles.username);
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- ============================================================================
 -- VERIFIKASI: Cek apakah constraint dan trigger sudah benar
