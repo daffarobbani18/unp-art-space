@@ -114,7 +114,7 @@ class _OrganizerEventCurationPageState
                     ],
                   ),
                   child: QrImageView(
-                    data: 'https://artwork-space.vercel.app/artwork/$artworkId',
+                    data: 'https://campus-art-space.vercel.app/artwork/$artworkId',
                     version: QrVersions.auto,
                     size: 200,
                     backgroundColor: Colors.white,
