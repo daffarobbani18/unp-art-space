@@ -60,31 +60,29 @@ class _RegisterPageState extends State<RegisterPage> with SingleTickerProviderSt
       );
 
       try {
+        final userName = _namaController.text.trim();
+        final userEmail = _emailController.text.trim();
+        final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
+
         // 1. Buat user baru di Supabase Authentication
+        // Kirim data lewat parameter 'data' agar trigger database bisa menangkap
         final authResponse = await supabase.auth.signUp(
-          email: _emailController.text.trim(),
+          email: userEmail,
           password: _passwordController.text.trim(),
+          data: {
+            'full_name': userName,
+            'role': roleString,
+            'username': userName,
+          },
         );
 
         // Jika pendaftaran di Auth berhasil & ada user yang dibuat
         if (authResponse.user != null) {
           final user = authResponse.user!;
-          final userName = _namaController.text.trim();
-          final userEmail = _emailController.text.trim();
-          // Perbaiki: enum UserRole hanya punya 'artist' dan 'viewer'
-          final roleString = _selectedRole == UserRole.artist ? 'artist' : 'viewer';
 
-          // 2. Insert ke 'profiles' terlebih dahulu (FK ke auth.users)
-          await supabase.from('profiles').insert({
-            'id': user.id, // Same ID as auth user
-            'role': roleString,
-            'username': userName, // Use name as username
-            // created_at akan auto-generated oleh database
-          });
-
-          // 3. Insert ke tabel 'users' (tabel aplikasi)
+          // 2. Insert ke tabel 'users' (tabel aplikasi)
           await supabase.from('users').insert({
-            'id': user.id, // Gunakan ID dari Auth sebagai Primary Key
+            'id': user.id,
             'name': userName,
             'email': userEmail,
             'role': roleString,
