@@ -42,12 +42,12 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
       // Query semua events dulu untuk debugging
       final allEvents = await Supabase.instance.client
           .from('events')
-          .select('id, title, status, artist_id, created_at')
+          .select('id, title, status, organizer_id, created_at')
           .order('created_at', ascending: false);
       
       print('📊 Total events in database: ${(allEvents as List).length}');
       for (var event in allEvents) {
-        print('  - ${event['title']}: status="${event['status']}", artist_id=${event['artist_id']}');
+        print('  - ${event['title']}: status="${event['status']}", organizer_id=${event['organizer_id']}');
       }
       
       // Query events dengan multiple status
@@ -63,42 +63,42 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
       final eventsList = List<Map<String, dynamic>>.from(response as List);
       print('✅ Found ${eventsList.length} events matching status filter');
 
-      // Untuk setiap event, ambil data artist
+      // Untuk setiap event, ambil data organizer
       for (var event in eventsList) {
         print('🎉 Processing event: ${event['title']} (ID: ${event['id']})');
-        if (event['artist_id'] != null) {
+        if (event['organizer_id'] != null) {
           try {
             final userResponse = await Supabase.instance.client
                 .from('users')
                 .select('name')
-                .eq('id', event['artist_id'])
+                .eq('id', event['organizer_id'])
                 .maybeSingle();
 
             if (userResponse != null && userResponse['name'] != null) {
-              event['artist_name'] = userResponse['name'];
-              print('👤 Artist (from users): ${event['artist_name']}');
+              event['organizer_name'] = userResponse['name'];
+              print('👤 Organizer (from users): ${event['organizer_name']}');
             } else {
               final profileResponse = await Supabase.instance.client
                   .from('profiles')
                   .select('username')
-                  .eq('id', event['artist_id'])
+                  .eq('id', event['organizer_id'])
                   .maybeSingle();
 
               if (profileResponse != null) {
-                event['artist_name'] = profileResponse['username'];
-                print('👤 Artist (from profiles): ${event['artist_name']}');
+                event['organizer_name'] = profileResponse['username'];
+                print('👤 Organizer (from profiles): ${event['organizer_name']}');
               } else {
-                event['artist_name'] = 'Unknown Artist';
-                print('⚠️ Profile not found for artist_id: ${event['artist_id']}');
+                event['organizer_name'] = 'Unknown Organizer';
+                print('⚠️ Profile not found for organizer_id: ${event['organizer_id']}');
               }
             }
           } catch (e) {
-            event['artist_name'] = 'Unknown Artist';
+            event['organizer_name'] = 'Unknown Organizer';
             print('❌ Error fetching profile: $e');
           }
         } else {
-          event['artist_name'] = 'Unknown Artist';
-          print('⚠️ No artist_id in event');
+          event['organizer_name'] = 'Unknown Organizer';
+          print('⚠️ No organizer_id in event');
         }
       }
 
@@ -514,13 +514,13 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // Artist & Date Info
+                // Organizer & Date Info
                 Row(
                   children: [
                     Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 6),
                     Text(
-                      'By: ${event['artist_name'] ?? 'Unknown'}',
+                      'By: ${event['organizer_name'] ?? 'Unknown'}',
                       style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
                     ),
                     const SizedBox(width: 16),
