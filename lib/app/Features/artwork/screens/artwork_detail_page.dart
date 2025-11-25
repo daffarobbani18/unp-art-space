@@ -1278,35 +1278,48 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       }
 
       final artworkId = submissionResponse['artwork_id'];
-      debugPrint('📌 Found artwork_id: $artworkId');
+      final artistId = submissionResponse['artist_id'];
+      debugPrint('📌 Found artwork_id: $artworkId, artist_id: $artistId');
 
-      // Step 2: Fetch artwork with user info
+      // Step 2: Fetch artwork data
       final artworkResponse = await Supabase.instance.client
           .from('artworks')
-          .select('*, users(*)')
+          .select('*')
           .eq('id', artworkId)
           .maybeSingle();
 
       debugPrint('🎨 Artwork Response: $artworkResponse');
 
-      // Extract artwork data
-      final artworkData = artworkResponse;
-      
-      if (artworkData == null) {
-        debugPrint('❌ Artwork data not found in submission');
+      if (artworkResponse == null) {
+        debugPrint('❌ Artwork not found');
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Data karya tidak lengkap'),
+              content: Text('Karya tidak ditemukan'),
               backgroundColor: Colors.red,
             ),
           );
         }
         return;
       }
+
+      // Step 3: Fetch user/artist info from users table
+      final userResponse = await Supabase.instance.client
+          .from('users')
+          .select('*')
+          .eq('id', artistId)
+          .maybeSingle();
+
+      debugPrint('👤 User Response: $userResponse');
+
+      // Merge artwork with user data
+      final artworkData = {
+        ...artworkResponse,
+        'users': userResponse ?? {},
+      };
 
       debugPrint('✅ Artwork found from submission: ${artworkData['title']}');
 
