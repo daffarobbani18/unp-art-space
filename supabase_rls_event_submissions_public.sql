@@ -82,6 +82,30 @@ ORDER BY policyname;
 -- 3. Artists to insert their own submissions
 -- 4. Organizers to update submission status (approve/reject)
 
--- Make sure to run the artworks and users RLS policies as well:
+-- =====================================================
+-- USERS TABLE RLS (for artist profile data)
+-- =====================================================
+
+-- Enable RLS on users table
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- Allow anonymous users to SELECT users (for artist profile in artwork detail)
+DROP POLICY IF EXISTS "anon_select_users" ON public.users;
+CREATE POLICY "anon_select_users"
+ON public.users
+FOR SELECT
+TO anon
+USING (true);
+
+-- Allow authenticated users to SELECT all users
+DROP POLICY IF EXISTS "authenticated_select_users" ON public.users;
+CREATE POLICY "authenticated_select_users"
+ON public.users
+FOR SELECT
+TO authenticated
+USING (true);
+
+-- =====================================================
+-- Make sure to run the artworks RLS policies as well:
 -- - supabase_rls_public_artworks.sql (for artwork data access)
--- - supabase_rls_simple.sql (for users/profiles access)
+-- =====================================================
