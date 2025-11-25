@@ -13,13 +13,21 @@ import '../../../shared/widgets/custom_network_image.dart';
 class ArtworkDetailPage extends StatefulWidget {
   final Map<String, dynamic>? artwork;
   final int? artworkId;
+  final String? submissionId;
 
   const ArtworkDetailPage({Key? key, required this.artwork})
       : artworkId = null,
+        submissionId = null,
         super(key: key);
 
   const ArtworkDetailPage.fromId({Key? key, required this.artworkId})
       : artwork = null,
+        submissionId = null,
+        super(key: key);
+
+  const ArtworkDetailPage.fromSubmission({Key? key, required this.submissionId})
+      : artwork = null,
+        artworkId = null,
         super(key: key);
 
   @override
@@ -56,10 +64,15 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     final user = Supabase.instance.client.auth.currentUser;
     _isGuestMode = user == null;
 
-    // Fetch artwork if coming from artworkId (Deep Link)
-    if (widget.artworkId != null) {
+    // Fetch artwork based on source
+    if (widget.submissionId != null) {
+      // Coming from /submission/{uuid} (QR Code scan)
+      _fetchArtworkFromSubmission();
+    } else if (widget.artworkId != null) {
+      // Coming from /artwork/{id} (Legacy deep link)
       _fetchArtworkData();
     } else {
+      // Coming from navigation with artwork data
       _loadedArtwork = widget.artwork;
     }
 
@@ -1218,6 +1231,102 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           _isLoading = false;
         });
         // Show error snackbar with details
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchArtworkFromSubmission() async {
+    if (widget.submissionId == null) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      debugPrint('🔍 Fetching artwork from submission UUID: ${widget.submissionId}');
+      
+      // Fetch submission with JOIN to artworks and users
+      final response = await Supabase.instance.client
+          .from('event_submissions')
+          .select('''
+            id,
+            status,
+            artworks!inner (
+              *,
+              users (*)
+            )
+          ''')
+          .eq('id', widget.submissionId!)
+          .maybeSingle();
+
+      debugPrint('📦 Submission Response: $response');
+
+      if (response == null) {
+        debugPrint('❌ Submission not found in database');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Karya tidak ditemukan atau sudah dihapus dari event'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Extract artwork data from submission
+      final artworkData = response['artworks'] as Map<String, dynamic>?;
+      
+      if (artworkData == null) {
+        debugPrint('❌ Artwork data not found in submission');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Data karya tidak lengkap'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('✅ Artwork found from submission: ${artworkData['title']}');
+
+      if (mounted) {
+        setState(() {
+          _loadedArtwork = artworkData;
+          _isLoading = false;
+        });
+
+        // Initialize video player if artwork is video type
+        _initializeVideoPlayer();
+
+        // Initialize like status and comments if user is logged in
+        if (!_isGuestMode) {
+          _initializeLikeStatus();
+          _loadCommentCount();
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error fetching submission: $e');
+      debugPrint('Stack trace: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),

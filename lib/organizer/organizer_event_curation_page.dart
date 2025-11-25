@@ -56,7 +56,7 @@ class _OrganizerEventCurationPageState
     }
   }
 
-  void _showQrDialog(BuildContext context, int artworkId, String artworkTitle, String artistName) {
+  void _showQrDialog(BuildContext context, String submissionId, String artworkTitle, String artistName) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -114,7 +114,7 @@ class _OrganizerEventCurationPageState
                     ],
                   ),
                   child: QrImageView(
-                    data: 'https://campus-art-space.vercel.app/artwork/$artworkId',
+                    data: 'https://campus-art-space.vercel.app/submission/$submissionId',
                     version: QrVersions.auto,
                     size: 200,
                     backgroundColor: Colors.white,
@@ -404,15 +404,13 @@ class _OrganizerEventCurationPageState
                             width: double.infinity,
                             child: ElevatedButton.icon(
                               onPressed: () {
-                                final artworkId = artwork?['id'] as int?;
-                                if (artworkId != null) {
-                                  _showQrDialog(
-                                    context,
-                                    artworkId,
-                                    artworkTitle,
-                                    artistName,
-                                  );
-                                }
+                                // Use submission ID (UUID) instead of artwork ID
+                                _showQrDialog(
+                                  context,
+                                  submissionId,
+                                  artworkTitle,
+                                  artistName,
+                                );
                               },
                               icon: const Icon(Icons.qr_code_rounded, size: 18),
                               label: Text(

@@ -54,7 +54,19 @@ class MyApp extends StatelessWidget {
         '/organizer_home': (context) => const OrganizerMainScreen(),
       },
       onGenerateRoute: (settings) {
-        // Handle deep linking for /artwork/{id}
+        // Handle deep linking for /submission/{uuid} (QR Code from event submissions)
+        if (settings.name != null && settings.name!.startsWith('/submission/')) {
+          final submissionId = settings.name!.replaceFirst('/submission/', '');
+          
+          if (submissionId.isNotEmpty) {
+            return MaterialPageRoute(
+              builder: (context) => ArtworkDetailPage.fromSubmission(submissionId: submissionId),
+              settings: settings,
+            );
+          }
+        }
+        
+        // Handle deep linking for /artwork/{id} (Legacy support for direct artwork links)
         if (settings.name != null && settings.name!.startsWith('/artwork/')) {
           final artworkIdString = settings.name!.replaceFirst('/artwork/', '');
           final artworkId = int.tryParse(artworkIdString);
