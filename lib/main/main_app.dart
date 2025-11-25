@@ -49,16 +49,22 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.deepPurple,
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      // Remove fixed home to allow deep linking
+      // home: const SplashScreen(),
+      initialRoute: '/',
       routes: {
+        '/': (context) => const SplashScreen(),
         '/organizer_home': (context) => const OrganizerMainScreen(),
       },
       onGenerateRoute: (settings) {
+        debugPrint('🔗 Navigation to: ${settings.name}');
+        
         // Handle deep linking for /submission/{uuid} (QR Code from event submissions)
         if (settings.name != null && settings.name!.startsWith('/submission/')) {
           final submissionId = settings.name!.replaceFirst('/submission/', '');
           
           if (submissionId.isNotEmpty) {
+            debugPrint('✅ Deep link detected: submission/$submissionId');
             return MaterialPageRoute(
               builder: (context) => ArtworkDetailPage.fromSubmission(submissionId: submissionId),
               settings: settings,
@@ -72,6 +78,7 @@ class MyApp extends StatelessWidget {
           final artworkId = int.tryParse(artworkIdString);
           
           if (artworkId != null) {
+            debugPrint('✅ Deep link detected: artwork/$artworkId');
             return MaterialPageRoute(
               builder: (context) => ArtworkDetailPage.fromId(artworkId: artworkId),
               settings: settings,
