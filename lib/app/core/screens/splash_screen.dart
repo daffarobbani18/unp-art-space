@@ -44,20 +44,27 @@ class _SplashScreenState extends State<SplashScreen>
     )..repeat(reverse: true);
 
     _timer = Timer(const Duration(seconds: 7), () {
+      // IMPORTANT: Check if still mounted AND still the active route
+      // If user navigated away (e.g., deep link), don't force navigation
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const AuthGate(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
+      
+      // Only navigate if this splash screen is still the current route
+      // This prevents interrupting deep links or other navigation
+      if (ModalRoute.of(context)?.isCurrent ?? false) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const AuthGate(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 800),
+          ),
+        );
+      }
     });
   }
 
