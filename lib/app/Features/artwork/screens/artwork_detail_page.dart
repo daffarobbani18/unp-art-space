@@ -1252,23 +1252,16 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     try {
       debugPrint('🔍 Fetching artwork from submission UUID: ${widget.submissionId}');
       
-      // Fetch submission with JOIN to artworks and users
-      final response = await Supabase.instance.client
+      // Step 1: Get submission to find artwork_id
+      final submissionResponse = await Supabase.instance.client
           .from('event_submissions')
-          .select('''
-            id,
-            status,
-            artworks!inner (
-              *,
-              users (*)
-            )
-          ''')
+          .select('id, artwork_id, artist_id, status')
           .eq('id', widget.submissionId!)
           .maybeSingle();
 
-      debugPrint('📦 Submission Response: $response');
+      debugPrint('📦 Submission Response: $submissionResponse');
 
-      if (response == null) {
+      if (submissionResponse == null) {
         debugPrint('❌ Submission not found in database');
         if (mounted) {
           setState(() {
@@ -1284,8 +1277,20 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         return;
       }
 
-      // Extract artwork data from submission
-      final artworkData = response['artworks'] as Map<String, dynamic>?;
+      final artworkId = submissionResponse['artwork_id'];
+      debugPrint('📌 Found artwork_id: $artworkId');
+
+      // Step 2: Fetch artwork with user info
+      final artworkResponse = await Supabase.instance.client
+          .from('artworks')
+          .select('*, users(*)')
+          .eq('id', artworkId)
+          .maybeSingle();
+
+      debugPrint('🎨 Artwork Response: $artworkResponse');
+
+      // Extract artwork data
+      final artworkData = artworkResponse;
       
       if (artworkData == null) {
         debugPrint('❌ Artwork data not found in submission');
