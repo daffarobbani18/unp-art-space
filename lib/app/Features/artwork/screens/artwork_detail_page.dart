@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import '../../artist/screens/artist_detail_page.dart';
+import '../../auth/screens/login_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
@@ -1664,10 +1665,17 @@ Lihat karya seni ini di UNP Art Space!
                   child: ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
+                      // Navigate to login page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LoginPage(),
+                        ),
+                      );
                     },
-                    icon: const Icon(Icons.language_rounded, size: 20),
+                    icon: const Icon(Icons.login_rounded, size: 20),
                     label: Text(
-                      'Lanjut di Website',
+                      'Login untuk Berinteraksi',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
