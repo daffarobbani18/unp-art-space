@@ -598,7 +598,8 @@ class _OrganizerEventCurationPageState
                       );
                     }
 
-                    // Fetch artwork and profile data for each submission
+                    // Fetch artwork and profile data for each submission (OLD METHOD - SLOW)
+                    // Keeping this for now, but can be optimized with single query JOIN
                     return FutureBuilder<List<Map<String, dynamic>>>(
                       future: _fetchSubmissionsWithDetails(submissions),
                       builder: (context, detailSnapshot) {
@@ -647,6 +648,8 @@ class _OrganizerEventCurationPageState
     );
   }
 
+  // OLD METHOD: Loop through each submission and fetch details one by one
+  // ⚠️ SLOW - This creates N+1 queries (1 query per submission)
   Future<List<Map<String, dynamic>>> _fetchSubmissionsWithDetails(
       List<Map<String, dynamic>> submissions) async {
     List<Map<String, dynamic>> detailedSubmissions = [];
@@ -684,4 +687,27 @@ class _OrganizerEventCurationPageState
 
     return detailedSubmissions;
   }
+
+  // ✅ ALTERNATIVE BETTER METHOD: Single query with JOIN
+  // Uncomment and use this method in the StreamBuilder for better performance:
+  /*
+  Future<List<Map<String, dynamic>>> _fetchSubmissionsWithJoin() async {
+    try {
+      final response = await supabase
+          .from('event_submissions')
+          .select('''
+            *,
+            artworks (*),
+            profiles (*)
+          ''')
+          .eq('event_id', widget.eventId)
+          .order('created_at', ascending: false);
+      
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      debugPrint('Error fetching submissions with JOIN: $e');
+      return [];
+    }
+  }
+  */
 }

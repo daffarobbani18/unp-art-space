@@ -1166,11 +1166,34 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
 
     try {
+      debugPrint('🔍 Fetching artwork with ID: ${widget.artworkId}');
+      
       final response = await Supabase.instance.client
           .from('artworks')
           .select('*, users(*)')
           .eq('id', widget.artworkId!)
-          .single();
+          .maybeSingle();
+
+      debugPrint('📦 Response: $response');
+
+      if (response == null) {
+        debugPrint('❌ Artwork not found in database');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          // Show error snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Karya dengan ID ${widget.artworkId} tidak ditemukan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      debugPrint('✅ Artwork found: ${response['title']}');
 
       if (mounted) {
         setState(() {
@@ -1187,12 +1210,21 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           _loadCommentCount();
         }
       }
-    } catch (e) {
-      debugPrint('Error fetching artwork: $e');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error fetching artwork: $e');
+      debugPrint('Stack trace: $stackTrace');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
+        // Show error snackbar with details
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
     }
   }
