@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../artwork/screens/upload_artwork_page.dart';
-import '../../events/upload_event_screen.dart';
 import '../../../../main/main_app.dart';
 
 class UploadPage extends StatefulWidget {
@@ -153,7 +152,7 @@ class _UploadPageState extends State<UploadPage> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    'Hanya akun Artist yang dapat mengunggah karya seni atau mengajukan event.',
+                    'Hanya akun Artist yang dapat mengunggah karya seni.',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: Colors.white.withOpacity(0.7),
@@ -327,25 +326,6 @@ class _UploadPageState extends State<UploadPage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const UploadArtworkPage()),
-              );
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Button 2: Ajukan Event (Orange/Red Glass)
-          _buildGlassButton(
-            icon: Icons.event_rounded,
-            title: 'Ajukan Event',
-            subtitle: 'Ajukan pameran seni atau event kreatif',
-            gradientColors: [
-              const Color(0xFFFF5722).withOpacity(0.3),
-              const Color(0xFFFF9800).withOpacity(0.3),
-            ],
-            borderColor: const Color(0xFFFF5722).withOpacity(0.4),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const UploadEventScreen()),
               );
             },
           ),
