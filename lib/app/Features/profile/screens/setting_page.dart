@@ -9,13 +9,16 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
   Future<void> _handleLogout(BuildContext context) async {
-    // Show confirmation dialog
-    final shouldLogout = await showDialog<bool>(
-      context: context,
-      builder: (context) => _buildLogoutDialog(context),
-    );
+    try {
+      // Show confirmation dialog
+      final shouldLogout = await showDialog<bool>(
+        context: context,
+        builder: (context) => _buildLogoutDialog(context),
+      );
 
-    if (shouldLogout == true && context.mounted) {
+      if (shouldLogout != true) return;
+      if (!context.mounted) return;
+
       // Show loading indicator
       showDialog(
         context: context,
@@ -34,45 +37,70 @@ class SettingsPage extends StatelessWidget {
         ),
       );
 
+      // Perform logout with complete error handling
       try {
-        // Perform logout - wrap in try-catch to prevent crash
-        try {
-          await Supabase.instance.client.auth.signOut().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('Logout timeout, continuing anyway');
-              return null; // Return null on timeout instead of throwing
-            },
-          );
-        } catch (signOutError) {
-          // Silently handle signOut errors - local logout will still work
-          debugPrint('SignOut error (continuing): $signOutError');
-        }
-
-        // Small delay to ensure cleanup
-        await Future.delayed(const Duration(milliseconds: 100));
-      } catch (e) {
-        // Catch any other errors
-        debugPrint('Logout process error: $e');
+        await Supabase.instance.client.auth.signOut().timeout(
+          const Duration(seconds: 5),
+          onTimeout: () {
+            debugPrint('Logout timeout, continuing anyway');
+            return null;
+          },
+        );
+      } catch (signOutError) {
+        debugPrint('SignOut error (continuing): $signOutError');
       }
 
-      // Always navigate to login regardless of logout success/failure
+      // Small delay to ensure cleanup
+      try {
+        await Future.delayed(const Duration(milliseconds: 100));
+      } catch (e) {
+        debugPrint('Delay error: $e');
+      }
+
+      // Close loading dialog
       if (context.mounted) {
-        // Close loading dialog
-        Navigator.of(context).pop();
+        try {
+          Navigator.of(context).pop();
+        } catch (e) {
+          debugPrint('Pop error: $e');
+        }
       }
 
       // Small delay before navigation
-      await Future.delayed(const Duration(milliseconds: 50));
+      try {
+        await Future.delayed(const Duration(milliseconds: 50));
+      } catch (e) {
+        debugPrint('Navigation delay error: $e');
+      }
 
-      // Navigate to AuthGate (this will clear session and show login)
+      // Navigate to AuthGate
       if (context.mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(
-            builder: (context) => const AuthGate(),
-          ),
-          (route) => false,
-        );
+        try {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const AuthGate(),
+            ),
+            (route) => false,
+          );
+        } catch (e) {
+          debugPrint('Navigation error: $e');
+        }
+      }
+    } catch (e) {
+      // Catch all errors in the entire logout process
+      debugPrint('Complete logout error: $e');
+      // Try to navigate anyway
+      if (context.mounted) {
+        try {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(
+              builder: (context) => const AuthGate(),
+            ),
+            (route) => false,
+          );
+        } catch (navError) {
+          debugPrint('Final navigation error: $navError');
+        }
       }
     }
   }

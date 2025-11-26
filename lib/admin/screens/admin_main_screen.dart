@@ -55,9 +55,9 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       ),
     );
 
-    if (confirm == true) {
+    if (confirm == true && mounted) {
       try {
-        // Perform signOut with error handling
+        // Perform signOut with complete error handling
         try {
           await Supabase.instance.client.auth.signOut().timeout(
             const Duration(seconds: 5),
@@ -69,22 +69,37 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         } catch (signOutError) {
           debugPrint('SignOut error: $signOutError');
         }
+
+        // Small delay
+        try {
+          await Future.delayed(const Duration(milliseconds: 50));
+        } catch (e) {
+          debugPrint('Delay error: $e');
+        }
         
         // Always navigate to login even if signOut fails
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-            (route) => false,
-          );
+          try {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+              (route) => false,
+            );
+          } catch (navError) {
+            debugPrint('Navigation error: $navError');
+          }
         }
       } catch (e) {
-        debugPrint('Logout error: $e');
+        debugPrint('Complete logout error: $e');
         // Still navigate to login on error
         if (mounted) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-            (route) => false,
-          );
+          try {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+              (route) => false,
+            );
+          } catch (navError) {
+            debugPrint('Final navigation error: $navError');
+          }
         }
       }
     }
