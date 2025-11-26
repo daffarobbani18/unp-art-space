@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../app/shared/widgets/custom_network_image.dart';
+import '../widgets/glass_app_bar.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/glass_button.dart';
 
 class ModerationScreen extends StatefulWidget {
   const ModerationScreen({super.key});
@@ -14,7 +17,7 @@ class _ModerationScreenState extends State<ModerationScreen> {
   String _selectedFilter = 'pending';
   List<Map<String, dynamic>> _artworks = [];
   bool _isLoading = true;
-  Set<String> _processingArtworks = {}; // Track artworks being processed
+  Set<String> _processingArtworks = {};
 
   @override
   void initState() {
@@ -25,9 +28,6 @@ class _ModerationScreenState extends State<ModerationScreen> {
   Future<void> _loadArtworks() async {
     setState(() => _isLoading = true);
     try {
-      print('🔍 Loading artworks with status: $_selectedFilter');
-      
-      // Map status baru ke status lama (backward compatibility)
       final statusMapping = {
         'pending': ['pending', 'menunggu_persetujuan', 'menunggu'],
         'approved': ['approved', 'disetujui'],
@@ -35,38 +35,18 @@ class _ModerationScreenState extends State<ModerationScreen> {
       };
       
       final statusVariants = statusMapping[_selectedFilter] ?? [_selectedFilter];
-      print('🔎 Searching for status variants: $statusVariants');
       
-      // Query semua artworks dulu untuk debugging
-      final allArtworks = await Supabase.instance.client
-          .from('artworks')
-          .select('id, title, status, artist_id, created_at')
-          .order('created_at', ascending: false);
-      
-      print('📊 Total artworks in database: ${(allArtworks as List).length}');
-      for (var art in allArtworks) {
-        print('  - ${art['title']}: status="${art['status']}", artist_id=${art['artist_id']}');
-      }
-      
-      // Query artworks dengan multiple status (support format lama dan baru)
       final response = await Supabase.instance.client
           .from('artworks')
           .select('*')
           .inFilter('status', statusVariants)
           .order('created_at', ascending: false);
 
-      print('📦 Filtered response for status variants $statusVariants: $response');
-      
-      // Ambil data artworks
       final artworksList = List<Map<String, dynamic>>.from(response as List);
-      print('✅ Found ${artworksList.length} artworks matching status filter');
 
-      // Untuk setiap artwork, ambil data artist dari profiles
       for (var artwork in artworksList) {
-        print('🎨 Processing artwork: ${artwork['title']} (ID: ${artwork['id']})');
         if (artwork['artist_id'] != null) {
           try {
-            // Coba dulu dari tabel users (untuk kompatibilitas dengan aplikasi utama)
             final userResponse = await Supabase.instance.client
                 .from('users')
                 .select('name')
@@ -75,30 +55,20 @@ class _ModerationScreenState extends State<ModerationScreen> {
 
             if (userResponse != null && userResponse['name'] != null) {
               artwork['artist_username'] = userResponse['name'];
-              print('👤 Artist (from users): ${artwork['artist_username']}');
             } else {
-              // Jika tidak ada di users, coba dari profiles
               final profileResponse = await Supabase.instance.client
                   .from('profiles')
                   .select('username')
                   .eq('id', artwork['artist_id'])
                   .maybeSingle();
 
-              if (profileResponse != null) {
-                artwork['artist_username'] = profileResponse['username'];
-                print('👤 Artist (from profiles): ${artwork['artist_username']}');
-              } else {
-                artwork['artist_username'] = 'Unknown Artist';
-                print('⚠️ Profile not found in both users and profiles for artist_id: ${artwork['artist_id']}');
-              }
+              artwork['artist_username'] = profileResponse?['username'] ?? 'Unknown Artist';
             }
           } catch (e) {
             artwork['artist_username'] = 'Unknown Artist';
-            print('❌ Error fetching profile: $e');
           }
         } else {
           artwork['artist_username'] = 'Unknown Artist';
-          print('⚠️ No artist_id in artwork');
         }
       }
 
@@ -106,63 +76,44 @@ class _ModerationScreenState extends State<ModerationScreen> {
         _artworks = artworksList;
         _isLoading = false;
       });
-      
-      print('✨ Loading complete. Total artworks: ${_artworks.length}');
     } catch (e) {
-      print('❌ Error loading artworks: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
   Future<void> _updateArtworkStatus(String artworkId, String newStatus) async {
-    // Prevent multiple clicks
-    if (_processingArtworks.contains(artworkId)) {
-      print('⚠️ Artwork $artworkId is already being processed');
-      return;
-    }
+    if (_processingArtworks.contains(artworkId)) return;
 
     setState(() => _processingArtworks.add(artworkId));
 
     try {
-      print('🔄 Updating artwork $artworkId to status: $newStatus');
+      final idValue = int.tryParse(artworkId) ?? artworkId;
       
-      // Parse ID - handle both String and numeric IDs
-      final dynamic idValue = int.tryParse(artworkId) ?? artworkId;
-      
-      final response = await Supabase.instance.client
+      await Supabase.instance.client
           .from('artworks')
           .update({'status': newStatus})
           .eq('id', idValue)
           .select();
-
-      print('✅ Update response: $response');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Karya berhasil ${newStatus == 'approved' ? 'disetujui' : 'ditolak'}'),
             backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
-            duration: const Duration(seconds: 2),
           ),
         );
         
-        // Reload data setelah update
         await _loadArtworks();
       }
     } catch (e) {
-      print('❌ Error updating artwork: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate karya: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -172,338 +123,301 @@ class _ModerationScreenState extends State<ModerationScreen> {
     }
   }
 
-  Future<void> _deleteArtwork(String artworkId) async {
-    // Prevent multiple clicks
-    if (_processingArtworks.contains(artworkId)) {
-      print('⚠️ Artwork $artworkId is already being processed');
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Karya', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text('Apakah Anda yakin ingin menghapus karya ini secara permanen?', style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('Hapus', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _processingArtworks.add(artworkId));
-
-      try {
-        print('🗑️ Deleting artwork: $artworkId');
-        
-        // Parse ID - handle both String and numeric IDs
-        final dynamic idValue = int.tryParse(artworkId) ?? artworkId;
-        
-        final response = await Supabase.instance.client
-            .from('artworks')
-            .delete()
-            .eq('id', idValue)
-            .select();
-
-        print('✅ Delete response: $response');
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Karya berhasil dihapus'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          
-          // Reload data setelah delete
-          await _loadArtworks();
-        }
-      } catch (e) {
-        print('❌ Error deleting artwork: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal menghapus karya: $e'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _processingArtworks.remove(artworkId));
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: 'Moderasi Karya',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: _loadArtworks,
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header
-          Container(
+          // Filter Tabs
+          Padding(
             padding: const EdgeInsets.all(24),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Moderasi Karya', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-                        Text('Kelola dan review karya seni', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
-                      ],
+            child: GlassCard(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Pending',
+                      icon: Icons.pending_actions,
+                      isSelected: _selectedFilter == 'pending',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'pending';
+                        _loadArtworks();
+                      }),
                     ),
-                    Row(
-                      children: [
-                        // Debug button
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            try {
-                              final all = await Supabase.instance.client.from('artworks').select('*');
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: Text('Debug: All Artworks', style: GoogleFonts.poppins()),
-                                  content: SingleChildScrollView(
-                                    child: Text('Total: ${(all as List).length}\n\n${all.map((a) => 'Title: ${a['title']}\nStatus: ${a['status']}\nArtist ID: ${a['artist_id']}\n---').join('\n')}'),
-                                  ),
-                                  actions: [TextButton(onPressed: () => Navigator.pop(context), child: Text('Close'))],
-                                ),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                            }
-                          },
-                          icon: Icon(Icons.bug_report, size: 18),
-                          label: Text('Debug', style: GoogleFonts.poppins(fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: _loadArtworks,
-                          icon: const Icon(Icons.refresh_rounded),
-                          style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Approved',
+                      icon: Icons.check_circle,
+                      isSelected: _selectedFilter == 'approved',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'approved';
+                        _loadArtworks();
+                      }),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Filter Tabs
-                Row(
-                  children: [
-                    _buildFilterChip('Menunggu', 'pending', Color(0xFFEA580C)),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Disetujui', 'approved', Color(0xFF059669)),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Ditolak', 'rejected', Color(0xFFDC2626)),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Rejected',
+                      icon: Icons.cancel,
+                      isSelected: _selectedFilter == 'rejected',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'rejected';
+                        _loadArtworks();
+                      }),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
-          // Content
+          // Artworks Grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                  )
                 : _artworks.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
+                            Icon(
+                              Icons.image_not_supported,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                             const SizedBox(height: 16),
-                            Text('Tidak ada karya dengan status "$_selectedFilter"', style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600])),
-                            const SizedBox(height: 8),
-                            Text('Klik tombol Debug untuk melihat semua data', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500])),
+                            Text(
+                              'Tidak ada karya ${_selectedFilter}',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       )
-                    : GridView.builder(
-                        padding: const EdgeInsets.all(24),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 16,
-                          mainAxisSpacing: 16,
-                          childAspectRatio: 0.75,
-                        ),
-                        itemCount: _artworks.length,
-                        itemBuilder: (context, index) => _buildArtworkCard(_artworks[index]),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          int crossAxisCount = constraints.maxWidth > 1400
+                              ? 4
+                              : constraints.maxWidth > 1000
+                                  ? 3
+                                  : constraints.maxWidth > 600
+                                      ? 2
+                                      : 1;
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(24),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemCount: _artworks.length,
+                            itemBuilder: (context, index) {
+                              final artwork = _artworks[index];
+                              final artworkId = artwork['id'].toString();
+                              final isProcessing = _processingArtworks.contains(artworkId);
+
+                              return _ArtworkCard(
+                                artwork: artwork,
+                                isProcessing: isProcessing,
+                                showActions: _selectedFilter == 'pending',
+                                onApprove: () => _updateArtworkStatus(artworkId, 'approved'),
+                                onReject: () => _updateArtworkStatus(artworkId, 'rejected'),
+                              );
+                            },
+                          );
+                        },
                       ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(String label, String value, Color color) {
-    final isSelected = _selectedFilter == value;
-    return InkWell(
-      onTap: () {
-        setState(() => _selectedFilter = value);
-        _loadArtworks();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+class _FilterTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildArtworkCard(Map<String, dynamic> artwork) {
-    // Safe type casting - handle both int and String IDs
-    final artworkId = artwork['id'].toString();
-    final isProcessing = _processingArtworks.contains(artworkId);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image with processing overlay
-          Stack(
-            children: [
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: artwork['media_url'] != null
-                      ? CustomNetworkImage(
-                          imageUrl: artwork['media_url'],
-                          fit: BoxFit.cover,
-                          borderRadius: 12,
-                        )
-                      : Container(
-                          color: Colors.grey[200],
-                          child: Icon(Icons.image, size: 48, color: Colors.grey[400]),
-                        ),
-                ),
-              ),
-              // Processing overlay
-              if (isProcessing)
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    ),
-                    child: const Center(
-                      child: CircularProgressIndicator(color: Colors.white),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(artwork['title'] ?? 'Untitled', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 4),
-                  Text('By: ${artwork['artist_username'] ?? 'Unknown'}', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const Spacer(),
-                  if (_selectedFilter == 'pending')
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isProcessing ? null : () => _updateArtworkStatus(artworkId, 'approved'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFF059669),
-                              disabledBackgroundColor: Colors.grey[300],
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: isProcessing
-                                ? SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]),
-                                  )
-                                : Text('Setujui', style: GoogleFonts.poppins(fontSize: 12, color: Colors.white)),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isProcessing ? null : () => _updateArtworkStatus(artworkId, 'rejected'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFDC2626),
-                              disabledBackgroundColor: Colors.grey[300],
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                            ),
-                            child: isProcessing
-                                ? SizedBox(
-                                    height: 16,
-                                    width: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]),
-                                  )
-                                : Text('Tolak', style: GoogleFonts.poppins(fontSize: 12, color: Colors.white)),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    ElevatedButton(
-                      onPressed: isProcessing ? null : () => _deleteArtwork(artworkId),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        disabledBackgroundColor: Colors.grey[300],
-                        minimumSize: const Size(double.infinity, 32),
-                      ),
-                      child: isProcessing
-                          ? SizedBox(
-                              height: 16,
-                              width: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]),
-                            )
-                          : Text('Hapus', style: GoogleFonts.poppins(fontSize: 12, color: Colors.white)),
-                    ),
-                ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArtworkCard extends StatefulWidget {
+  final Map<String, dynamic> artwork;
+  final bool isProcessing;
+  final bool showActions;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
+
+  const _ArtworkCard({
+    required this.artwork,
+    required this.isProcessing,
+    required this.showActions,
+    required this.onApprove,
+    required this.onReject,
+  });
+
+  @override
+  State<_ArtworkCard> createState() => _ArtworkCardState();
+}
+
+class _ArtworkCardState extends State<_ArtworkCard> {
+  bool _isHovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: GlassCard(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CustomNetworkImage(
+                    imageUrl: widget.artwork['image_url'] ?? '',
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Title
+              Text(
+                widget.artwork['title'] ?? 'Untitled',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              
+              // Artist
+              Row(
+                children: [
+                  const Icon(
+                    Icons.person_outline,
+                    color: Colors.white54,
+                    size: 14,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      widget.artwork['artist_username'] ?? 'Unknown',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              
+              if (widget.showActions) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: GlassButton(
+                        text: 'Approve',
+                        onPressed: widget.isProcessing ? () {} : widget.onApprove,
+                        type: GlassButtonType.success,
+                        icon: Icons.check,
+                        isLoading: widget.isProcessing,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: GlassButton(
+                        text: 'Reject',
+                        onPressed: widget.isProcessing ? () {} : widget.onReject,
+                        type: GlassButtonType.danger,
+                        icon: Icons.close,
+                        isLoading: widget.isProcessing,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

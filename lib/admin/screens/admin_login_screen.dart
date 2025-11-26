@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_main_screen.dart';
+import '../widgets/animated_background.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/glass_button.dart';
+import '../widgets/glass_text_field.dart';
 
 class AdminLoginScreen extends StatefulWidget {
   const AdminLoginScreen({super.key});
@@ -10,30 +14,80 @@ class AdminLoginScreen extends StatefulWidget {
   State<AdminLoginScreen> createState() => _AdminLoginScreenState();
 }
 
-class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerProviderStateMixin {
+class _AdminLoginScreenState extends State<AdminLoginScreen> 
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  late final AnimationController _animController;
+  late final AnimationController _fadeController;
+  late final AnimationController _slideController;
+  late final AnimationController _floatController;
+  late final AnimationController _scaleController;
+  
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
+  late final Animation<double> _floatAnimation;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animController = AnimationController(vsync: this, duration: const Duration(milliseconds: 700));
-    _fadeAnimation = CurvedAnimation(parent: _animController, curve: Curves.easeOut);
-    _slideAnimation = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _animController, curve: Curves.easeOut));
-    _animController.forward();
+    
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    );
+    
+    _slideController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    
+    _floatController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 3),
+    )..repeat(reverse: true);
+    
+    _scaleController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    
+    _fadeAnimation = CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeOut,
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeOutCubic,
+    ));
+    
+    _floatAnimation = Tween<double>(begin: 0, end: 15).animate(
+      CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
+    );
+    
+    _fadeController.forward();
+    _slideController.forward();
+    _scaleController.forward();
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _fadeController.dispose();
+    _slideController.dispose();
+    _floatController.dispose();
+    _scaleController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -91,150 +145,259 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> with SingleTickerPr
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-        ],
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.error_outline,
+                  color: Colors.white,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                message,
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              GlassButton(
+                text: 'OK',
+                onPressed: () => Navigator.pop(context),
+                type: GlassButtonType.primary,
+                width: double.infinity,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color(0xFF1E3A8A);
-    const primaryPurple = Color(0xFF9333EA);
-
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [primaryBlue, primaryPurple]),
-        ),
+      body: AnimatedBackground(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(
                 position: _slideAnimation,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Logo & Brand Container (White Box)
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.18),
-                            blurRadius: 24,
-                            offset: const Offset(0, 12),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxHeight: 100, maxWidth: 100),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(40),
-                              child: Image.asset(
-                                'assets/images/logo_app.png',
-                                fit: BoxFit.cover,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Floating Logo
+                        AnimatedBuilder(
+                          animation: _floatAnimation,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: Offset(0, _floatAnimation.value),
+                              child: child,
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF6366F1),
+                                  Color(0xFF8B5CF6),
+                                ],
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFF6366F1).withOpacity(0.3),
+                                  blurRadius: 30,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: Image.asset(
+                              'assets/images/logo_app.png',
+                              width: 80,
+                              height: 80,
                             ),
                           ),
-                          const SizedBox(height: 16),
-                          RichText(
-                            text: TextSpan(
-                              style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 32),
+                        
+                        // Title
+                        ShaderMask(
+                          shaderCallback: (bounds) => const LinearGradient(
+                            colors: [
+                              Color(0xFF6366F1),
+                              Color(0xFF8B5CF6),
+                              Color(0xFFEC4899),
+                            ],
+                          ).createShader(bounds),
+                          child: Text(
+                            'UNP ART SPACE',
+                            style: GoogleFonts.poppins(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withOpacity(0.1),
+                                Colors.white.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.2),
+                            ),
+                          ),
+                          child: Text(
+                            'Admin Panel',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 48),
+                        
+                        // Login Form
+                        GlassCard(
+                          padding: const EdgeInsets.all(32),
+                          child: Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
-                                TextSpan(text: 'UNP ', style: TextStyle(color: primaryBlue)),
-                                TextSpan(text: 'ART SPACE', style: TextStyle(color: primaryPurple)),
+                                Text(
+                                  'Admin Login',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Masuk sebagai Administrator',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: Colors.white.withOpacity(0.6),
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 32),
+                                
+                                GlassTextField(
+                                  controller: _emailController,
+                                  label: 'Email',
+                                  hint: 'example@domain.com',
+                                  prefixIcon: Icons.email_outlined,
+                                  keyboardType: TextInputType.emailAddress,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Email tidak boleh kosong';
+                                    }
+                                    if (!value.contains('@')) {
+                                      return 'Format email tidak valid';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 20),
+                                
+                                GlassTextField(
+                                  controller: _passwordController,
+                                  label: 'Password',
+                                  hint: 'Masukkan password',
+                                  prefixIcon: Icons.lock_outline,
+                                  suffixIcon: _isPasswordVisible
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  onSuffixTap: () => setState(
+                                    () => _isPasswordVisible = !_isPasswordVisible,
+                                  ),
+                                  obscureText: !_isPasswordVisible,
+                                  validator: (value) {
+                                    if (value == null || value.isEmpty) {
+                                      return 'Password tidak boleh kosong';
+                                    }
+                                    if (value.length < 6) {
+                                      return 'Password minimal 6 karakter';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                                const SizedBox(height: 32),
+                                
+                                GlassButton(
+                                  text: 'Login Sekarang',
+                                  onPressed: _handleLogin,
+                                  type: GlassButtonType.primary,
+                                  icon: Icons.login,
+                                  isLoading: _isLoading,
+                                  width: double.infinity,
+                                  height: 54,
+                                  fontSize: 16,
+                                ),
                               ],
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [primaryBlue.withOpacity(0.1), primaryPurple.withOpacity(0.1)],
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: primaryBlue.withOpacity(0.3), width: 1),
-                            ),
-                            child: Text('Admin Panel', style: GoogleFonts.poppins(fontSize: 12, color: primaryBlue, fontWeight: FontWeight.w600)),
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    Container(
-                      constraints: const BoxConstraints(maxWidth: 480),
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 24, offset: const Offset(0, 12))]),
-                      child: Padding(
-                        padding: const EdgeInsets.all(32.0),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                            Text('Admin Login', style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700), textAlign: TextAlign.center),
-                            const SizedBox(height: 6),
-                            Text('Masuk sebagai Administrator', style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey), textAlign: TextAlign.center),
-                            const SizedBox(height: 22),
-
-                            Text('Email', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(hintText: 'example@domain.com', hintStyle: GoogleFonts.poppins(color: Colors.grey[400]), filled: true, fillColor: Colors.grey[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: primaryBlue.withOpacity(0.9), width: 2)), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return 'Email tidak boleh kosong';
-                                if (!value.contains('@')) return 'Format email tidak valid';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                              Text('Password', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
-                              TextButton(onPressed: () {}, style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap), child: Text('Forgot ?', style: GoogleFonts.poppins(fontSize: 12, color: primaryBlue)))
-                            ]),
-                            const SizedBox(height: 8),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: !_isPasswordVisible,
-                              decoration: InputDecoration(hintText: 'Enter your password', hintStyle: GoogleFonts.poppins(color: Colors.grey[400]), filled: true, fillColor: Colors.grey[50], border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)), enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey[300]!)), focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: primaryPurple.withOpacity(0.9), width: 2)), contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14), suffixIcon: IconButton(icon: Icon(_isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: Colors.grey[500]), onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible))),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) return 'Password tidak boleh kosong';
-                                if (value.length < 6) return 'Password minimal 6 karakter';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 22),
-
-                            SizedBox(
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: _isLoading ? null : _handleLogin,
-                                style: ElevatedButton.styleFrom(backgroundColor: primaryBlue, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0),
-                                child: _isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white))) : Text('Login now', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                              ),
-                            ),
-                          ]),
                         ),
-                      ),
+                        
+                        const SizedBox(height: 24),
+                        
+                        Text(
+                          '© 2024 UNP Art Space. All rights reserved.',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.4),
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),

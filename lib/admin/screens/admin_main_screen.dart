@@ -8,6 +8,10 @@ import 'work_moderation_screen.dart';
 import 'event_moderation_screen.dart';
 import 'user_management_screen.dart';
 import 'settings_screen.dart';
+import '../widgets/animated_background.dart';
+import '../widgets/glass_sidebar.dart';
+import '../widgets/glass_button.dart';
+import '../widgets/glass_card.dart';
 
 class AdminMainScreen extends StatefulWidget {
   const AdminMainScreen({super.key});
@@ -19,13 +23,34 @@ class AdminMainScreen extends StatefulWidget {
 class _AdminMainScreenState extends State<AdminMainScreen> {
   int _selectedIndex = 0;
   bool _isCollapsed = false;
+  String _currentRoute = 'dashboard';
 
-  final List<Map<String, dynamic>> _menuItems = [
-    {'icon': Icons.dashboard_rounded, 'label': 'Dashboard', 'color': Color(0xFF1E3A8A)},
-    {'icon': Icons.palette_rounded, 'label': 'Moderasi Karya', 'color': Color(0xFF9333EA)},
-    {'icon': Icons.event_rounded, 'label': 'Moderasi Event', 'color': Color(0xFFDC2626)},
-    {'icon': Icons.people_rounded, 'label': 'Manajemen Pengguna', 'color': Color(0xFF059669)},
-    {'icon': Icons.settings_rounded, 'label': 'Pengaturan', 'color': Color(0xFFEA580C)},
+  final List<GlassSidebarItem> _sidebarItems = [
+    GlassSidebarItem(
+      icon: Icons.dashboard_rounded,
+      title: 'Dashboard',
+      route: 'dashboard',
+    ),
+    GlassSidebarItem(
+      icon: Icons.palette_rounded,
+      title: 'Moderasi Karya',
+      route: 'work_moderation',
+    ),
+    GlassSidebarItem(
+      icon: Icons.event_rounded,
+      title: 'Moderasi Event',
+      route: 'event_moderation',
+    ),
+    GlassSidebarItem(
+      icon: Icons.people_rounded,
+      title: 'Manajemen Pengguna',
+      route: 'user_management',
+    ),
+    GlassSidebarItem(
+      icon: Icons.settings_rounded,
+      title: 'Pengaturan',
+      route: 'settings',
+    ),
   ];
 
   final List<Widget> _screens = [
@@ -106,76 +131,67 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     final user = Supabase.instance.client.auth.currentUser;
 
     return Scaffold(
-      body: Row(
-        children: [
-          // Sidebar
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            width: _isCollapsed ? 80 : 260,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
-              ),
-            ),
-            child: Column(
+      body: AnimatedBackground(
+        child: Row(
+          children: [
+            // Glass Sidebar
+            Column(
               children: [
-                // Header
+                Expanded(
+                  child: GlassSidebar(
+                    items: _sidebarItems,
+                    currentRoute: _sidebarItems[_selectedIndex].route,
+                    onItemTap: (route) {
+                      final index = _sidebarItems.indexWhere(
+                        (item) => item.route == route,
+                      );
+                      if (index != -1) {
+                        setState(() {
+                          _selectedIndex = index;
+                          _currentRoute = route;
+                        });
+                      }
+                    },
+                    isCollapsed: _isCollapsed,
+                  ),
+                ),
+                
+                // User Info & Logout Section
                 Container(
-                  padding: EdgeInsets.all(_isCollapsed ? 16 : 24),
+                  width: _isCollapsed ? 80 : 260,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                  ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          if (!_isCollapsed) ...[
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'UNP ART SPACE',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Admin Panel',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white70,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          IconButton(
-                            icon: Icon(
-                              _isCollapsed ? Icons.menu : Icons.menu_open,
-                              color: Colors.white,
-                            ),
-                            onPressed: () => setState(() => _isCollapsed = !_isCollapsed),
-                          ),
-                        ],
-                      ),
                       if (!_isCollapsed) ...[
-                        const SizedBox(height: 16),
-                        Container(
+                        GlassCard(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                backgroundColor: Colors.white,
-                                child: Icon(Icons.person, color: Color(0xFF1E3A8A)),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [
+                                      Color(0xFF6366F1),
+                                      Color(0xFF8B5CF6),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: const Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -193,7 +209,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                                     Text(
                                       user?.email ?? '',
                                       style: GoogleFonts.poppins(
-                                        color: Colors.white70,
+                                        color: Colors.white.withOpacity(0.6),
                                         fontSize: 11,
                                       ),
                                       maxLines: 1,
@@ -205,104 +221,70 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                             ],
                           ),
                         ),
+                        const SizedBox(height: 12),
                       ],
-                    ],
-                  ),
-                ),
-
-                // Menu Items
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: _isCollapsed ? 8 : 16, vertical: 8),
-                    itemCount: _menuItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _menuItems[index];
-                      final isSelected = _selectedIndex == index;
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => setState(() => _selectedIndex = index),
-                            borderRadius: BorderRadius.circular(12),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: EdgeInsets.all(_isCollapsed ? 16 : 12),
-                              decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : Colors.transparent,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    item['icon'],
-                                    color: isSelected ? item['color'] : Colors.white,
-                                    size: 24,
-                                  ),
-                                  if (!_isCollapsed) ...[
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: Text(
-                                        item['label'],
-                                        style: GoogleFonts.poppins(
-                                          color: isSelected ? item['color'] : Colors.white,
-                                          fontSize: 14,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-
-                // Logout Button
-                Padding(
-                  padding: EdgeInsets.all(_isCollapsed ? 8 : 16),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _handleLogout,
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: EdgeInsets.all(_isCollapsed ? 16 : 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: _isCollapsed ? MainAxisAlignment.center : MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.logout_rounded, color: Colors.white, size: 24),
-                            if (!_isCollapsed) ...[
-                              const SizedBox(width: 16),
-                              Text('Logout', style: GoogleFonts.poppins(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-                            ],
-                          ],
+                      
+                      SizedBox(
+                        width: double.infinity,
+                        child: GlassButton(
+                          text: _isCollapsed ? '' : 'Logout',
+                          onPressed: _handleLogout,
+                          type: GlassButtonType.danger,
+                          icon: Icons.logout_rounded,
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
 
-          // Main Content
-          Expanded(
-            child: Container(
-              color: Colors.grey[50],
+            // Toggle Collapse Button
+            Positioned(
+              left: _isCollapsed ? 68 : 248,
+              top: 12,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _isCollapsed = !_isCollapsed),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.2),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF6366F1).withOpacity(0.3),
+                          blurRadius: 10,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      _isCollapsed
+                          ? Icons.arrow_forward_ios
+                          : Icons.arrow_back_ios,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Main Content
+            Expanded(
               child: _screens[_selectedIndex],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
