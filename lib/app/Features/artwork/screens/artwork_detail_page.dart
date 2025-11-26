@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
 import '../../profile/screens/enhanced_artist_profile_page.dart';
@@ -7,6 +8,7 @@ import '../../auth/screens/login_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import '../../../shared/widgets/custom_network_image.dart';
@@ -44,6 +46,8 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   bool _isGuestMode = false;
   int _likeCount = 0;
   int _commentCount = 0;
+  int _viewCount = 0;
+  int _shareCount = 0;
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   bool _isVideoPlaying = false;
@@ -82,6 +86,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       _initializeLikeStatus();
       _loadCommentCount();
     }
+
+    // Increment view counter (for both guest and logged-in users)
+    _incrementViewCount();
 
     // Setup animation
     _animationController = AnimationController(
@@ -512,15 +519,57 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
                         const SizedBox(height: 16),
 
-                        // Stats Glass Card
-                        _buildInfoGlassCard(
-                          icon: Icons.favorite_rounded,
-                          iconGradient: const LinearGradient(
-                            colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                        // Engagement Stats Row
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatMiniCard(
+                                  icon: Icons.favorite_rounded,
+                                  count: _likeCount,
+                                  label: 'Likes',
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildStatMiniCard(
+                                  icon: Icons.visibility_rounded,
+                                  count: _viewCount,
+                                  label: 'Views',
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _buildStatMiniCard(
+                                  icon: Icons.share_rounded,
+                                  count: _shareCount,
+                                  label: 'Shares',
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          title: 'Interaksi',
-                          content:
-                              '$_likeCount Likes • $_commentCount Komentar',
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Comments Count Card
+                        _buildInfoGlassCard(
+                          icon: Icons.comment_rounded,
+                          iconGradient: const LinearGradient(
+                            colors: [Color(0xFFF59E0B), Color(0xFFFBBF24)],
+                          ),
+                          title: 'Komentar',
+                          content: '$_commentCount Komentar',
                         ),
 
                         const SizedBox(height: 12),
@@ -1027,6 +1076,69 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   }
 
   // Info Glass Card with Icon
+  Widget _buildStatMiniCard({
+    required IconData icon,
+    required int count,
+    required String label,
+    required Gradient gradient,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.12),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: gradient.colors.first.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 20),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                count.toString(),
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  color: Colors.white60,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildInfoGlassCard({
     required IconData icon,
     required Gradient iconGradient,
@@ -1413,6 +1525,87 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     }
   }
 
+  Future<void> _incrementViewCount() async {
+    try {
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'];
+
+      // Fetch current count first
+      final current = await Supabase.instance.client
+          .from('artworks')
+          .select('views_count')
+          .eq('id', artworkId)
+          .maybeSingle();
+
+      final currentCount = (current?['views_count'] as int?) ?? 0;
+
+      // Increment view count in database
+      await Supabase.instance.client
+          .from('artworks')
+          .update({'views_count': currentCount + 1})
+          .eq('id', artworkId);
+
+      if (mounted) {
+        setState(() {
+          _viewCount = currentCount + 1;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error incrementing view count: $e');
+      // Fallback: Just fetch the current count
+      _loadViewCount();
+    }
+  }
+
+  Future<void> _loadViewCount() async {
+    try {
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'];
+      final response = await Supabase.instance.client
+          .from('artworks')
+          .select('views_count, shares_count')
+          .eq('id', artworkId)
+          .maybeSingle();
+
+      if (mounted && response != null) {
+        setState(() {
+          _viewCount = (response['views_count'] as int?) ?? 0;
+          _shareCount = (response['shares_count'] as int?) ?? 0;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading view count: $e');
+    }
+  }
+
+  Future<void> _incrementShareCount() async {
+    try {
+      final artwork = _loadedArtwork ?? widget.artwork;
+      if (artwork == null) return;
+
+      final artworkId = artwork['id'];
+
+      // Increment share count
+      final currentCount = _shareCount;
+      await Supabase.instance.client
+          .from('artworks')
+          .update({'shares_count': currentCount + 1})
+          .eq('id', artworkId);
+
+      if (mounted) {
+        setState(() {
+          _shareCount = currentCount + 1;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error incrementing share count: $e');
+    }
+  }
+
   Future<void> _toggleLike() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
@@ -1570,16 +1763,345 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   }
 
   void _shareArtwork(String title, String imageUrl) {
-    final shareText =
-        '''
+    // Show share options menu
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => _buildShareMenu(title, imageUrl),
+    );
+  }
+
+  Widget _buildShareMenu(String title, String imageUrl) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFF1a1a2e).withOpacity(0.95),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Title
+              Text(
+                'Share Artwork',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Share Options
+              _buildShareOption(
+                icon: Icons.link_rounded,
+                title: 'Copy Link',
+                subtitle: 'Copy artwork link to clipboard',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _copyArtworkLink(title);
+                },
+              ),
+              _buildShareOption(
+                icon: Icons.qr_code_rounded,
+                title: 'Show QR Code',
+                subtitle: 'Generate QR code for easy sharing',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8B5CF6), Color(0xFFA78BFA)],
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showQRCodeDialog(title);
+                },
+              ),
+              _buildShareOption(
+                icon: Icons.share_rounded,
+                title: 'Share via...',
+                subtitle: 'Share to other apps',
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _shareViaApps(title);
+                },
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Gradient gradient,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: gradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: Colors.white60,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: Colors.white.withOpacity(0.3),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _copyArtworkLink(String title) async {
+    try {
+      final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
+      final artworkUrl = 'https://unp-art-space.vercel.app/artwork/$artworkId';
+      await Clipboard.setData(ClipboardData(text: artworkUrl));
+      
+      await _incrementShareCount();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text(
+                  'Link copied to clipboard!',
+                  style: GoogleFonts.poppins(),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error copying link: $e');
+    }
+  }
+
+  void _showQRCodeDialog(String title) {
+    final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
+    final artworkUrl = 'https://unp-art-space.vercel.app/artwork/$artworkId';
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(25),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1a1a2e).withOpacity(0.95),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Scan QR Code',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white60,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // QR Code
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: QrImageView(
+                      data: artworkUrl,
+                      version: QrVersions.auto,
+                      size: 250,
+                      backgroundColor: Colors.white,
+                      errorCorrectionLevel: QrErrorCorrectLevel.H,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // URL display
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.1),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.link_rounded,
+                          color: Colors.white.withOpacity(0.6),
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            artworkUrl,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              color: Colors.white60,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Close button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareViaApps(String title) async {
+    try {
+      await _incrementShareCount();
+      
+      final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
+      final shareText = '''
 🎨 $title
 
 Lihat karya seni ini di UNP Art Space!
+https://unp-art-space.vercel.app/artwork/$artworkId
 
 #UNPArtSpace #KaryaSeni
-    ''';
+      ''';
 
-    Share.share(shareText, subject: title);
+      await Share.share(shareText, subject: title);
+    } catch (e) {
+      debugPrint('Error sharing: $e');
+    }
   }
 
   void _showDownloadDialog() {

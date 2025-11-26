@@ -27,12 +27,21 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
   Map<String, dynamic>? _artistProfile;
   List<Map<String, dynamic>> _artworks = [];
   Map<String, dynamic> _statistics = {};
+  
+  // Follow system
+  bool _isFollowing = false;
+  int _followerCount = 0;
+  int _followingCount = 0;
+  bool _isCurrentUser = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadArtistProfile();
+    _checkIfCurrentUser();
+    _checkFollowStatus();
+    _loadFollowCounts();
   }
 
   @override
@@ -88,6 +97,118 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
     } catch (e) {
       debugPrint('Error loading artist profile: $e');
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _checkIfCurrentUser() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser != null) {
+        setState(() {
+          _isCurrentUser = currentUser.id == widget.artistId;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error checking current user: $e');
+    }
+  }
+
+  Future<void> _checkFollowStatus() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null || _isCurrentUser) return;
+
+      final response = await supabase
+          .from('artist_follows')
+          .select('id')
+          .eq('follower_id', currentUser.id)
+          .eq('artist_id', widget.artistId)
+          .maybeSingle();
+
+      setState(() {
+        _isFollowing = response != null;
+      });
+    } catch (e) {
+      debugPrint('Error checking follow status: $e');
+    }
+  }
+
+  Future<void> _loadFollowCounts() async {
+    try {
+      // Get follower count
+      final followerResponse = await supabase
+          .from('artist_follows')
+          .select('id')
+          .eq('artist_id', widget.artistId);
+
+      // Get following count
+      final followingResponse = await supabase
+          .from('artist_follows')
+          .select('id')
+          .eq('follower_id', widget.artistId);
+
+      setState(() {
+        _followerCount = followerResponse.length;
+        _followingCount = followingResponse.length;
+      });
+    } catch (e) {
+      debugPrint('Error loading follow counts: $e');
+    }
+  }
+
+  Future<void> _toggleFollow() async {
+    try {
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please login to follow artists')),
+        );
+        return;
+      }
+
+      if (_isFollowing) {
+        // Unfollow
+        await supabase
+            .from('artist_follows')
+            .delete()
+            .eq('follower_id', currentUser.id)
+            .eq('artist_id', widget.artistId);
+
+        setState(() {
+          _isFollowing = false;
+          _followerCount = (_followerCount - 1).clamp(0, 999999);
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unfollowed successfully')),
+          );
+        }
+      } else {
+        // Follow
+        await supabase.from('artist_follows').insert({
+          'follower_id': currentUser.id,
+          'artist_id': widget.artistId,
+        });
+
+        setState(() {
+          _isFollowing = true;
+          _followerCount++;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Following successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error toggling follow: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
+        );
+      }
     }
   }
 
@@ -243,8 +364,79 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
               ),
             ),
           ],
+
+          // Follow Button (only show if not current user)
+          if (!_isCurrentUser && supabase.auth.currentUser != null) ...[
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _toggleFollow,
+              icon: Icon(
+                _isFollowing ? Icons.check_rounded : Icons.person_add_rounded,
+                size: 18,
+              ),
+              label: Text(
+                _isFollowing ? 'Following' : 'Follow',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _isFollowing 
+                    ? Colors.white.withOpacity(0.2) 
+                    : const Color(0xFF8B5CF6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
+                elevation: _isFollowing ? 0 : 4,
+              ),
+            ),
+          ],
+
+          // Followers/Following stats
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildFollowStat('Followers', _followerCount),
+              Container(
+                width: 1,
+                height: 20,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                color: Colors.white.withOpacity(0.3),
+              ),
+              _buildFollowStat('Following', _followingCount),
+            ],
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFollowStat(String label, int count) {
+    return Column(
+      children: [
+        Text(
+          count.toString(),
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            color: Colors.white60,
+          ),
+        ),
+      ],
     );
   }
 
