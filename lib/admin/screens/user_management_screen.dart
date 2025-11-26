@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../widgets/glass_app_bar.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/glass_button.dart';
+import '../widgets/glass_text_field.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -11,8 +15,10 @@ class UserManagementScreen extends StatefulWidget {
 
 class _UserManagementScreenState extends State<UserManagementScreen> {
   List<Map<String, dynamic>> _users = [];
+  List<Map<String, dynamic>> _filteredUsers = [];
   bool _isLoading = true;
   String _searchQuery = '';
+  String _roleFilter = 'all';
 
   @override
   void initState() {
@@ -23,7 +29,6 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
   Future<void> _loadUsers() async {
     setState(() => _isLoading = true);
     try {
-      // Query dari tabel users karena aplikasi utama menggunakan tabel users
       final response = await Supabase.instance.client
           .from('users')
           .select('*')
@@ -31,16 +36,31 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
       setState(() {
         _users = List<Map<String, dynamic>>.from(response as List);
+        _applyFilters();
         _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      _filteredUsers = _users.where((user) {
+        final matchesSearch = _searchQuery.isEmpty ||
+            (user['name']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
+            (user['email']?.toString().toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+        
+        final matchesRole = _roleFilter == 'all' || user['role'] == _roleFilter;
+        
+        return matchesSearch && matchesRole;
+      }).toList();
+    });
   }
 
   Future<void> _updateUserRole(String userId, String newRole) async {
@@ -62,256 +82,475 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  Future<void> _deleteUser(String userId) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Pengguna', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text('Apakah Anda yakin ingin menghapus pengguna ini?', style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Hapus', style: GoogleFonts.poppins(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        await Supabase.instance.client.from('users').delete().eq('id', userId);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Pengguna berhasil dihapus'), backgroundColor: Colors.green),
-          );
-          _loadUsers();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-        }
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> get _filteredUsers {
-    if (_searchQuery.isEmpty) return _users;
-    return _users.where((user) {
-      final name = user['name']?.toString().toLowerCase() ?? '';
-      final email = user['email']?.toString().toLowerCase() ?? '';
-      final query = _searchQuery.toLowerCase();
-      return name.contains(query) || email.contains(query);
-    }).toList();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: 'Manajemen Pengguna',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: _loadUsers,
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header
-          Container(
+          // Search and Filter
+          Padding(
             padding: const EdgeInsets.all(24),
-            color: Colors.white,
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Manajemen Pengguna', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-                        Text('Kelola akun pengguna aplikasi', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
-                      ],
-                    ),
-                    IconButton(
-                      onPressed: _loadUsers,
-                      icon: const Icon(Icons.refresh_rounded),
-                      style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
-                    ),
-                  ],
+                // Search Bar
+                GlassTextField(
+                  hint: 'Cari nama atau email...',
+                  prefixIcon: Icons.search,
+                  onChanged: (value) {
+                    setState(() => _searchQuery = value);
+                    _applyFilters();
+                  },
                 ),
                 const SizedBox(height: 16),
-                // Search Bar
-                TextField(
-                  onChanged: (value) => setState(() => _searchQuery = value),
-                  decoration: InputDecoration(
-                    hintText: 'Cari pengguna...',
-                    hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    filled: true,
-                    fillColor: Colors.grey[100],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                
+                // Role Filter
+                GlassCard(
+                  padding: const EdgeInsets.all(8),
+                  child: Row(
+                    children: [
+                      _RoleFilterTab(
+                        label: 'Semua',
+                        isSelected: _roleFilter == 'all',
+                        onTap: () {
+                          setState(() => _roleFilter = 'all');
+                          _applyFilters();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _RoleFilterTab(
+                        label: 'Admin',
+                        isSelected: _roleFilter == 'admin',
+                        onTap: () {
+                          setState(() => _roleFilter = 'admin');
+                          _applyFilters();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _RoleFilterTab(
+                        label: 'Artist',
+                        isSelected: _roleFilter == 'artist',
+                        onTap: () {
+                          setState(() => _roleFilter = 'artist');
+                          _applyFilters();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _RoleFilterTab(
+                        label: 'Organizer',
+                        isSelected: _roleFilter == 'organizer',
+                        onTap: () {
+                          setState(() => _roleFilter = 'organizer');
+                          _applyFilters();
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _RoleFilterTab(
+                        label: 'Viewer',
+                        isSelected: _roleFilter == 'viewer',
+                        onTap: () {
+                          setState(() => _roleFilter = 'viewer');
+                          _applyFilters();
+                        },
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
 
-          // User List
+          // User Count
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Text(
+                  '${_filteredUsers.length} pengguna ditemukan',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Users Grid
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                  )
                 : _filteredUsers.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+                            Icon(
+                              Icons.people_outline,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                             const SizedBox(height: 16),
-                            Text('Tidak ada pengguna', style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600])),
+                            Text(
+                              'Tidak ada pengguna ditemukan',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       )
-                    : ListView.builder(
-                        padding: const EdgeInsets.all(24),
-                        itemCount: _filteredUsers.length,
-                        itemBuilder: (context, index) => _buildUserCard(_filteredUsers[index]),
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          int crossAxisCount = constraints.maxWidth > 1400
+                              ? 4
+                              : constraints.maxWidth > 1000
+                                  ? 3
+                                  : constraints.maxWidth > 600
+                                      ? 2
+                                      : 1;
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(24),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                              childAspectRatio: 1.2,
+                            ),
+                            itemCount: _filteredUsers.length,
+                            itemBuilder: (context, index) {
+                              final user = _filteredUsers[index];
+                              return _UserCard(
+                                user: user,
+                                onRoleChange: (newRole) => _updateUserRole(
+                                  user['id'].toString(),
+                                  newRole,
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildUserCard(Map<String, dynamic> user) {
-    final role = user['role'] ?? 'user';
-    Color roleColor;
-    IconData roleIcon;
+class _RoleFilterTab extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
 
+  const _RoleFilterTab({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            gradient: isSelected
+                ? const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  )
+                : null,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _UserCard extends StatefulWidget {
+  final Map<String, dynamic> user;
+  final Function(String) onRoleChange;
+
+  const _UserCard({
+    required this.user,
+    required this.onRoleChange,
+  });
+
+  @override
+  State<_UserCard> createState() => _UserCardState();
+}
+
+class _UserCardState extends State<_UserCard> {
+  bool _isHovered = false;
+
+  Color _getRoleColor(String? role) {
     switch (role) {
       case 'admin':
-        roleColor = Color(0xFFDC2626);
-        roleIcon = Icons.admin_panel_settings_rounded;
-        break;
+        return const Color(0xFFEF4444);
       case 'artist':
-        roleColor = Color(0xFF9333EA);
-        roleIcon = Icons.palette_rounded;
-        break;
+        return const Color(0xFF8B5CF6);
+      case 'organizer':
+        return const Color(0xFF3B82F6);
+      case 'viewer':
       default:
-        roleColor = Color(0xFF1E3A8A);
-        roleIcon = Icons.person_rounded;
+        return const Color(0xFF10B981);
     }
+  }
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Avatar
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: roleColor.withOpacity(0.1),
-            child: Icon(roleIcon, color: roleColor, size: 28),
-          ),
-          const SizedBox(width: 16),
+  IconData _getRoleIcon(String? role) {
+    switch (role) {
+      case 'admin':
+        return Icons.admin_panel_settings;
+      case 'artist':
+        return Icons.palette;
+      case 'organizer':
+        return Icons.event;
+      case 'viewer':
+      default:
+        return Icons.person;
+    }
+  }
 
-          // User Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user['name'] ?? 'No name',
-                  style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600),
+  void _showRoleChangeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: GlassCard(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Ubah Role',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  user['email'] ?? 'No email',
-                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                widget.user['name'] ?? 'Unknown User',
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
                 ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: roleColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    role.toUpperCase(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: roleColor,
+              ),
+              const SizedBox(height: 24),
+              ...[
+                {'role': 'admin', 'label': 'Admin', 'icon': Icons.admin_panel_settings},
+                {'role': 'artist', 'label': 'Artist', 'icon': Icons.palette},
+                {'role': 'organizer', 'label': 'Organizer', 'icon': Icons.event},
+                {'role': 'viewer', 'label': 'Viewer', 'icon': Icons.person},
+              ].map((roleData) {
+                final isCurrentRole = widget.user['role'] == roleData['role'];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: GlassButton(
+                      text: roleData['label'] as String,
+                      icon: roleData['icon'] as IconData,
+                      onPressed: isCurrentRole
+                          ? () {}
+                          : () {
+                              Navigator.pop(context);
+                              widget.onRoleChange(roleData['role'] as String);
+                            },
+                      type: isCurrentRole
+                          ? GlassButtonType.outline
+                          : GlassButtonType.primary,
                     ),
                   ),
-                ),
-              ],
-            ),
+                );
+              }).toList(),
+            ],
           ),
+        ),
+      ),
+    );
+  }
 
-          // Actions
-          if (role != 'admin') ...[
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded),
-              onSelected: (value) {
-                if (value == 'make_artist') {
-                  _updateUserRole(user['id'], 'artist');
-                } else if (value == 'make_user') {
-                  _updateUserRole(user['id'], 'user');
-                } else if (value == 'delete') {
-                  _deleteUser(user['id']);
-                }
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(
-                  value: 'make_artist',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.palette_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Jadikan Artist', style: GoogleFonts.poppins(fontSize: 13)),
-                    ],
+  @override
+  Widget build(BuildContext context) {
+    final role = widget.user['role'] ?? 'viewer';
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: GlassCard(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Profile Image
+              Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          _getRoleColor(role),
+                          _getRoleColor(role).withOpacity(0.7),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: widget.user['profile_image_url'] != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: Image.network(
+                              widget.user['profile_image_url'],
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Icon(
+                            _getRoleIcon(role),
+                            color: Colors.white,
+                            size: 30,
+                          ),
                   ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getRoleColor(role).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _getRoleColor(role),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      role.toUpperCase(),
+                      style: GoogleFonts.poppins(
+                        color: _getRoleColor(role),
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Name
+              Text(
+                widget.user['name'] ?? 'Unknown User',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                PopupMenuItem(
-                  value: 'make_user',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person_rounded, size: 20),
-                      const SizedBox(width: 8),
-                      Text('Jadikan User', style: GoogleFonts.poppins(fontSize: 13)),
-                    ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 4),
+              
+              // Email
+              Row(
+                children: [
+                  const Icon(
+                    Icons.email_outlined,
+                    color: Colors.white54,
+                    size: 14,
                   ),
-                ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.delete_rounded, size: 20, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Text('Hapus', style: GoogleFonts.poppins(fontSize: 13, color: Colors.red)),
-                    ],
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      widget.user['email'] ?? 'No email',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                ],
+              ),
+              
+              if (widget.user['specialization'] != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.work_outline,
+                      color: Colors.white54,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.user['specialization'],
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ],
+              
+              const Spacer(),
+              
+              // Change Role Button
+              SizedBox(
+                width: double.infinity,
+                child: GlassButton(
+                  text: 'Ubah Role',
+                  onPressed: _showRoleChangeDialog,
+                  type: GlassButtonType.outline,
+                  icon: Icons.swap_horiz,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

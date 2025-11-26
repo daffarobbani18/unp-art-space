@@ -345,7 +345,7 @@ class _ArtworkCardState extends State<_ArtworkCard> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: CustomNetworkImage(
-                    imageUrl: widget.artwork['image_url'] ?? '',
+                    imageUrl: widget.artwork['media_url'] ?? '',
                     width: double.infinity,
                     fit: BoxFit.cover,
                   ),

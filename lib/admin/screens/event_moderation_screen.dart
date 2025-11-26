@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
-import 'event_detail_screen.dart';
 import '../../app/shared/widgets/custom_network_image.dart';
+import '../widgets/glass_app_bar.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/glass_button.dart';
 
 class EventModerationScreen extends StatefulWidget {
   const EventModerationScreen({super.key});
@@ -27,9 +29,6 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
   Future<void> _loadEvents() async {
     setState(() => _isLoading = true);
     try {
-      print('🔍 Loading events with status: $_selectedFilter');
-      
-      // Map status baru ke status lama (backward compatibility)
       final statusMapping = {
         'pending': ['pending', 'menunggu_persetujuan', 'menunggu'],
         'approved': ['approved', 'disetujui'],
@@ -37,35 +36,16 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
       };
       
       final statusVariants = statusMapping[_selectedFilter] ?? [_selectedFilter];
-      print('🔎 Searching for status variants: $statusVariants');
       
-      // Query semua events dulu untuk debugging
-      final allEvents = await Supabase.instance.client
-          .from('events')
-          .select('id, title, status, organizer_id, created_at')
-          .order('created_at', ascending: false);
-      
-      print('📊 Total events in database: ${(allEvents as List).length}');
-      for (var event in allEvents) {
-        print('  - ${event['title']}: status="${event['status']}", organizer_id=${event['organizer_id']}');
-      }
-      
-      // Query events dengan multiple status
       final response = await Supabase.instance.client
           .from('events')
           .select('*')
           .inFilter('status', statusVariants)
           .order('created_at', ascending: false);
 
-      print('📦 Filtered response for status variants $statusVariants: $response');
-      
-      // Ambil data events
       final eventsList = List<Map<String, dynamic>>.from(response as List);
-      print('✅ Found ${eventsList.length} events matching status filter');
 
-      // Untuk setiap event, ambil data organizer
       for (var event in eventsList) {
-        print('🎉 Processing event: ${event['title']} (ID: ${event['id']})');
         if (event['organizer_id'] != null) {
           try {
             final userResponse = await Supabase.instance.client
@@ -76,7 +56,6 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
 
             if (userResponse != null && userResponse['name'] != null) {
               event['organizer_name'] = userResponse['name'];
-              print('👤 Organizer (from users): ${event['organizer_name']}');
             } else {
               final profileResponse = await Supabase.instance.client
                   .from('profiles')
@@ -84,21 +63,13 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
                   .eq('id', event['organizer_id'])
                   .maybeSingle();
 
-              if (profileResponse != null) {
-                event['organizer_name'] = profileResponse['username'];
-                print('👤 Organizer (from profiles): ${event['organizer_name']}');
-              } else {
-                event['organizer_name'] = 'Unknown Organizer';
-                print('⚠️ Profile not found for organizer_id: ${event['organizer_id']}');
-              }
+              event['organizer_name'] = profileResponse?['username'] ?? 'Unknown Organizer';
             }
           } catch (e) {
             event['organizer_name'] = 'Unknown Organizer';
-            print('❌ Error fetching profile: $e');
           }
         } else {
           event['organizer_name'] = 'Unknown Organizer';
-          print('⚠️ No organizer_id in event');
         }
       }
 
@@ -106,65 +77,42 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
         _events = eventsList;
         _isLoading = false;
       });
-      
-      print('✨ Loading complete. Total events: ${_events.length}');
     } catch (e) {
-      print('❌ Error loading events: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     }
   }
 
-  Future<void> _updateEventStatus(String eventId, String newStatus, {String? rejectionReason}) async {
-    if (_processingEvents.contains(eventId)) {
-      print('⚠️ Event $eventId is already being processed');
-      return;
-    }
+  Future<void> _updateEventStatus(String eventId, String newStatus) async {
+    if (_processingEvents.contains(eventId)) return;
 
     setState(() => _processingEvents.add(eventId));
 
     try {
-      print('🔄 Updating event $eventId to status: $newStatus');
-      
-      final dynamic idValue = int.tryParse(eventId) ?? eventId;
-      
-      final updateData = {
-        'status': newStatus,
-        if (rejectionReason != null) 'rejection_reason': rejectionReason,
-      };
-      
-      final response = await Supabase.instance.client
+      await Supabase.instance.client
           .from('events')
-          .update(updateData)
-          .eq('id', idValue)
+          .update({'status': newStatus})
+          .eq('id', eventId)
           .select();
-
-      print('✅ Update response: $response');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Event berhasil ${newStatus == 'approved' ? 'disetujui' : 'ditolak'}'),
             backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
-            duration: const Duration(seconds: 2),
           ),
         );
         
         await _loadEvents();
       }
     } catch (e) {
-      print('❌ Error updating event: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal mengupdate event: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -174,492 +122,346 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
     }
   }
 
-  Future<void> _showRejectDialog(String eventId) async {
-    final reasonController = TextEditingController();
-    final result = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Tolak Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Berikan alasan penolakan:', style: GoogleFonts.poppins(fontSize: 14)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Contoh: Tanggal event sudah lewat, informasi tidak lengkap, dll.',
-                hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                contentPadding: const EdgeInsets.all(12),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('Tolak Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    if (result == true && reasonController.text.trim().isNotEmpty) {
-      await _updateEventStatus(eventId, 'rejected', rejectionReason: reasonController.text.trim());
-    } else if (result == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Alasan penolakan wajib diisi'), backgroundColor: Colors.orange),
-        );
-      }
-    }
-  }
-
-  Future<void> _deleteEvent(String eventId) async {
-    if (_processingEvents.contains(eventId)) {
-      print('⚠️ Event $eventId is already being processed');
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Hapus Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text('Apakah Anda yakin ingin menghapus event ini secara permanen?', style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: Text('Hapus', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _processingEvents.add(eventId));
-
-      try {
-        print('🗑️ Deleting event: $eventId');
-        
-        final dynamic idValue = int.tryParse(eventId) ?? eventId;
-        
-        final response = await Supabase.instance.client
-            .from('events')
-            .delete()
-            .eq('id', idValue)
-            .select();
-
-        print('✅ Delete response: $response');
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Event berhasil dihapus'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          
-          await _loadEvents();
-        }
-      } catch (e) {
-        print('❌ Error deleting event: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Gagal menghapus event: $e'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _processingEvents.remove(eventId));
-        }
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.transparent,
+      appBar: GlassAppBar(
+        title: 'Moderasi Event',
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+            onPressed: _loadEvents,
+          ),
+        ],
+      ),
       body: Column(
         children: [
-          // Header
-          Container(
+          // Filter Tabs
+          Padding(
             padding: const EdgeInsets.all(24),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Moderasi Event', style: GoogleFonts.poppins(fontSize: 28, fontWeight: FontWeight.bold)),
-                        Text('Kelola dan review event yang diusulkan artist', style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600])),
-                      ],
+            child: GlassCard(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Pending',
+                      icon: Icons.pending_actions,
+                      isSelected: _selectedFilter == 'pending',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'pending';
+                        _loadEvents();
+                      }),
                     ),
-                    Row(
-                      children: [
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            try {
-                              final all = await Supabase.instance.client.from('events').select('*');
-                              if (mounted) {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: Text('Debug: All Events', style: GoogleFonts.poppins()),
-                                    content: SingleChildScrollView(
-                                      child: Text('Total: ${(all as List).length}\n\n${all.map((e) => 'Title: ${e['title']}\nStatus: ${e['status']}\nDate: ${e['event_date']}\n---').join('\n')}'),
-                                    ),
-                                    actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-                              }
-                            }
-                          },
-                          icon: const Icon(Icons.bug_report, size: 18),
-                          label: Text('Debug', style: GoogleFonts.poppins(fontSize: 12)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          onPressed: _loadEvents,
-                          icon: const Icon(Icons.refresh_rounded),
-                          style: IconButton.styleFrom(backgroundColor: Colors.grey[100]),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Approved',
+                      icon: Icons.check_circle,
+                      isSelected: _selectedFilter == 'approved',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'approved';
+                        _loadEvents();
+                      }),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // Filter Tabs
-                Row(
-                  children: [
-                    _buildFilterChip('Menunggu', 'pending', const Color(0xFFEA580C)),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Disetujui', 'approved', const Color(0xFF059669)),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('Ditolak', 'rejected', const Color(0xFFDC2626)),
-                  ],
-                ),
-              ],
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Rejected',
+                      icon: Icons.cancel,
+                      isSelected: _selectedFilter == 'rejected',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'rejected';
+                        _loadEvents();
+                      }),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
 
-          // Content
+          // Events List
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+                  )
                 : _events.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.event_busy_outlined, size: 64, color: Colors.grey[400]),
+                            Icon(
+                              Icons.event_busy,
+                              size: 80,
+                              color: Colors.white.withOpacity(0.3),
+                            ),
                             const SizedBox(height: 16),
-                            Text('Tidak ada event dengan status "$_selectedFilter"', style: GoogleFonts.poppins(fontSize: 16, color: Colors.grey[600])),
-                            const SizedBox(height: 8),
-                            Text('Klik tombol Debug untuk melihat semua data', style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[500])),
+                            Text(
+                              'Tidak ada event $_selectedFilter',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white.withOpacity(0.6),
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.all(24),
                         itemCount: _events.length,
-                        itemBuilder: (context, index) => _buildEventCard(_events[index]),
+                        itemBuilder: (context, index) {
+                          final event = _events[index];
+                          final eventId = event['id'].toString();
+                          final isProcessing = _processingEvents.contains(eventId);
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: _EventCard(
+                              event: event,
+                              isProcessing: isProcessing,
+                              showActions: _selectedFilter == 'pending',
+                              onApprove: () => _updateEventStatus(eventId, 'approved'),
+                              onReject: () => _updateEventStatus(eventId, 'rejected'),
+                            ),
+                          );
+                        },
                       ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildFilterChip(String label, String value, Color color) {
-    final isSelected = _selectedFilter == value;
-    return InkWell(
-      onTap: () {
-        setState(() => _selectedFilter = value);
-        _loadEvents();
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+class _FilterTab extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterTab({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey[100],
-          borderRadius: BorderRadius.circular(20),
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                )
+              : null,
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.poppins(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildEventCard(Map<String, dynamic> event) {
-    final eventId = event['id'].toString();
-    final isProcessing = _processingEvents.contains(eventId);
-    final eventDate = event['event_date'] != null 
-        ? DateFormat('dd MMM yyyy, HH:mm').format(DateTime.parse(event['event_date']))
-        : 'Tanggal belum ditentukan';
+class _EventCard extends StatefulWidget {
+  final Map<String, dynamic> event;
+  final bool isProcessing;
+  final bool showActions;
+  final VoidCallback onApprove;
+  final VoidCallback onReject;
 
-    return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailScreen(
-              event: event,
-              onEventUpdated: _loadEvents,
-            ),
-          ),
-        );
-        
-        if (result == true) {
-          _loadEvents(); // Refresh list jika ada perubahan
-        }
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header dengan gambar
-            if (event['image_url'] != null)
-              Stack(
-                children: [
-                  Hero(
-                    tag: 'event_${event['id']}',
-                    child: event['image_url'] != null
-                        ? CustomNetworkImage(
-                            imageUrl: event['image_url'],
-                            width: double.infinity,
-                            height: 200,
-                            fit: BoxFit.cover,
-                            borderRadius: 16,
-                          )
-                        : Container(
-                            height: 200,
-                            color: Colors.grey[200],
-                            child: Icon(Icons.event, size: 64, color: Colors.grey[400]),
-                          ),
-                  ),
-                  if (isProcessing)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      ),
-                      child: const Center(
-                        child: CircularProgressIndicator(color: Colors.white),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+  const _EventCard({
+    required this.event,
+    required this.isProcessing,
+    required this.showActions,
+    required this.onApprove,
+    required this.onReject,
+  });
 
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Title
-                Text(
-                  event['title'] ?? 'Untitled Event',
-                  style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
+  @override
+  State<_EventCard> createState() => _EventCardState();
+}
+
+class _EventCardState extends State<_EventCard> {
+  bool _isHovered = false;
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null) return 'Tanggal tidak tersedia';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('dd MMM yyyy, HH:mm').format(date);
+    } catch (e) {
+      return 'Tanggal tidak valid';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.02 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: GlassCard(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Event Image
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: CustomNetworkImage(
+                  imageUrl: widget.event['image_url'] ?? '',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.cover,
                 ),
-                const SizedBox(height: 8),
-
-                // Organizer & Date Info
-                Row(
+              ),
+              const SizedBox(width: 20),
+              
+              // Event Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.person_outline, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 6),
+                    // Title
                     Text(
-                      'By: ${event['organizer_name'] ?? 'Unknown'}',
-                      style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
+                      widget.event['title'] ?? 'Untitled Event',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        eventDate,
-                        style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
-                        overflow: TextOverflow.ellipsis,
+                    const SizedBox(height: 8),
+                    
+                    // Organizer
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.person_outline,
+                          color: Colors.white54,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.event['organizer_name'] ?? 'Unknown',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Date
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today,
+                          color: Colors.white54,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatDate(widget.event['event_date']),
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    
+                    // Location
+                    if (widget.event['location'] != null) ...[
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on_outlined,
+                            color: Colors.white54,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              widget.event['location'],
+                              style: GoogleFonts.poppins(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 13,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              
+              // Actions
+              if (widget.showActions) ...[
+                const SizedBox(width: 16),
+                Column(
+                  children: [
+                    SizedBox(
+                      width: 120,
+                      child: GlassButton(
+                        text: 'Approve',
+                        onPressed: widget.isProcessing ? () {} : widget.onApprove,
+                        type: GlassButtonType.success,
+                        icon: Icons.check,
+                        isLoading: widget.isProcessing,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: 120,
+                      child: GlassButton(
+                        text: 'Reject',
+                        onPressed: widget.isProcessing ? () {} : widget.onReject,
+                        type: GlassButtonType.danger,
+                        icon: Icons.close,
+                        isLoading: widget.isProcessing,
                       ),
                     ),
                   ],
                 ),
-
-                // Location
-                if (event['location'] != null) ...[
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          event['location'],
-                          style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[600]),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
-                // Content Preview
-                if (event['content'] != null) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    event['content'],
-                    style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[700]),
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-
-                // Rejection Reason (if rejected)
-                if (_selectedFilter == 'rejected' && event['rejection_reason'] != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red[50],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red[200]!),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.red[700]),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Alasan Penolakan:',
-                              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.red[700]),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          event['rejection_reason'],
-                          style: GoogleFonts.poppins(fontSize: 13, color: Colors.red[900]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-
-                // Action Buttons
-                if (_selectedFilter == 'pending')
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: isProcessing ? null : () => _updateEventStatus(eventId, 'approved'),
-                          icon: isProcessing
-                              ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                              : const Icon(Icons.check_circle_outline, size: 18),
-                          label: Text('Setujui', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF059669),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey[300],
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: isProcessing ? null : () => _showRejectDialog(eventId),
-                          icon: isProcessing
-                              ? SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]))
-                              : const Icon(Icons.cancel_outlined, size: 18),
-                          label: Text('Tolak', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDC2626),
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: Colors.grey[300],
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  ElevatedButton.icon(
-                    onPressed: isProcessing ? null : () => _deleteEvent(eventId),
-                    icon: isProcessing
-                        ? SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.grey[600]))
-                        : const Icon(Icons.delete_outline, size: 18),
-                    label: Text('Hapus Event', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey[300],
-                      minimumSize: const Size(double.infinity, 44),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  ),
               ],
-            ),
+            ],
           ),
-        ],
+        ),
       ),
-    ),
     );
   }
 }
