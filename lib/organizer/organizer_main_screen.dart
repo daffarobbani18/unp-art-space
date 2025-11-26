@@ -64,13 +64,20 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
       setState(() => _isLoggingOut = true);
 
       try {
-        await Supabase.instance.client.auth.signOut().timeout(
-          const Duration(seconds: 10),
-          onTimeout: () {
-            throw TimeoutException('Logout timeout');
-          },
-        );
+        // Perform signOut with safe error handling
+        try {
+          await Supabase.instance.client.auth.signOut().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Organizer logout timeout');
+              return null; // Return null instead of throwing
+            },
+          );
+        } catch (signOutError) {
+          debugPrint('SignOut error: $signOutError');
+        }
 
+        // Always navigate even if signOut fails (local logout)
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AuthGate()),
@@ -78,13 +85,13 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
           );
         }
       } catch (e) {
+        debugPrint('Logout error: $e');
+        // Still navigate on error
         if (mounted) {
           setState(() => _isLoggingOut = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Logout gagal: $e'),
-              backgroundColor: Colors.red,
-            ),
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AuthGate()),
+            (route) => false,
           );
         }
       }

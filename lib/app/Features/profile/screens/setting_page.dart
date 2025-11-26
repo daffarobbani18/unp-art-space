@@ -35,44 +35,43 @@ class SettingsPage extends StatelessWidget {
       );
 
       try {
-        // Perform logout with timeout to prevent freeze
-        await Supabase.instance.client.auth.signOut().timeout(
-          const Duration(seconds: 10),
-          onTimeout: () {
-            // Force logout even on timeout
-            debugPrint('Logout timeout, forcing navigation');
-          },
-        );
+        // Perform logout - wrap in try-catch to prevent crash
+        try {
+          await Supabase.instance.client.auth.signOut().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Logout timeout, continuing anyway');
+              return null; // Return null on timeout instead of throwing
+            },
+          );
+        } catch (signOutError) {
+          // Silently handle signOut errors - local logout will still work
+          debugPrint('SignOut error (continuing): $signOutError');
+        }
 
         // Small delay to ensure cleanup
-        await Future.delayed(const Duration(milliseconds: 200));
-
-        // Navigate back to login and remove all previous routes
-        if (context.mounted) {
-          Navigator.of(context).pop(); // Close loading dialog
-          
-          // Navigate to AuthGate to trigger auth state check
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const AuthGate(),
-            ),
-            (route) => false,
-          );
-        }
+        await Future.delayed(const Duration(milliseconds: 100));
       } catch (e) {
-        debugPrint('Logout error: $e');
-        
-        // Close loading dialog if still open
+        // Catch any other errors
+        debugPrint('Logout process error: $e');
+      } finally {
+        // Always navigate to login regardless of logout success/failure
         if (context.mounted) {
+          // Close loading dialog
           Navigator.of(context).pop();
           
-          // Even on error, navigate to AuthGate (local logout)
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const AuthGate(),
-            ),
-            (route) => false,
-          );
+          // Small delay before navigation
+          await Future.delayed(const Duration(milliseconds: 50));
+          
+          // Navigate to AuthGate (this will clear session and show login)
+          if (context.mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const AuthGate(),
+              ),
+              (route) => false,
+            );
+          }
         }
       }
     }

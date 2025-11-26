@@ -57,16 +57,33 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
 
     if (confirm == true) {
       try {
-        await Supabase.instance.client.auth.signOut();
+        // Perform signOut with error handling
+        try {
+          await Supabase.instance.client.auth.signOut().timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              debugPrint('Admin logout timeout');
+              return null;
+            },
+          );
+        } catch (signOutError) {
+          debugPrint('SignOut error: $signOutError');
+        }
+        
+        // Always navigate to login even if signOut fails
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+            (route) => false,
           );
         }
       } catch (e) {
+        debugPrint('Logout error: $e');
+        // Still navigate to login on error
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error logout: $e')),
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+            (route) => false,
           );
         }
       }
