@@ -20,10 +20,14 @@ class _NotificationPageState extends State<NotificationPage> {
   }
 
   Future<void> _loadNotifications() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     
     // Simulasi notifikasi - nanti bisa diganti dengan data real dari database
     await Future.delayed(const Duration(seconds: 1));
+    
+    // Check if widget is still mounted before calling setState
+    if (!mounted) return;
     
     setState(() {
       _notifications = [
@@ -107,6 +111,7 @@ class _NotificationPageState extends State<NotificationPage> {
           if (_notifications.any((n) => n['isRead'] == false))
             TextButton(
               onPressed: () {
+                if (!mounted) return;
                 setState(() {
                   for (var notification in _notifications) {
                     notification['isRead'] = true;
@@ -182,6 +187,7 @@ class _NotificationPageState extends State<NotificationPage> {
                         delay: Duration(milliseconds: index * 50),
                         child: BounceAnimation(
                           onTap: () {
+                            if (!mounted) return;
                             setState(() {
                               notification['isRead'] = true;
                             });
