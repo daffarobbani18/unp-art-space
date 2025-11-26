@@ -23,7 +23,46 @@ class SettingsPage extends StatelessWidget {
       if (shouldLogout != true) return;
       if (!context.mounted) return;
 
-      // Perform logout without showing loading dialog (cleaner)
+      // Show loading dialog with spinning animation
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => PopScope(
+          canPop: false,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Logging out...',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Perform logout
       try {
         await Supabase.instance.client.auth.signOut().timeout(
           const Duration(seconds: 3),
@@ -45,11 +84,15 @@ class SettingsPage extends StatelessWidget {
         return null;
       });
 
-      // Navigate directly - this will close any open dialogs
+      // Close loading dialog and navigate
       if (context.mounted) {
         scheduleMicrotask(() {
           if (context.mounted) {
             try {
+              // Close loading dialog first
+              Navigator.of(context).pop();
+              
+              // Then navigate to login
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(
                   builder: (context) => const AuthGate(),
