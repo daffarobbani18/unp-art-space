@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../navigation/auth_gate.dart';
+import '../../Features/onboarding/onboarding_page.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -43,10 +45,14 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(milliseconds: 2000),
     )..repeat(reverse: true);
 
-    _timer = Timer(const Duration(seconds: 7), () {
+    _timer = Timer(const Duration(seconds: 7), () async {
       // IMPORTANT: Check if still mounted AND still the active route
       // If user navigated away (e.g., deep link), don't force navigation
       if (!mounted) return;
+      
+      // Check if user has seen onboarding
+      final prefs = await SharedPreferences.getInstance();
+      final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
       
       // Only navigate if this splash screen is still the current route
       // This prevents interrupting deep links or other navigation
@@ -54,7 +60,9 @@ class _SplashScreenState extends State<SplashScreen>
         Navigator.of(context).pushReplacement(
           PageRouteBuilder(
             pageBuilder: (context, animation, secondaryAnimation) =>
-                const AuthGate(),
+                seenOnboarding 
+                    ? const AuthGate()
+                    : const OnboardingPage(),
             transitionsBuilder: (context, animation, secondaryAnimation, child) {
               return FadeTransition(
                 opacity: animation,
