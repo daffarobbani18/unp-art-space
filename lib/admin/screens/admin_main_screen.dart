@@ -79,11 +79,17 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         debugPrint('SignOut outer error: $signOutError');
       }
 
+      // Check if widget is still mounted after async signOut
+      if (!mounted) return;
+
       // Small delay
       await Future.delayed(const Duration(milliseconds: 50)).catchError((e) {
         debugPrint('Delay error: $e');
         return null;
       });
+
+      // Check again after delay
+      if (!mounted) return;
       
       // Navigate in next microtask
       if (mounted) {

@@ -78,11 +78,17 @@ class SettingsPage extends StatelessWidget {
         debugPrint('SignOut outer error: $signOutError');
       }
 
+      // Check if widget is still mounted after async signOut
+      if (!context.mounted) return;
+
       // Small delay
       await Future.delayed(const Duration(milliseconds: 100)).catchError((e) {
         debugPrint('Delay error: $e');
         return null;
       });
+
+      // Check again after delay
+      if (!context.mounted) return;
 
       // Close loading dialog and navigate
       if (context.mounted) {
