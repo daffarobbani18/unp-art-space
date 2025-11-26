@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:video_player/video_player.dart';
-import '../../artist/screens/artist_detail_page.dart';
+import '../../profile/screens/enhanced_artist_profile_page.dart';
 import '../../auth/screens/login_page.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -453,7 +453,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   if (artistId.isNotEmpty) {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => ArtistDetailPage(
+                                        builder: (_) => EnhancedArtistProfilePage(
                                           artistId: artistId,
                                         ),
                                       ),
@@ -2177,7 +2177,7 @@ class _CommentItem extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ArtistDetailPage(artistId: userId),
+                        builder: (context) => EnhancedArtistProfilePage(artistId: userId),
                       ),
                     );
                   }

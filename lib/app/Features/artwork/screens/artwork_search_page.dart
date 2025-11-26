@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'artwork_detail_page.dart';
+import '../../profile/screens/enhanced_artist_profile_page.dart';
 import '../../../shared/widgets/custom_network_image.dart';
 
 class ArtworkSearchPage extends StatefulWidget {
@@ -64,7 +65,7 @@ class _ArtworkSearchPageState extends State<ArtworkSearchPage> {
     try {
       final response = await supabase
           .from('artworks')
-          .select('id, title, description, media_url, thumbnail_url, category, artwork_type, likes_count, artist_name, created_at')
+          .select('id, title, description, media_url, thumbnail_url, category, artwork_type, likes_count, artist_name, artist_id, created_at')
           .eq('status', 'approved')
           .order('created_at', ascending: false);
 
@@ -512,14 +513,41 @@ class _ArtworkSearchPageState extends State<ArtworkSearchPage> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        artwork['artist_name'] ?? 'Unknown Artist',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.white60,
+                      GestureDetector(
+                        onTap: () {
+                          final artistId = artwork['artist_id'] as String?;
+                          if (artistId != null && artistId.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EnhancedArtistProfilePage(
+                                  artistId: artistId,
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.person_rounded,
+                              size: 12,
+                              color: Colors.white60,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                artwork['artist_name'] ?? 'Unknown Artist',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Colors.white60,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
                       Row(
