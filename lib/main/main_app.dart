@@ -9,6 +9,7 @@ import '../app/core/screens/splash_screen.dart';
 import '../organizer/organizer_main_screen.dart';
 import '../app/Features/artwork/screens/artwork_detail_page.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
+import '../app/Features/auth/screens/login_page.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
 late final SupabaseClient supabase;
@@ -53,6 +54,7 @@ class MyApp extends StatelessWidget {
       // home: const SplashScreen(),
       initialRoute: '/',
       routes: {
+        '/login': (context) => const LoginPage(),
         '/': (context) => const SplashScreen(),
         '/organizer_home': (context) => const OrganizerMainScreen(),
       },

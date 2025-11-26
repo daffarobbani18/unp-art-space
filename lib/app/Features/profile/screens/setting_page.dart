@@ -10,120 +10,82 @@ class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
 
   Future<void> _handleLogout(BuildContext context) async {
-    try {
-      // Show confirmation dialog
-      final shouldLogout = await showDialog<bool>(
-        context: context,
-        builder: (context) => _buildLogoutDialog(context),
-      ).catchError((e) {
-        debugPrint('Dialog error: $e');
-        return false;
-      });
+    // 1. Konfirmasi Logout
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (context) => _buildLogoutDialog(context),
+    );
 
-      if (shouldLogout != true) return;
-      if (!context.mounted) return;
+    if (shouldLogout != true) return;
+    if (!context.mounted) return;
 
-      // Show loading dialog with spinning animation
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (dialogContext) => PopScope(
-          canPop: false,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
-                  width: 1,
+    // 2. Tampilkan Loading Dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  strokeWidth: 3,
                 ),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    strokeWidth: 3,
+                const SizedBox(height: 16),
+                Text(
+                  'Logging out...',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Logging out...',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
-      );
+      ),
+    );
 
-      // Perform logout
-      try {
-        await Supabase.instance.client.auth.signOut().timeout(
-          const Duration(seconds: 3),
-          onTimeout: () {
-            debugPrint('Logout timeout, continuing anyway');
-            return null;
-          },
-        ).catchError((e) {
-          debugPrint('SignOut error (continuing): $e');
-          return null;
-        });
-      } catch (signOutError) {
-        debugPrint('SignOut outer error: $signOutError');
-      }
+    try {
+      // 3. LAKUKAN LOGOUT
+      await Supabase.instance.client.auth.signOut();
 
-      // Check if widget is still mounted after async signOut
-      if (!context.mounted) return;
-
-      // Small delay
-      await Future.delayed(const Duration(milliseconds: 100)).catchError((e) {
-        debugPrint('Delay error: $e');
-        return null;
-      });
-
-      // Check again after delay
-      if (!context.mounted) return;
-
-      // Close loading dialog
-      // AuthGate's StreamBuilder will automatically detect logout and navigate
+      // Beri jeda sedikit agar Supabase benar-benar clear session lokalnya
       if (context.mounted) {
-        try {
-          Navigator.of(context).pop();
-        } catch (e) {
-          debugPrint('Dialog close error: $e');
-        }
+        await Future.delayed(const Duration(milliseconds: 100));
       }
-      
-      // No manual navigation needed - AuthGate StreamBuilder will handle it
-    } catch (e, stackTrace) {
-      // Catch all errors in the entire logout process
-      debugPrint('Complete logout error: $e');
-      debugPrint('Stack trace: $stackTrace');
-      
-      // Schedule navigation in next microtask to avoid sync errors
-      if (context.mounted) {
-        scheduleMicrotask(() {
-          if (context.mounted) {
-            try {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const AuthGate(),
-                ),
-                (route) => false,
-              );
-            } catch (navError) {
-              debugPrint('Final navigation error: $navError');
-            }
-          }
-        });
-      }
+    } catch (e) {
+      debugPrint("Error saat logout: $e");
+      // Lanjut saja ke navigasi meskipun error, agar user tidak stuck
     }
+
+    if (!context.mounted) return;
+
+    // 4. BAGIAN PENTING: "SAPU BERSIH" NAVIGASI
+    // Jangan cuma pop dialog, tapi hancurkan seluruh route sebelumnya.
+
+    // A. Tutup Loading Dialog dulu
+    Navigator.of(context).pop();
+
+    // B. Pindah Paksa ke AuthGate & Hapus History
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (context) => const AuthGate(),
+      ),
+      (route) => false, // False = Hapus semua halaman sebelumnya dari memori
+    );
   }
 
   Widget _buildLogoutDialog(BuildContext context) {

@@ -69,35 +69,28 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
 
       setState(() => _isLoggingOut = true);
 
-      // Perform signOut with error handling
       try {
-        await Supabase.instance.client.auth.signOut().timeout(
-          const Duration(seconds: 3),
-          onTimeout: () {
-            debugPrint('Organizer logout timeout');
-            return null;
-          },
-        ).catchError((e) {
-          debugPrint('SignOut error: $e');
-          return null;
-        });
-      } catch (signOutError) {
-        debugPrint('SignOut outer error: $signOutError');
+        // Lakukan logout
+        await Supabase.instance.client.auth.signOut();
+
+        // Beri jeda sedikit agar Supabase benar-benar clear session
+        if (mounted) {
+          await Future.delayed(const Duration(milliseconds: 100));
+        }
+      } catch (e) {
+        debugPrint("Error saat organizer logout: $e");
+        // Lanjut ke navigasi meskipun error
       }
 
-      // Check if widget is still mounted after async signOut
       if (!mounted) return;
 
-      // Small delay
-      await Future.delayed(const Duration(milliseconds: 50)).catchError((e) {
-        debugPrint('Delay error: $e');
-        return null;
-      });
-
-      // Check again after delay
-      if (!mounted) return;
-
-      // No manual navigation - AuthGate StreamBuilder will detect logout automatically
+      // Pindah paksa ke AuthGate & hapus semua history
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(
+          builder: (context) => const AuthGate(),
+        ),
+        (route) => false, // Hapus semua halaman dari memori
+      );
       // This prevents double navigation crash
     } catch (e, stackTrace) {
       debugPrint('Complete logout error: $e');
