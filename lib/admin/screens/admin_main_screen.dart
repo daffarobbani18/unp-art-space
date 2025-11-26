@@ -91,21 +91,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       // Check again after delay
       if (!mounted) return;
       
-      // Navigate in next microtask
-      if (mounted) {
-        scheduleMicrotask(() {
-          if (mounted) {
-            try {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-                (route) => false,
-              );
-            } catch (navError) {
-              debugPrint('Navigation error: $navError');
-            }
-          }
-        });
-      }
+      // No manual navigation - AuthGate will detect logout and navigate automatically
+      // This prevents navigation crash from double navigation
     } catch (e, stackTrace) {
       debugPrint('Complete logout error: $e');
       debugPrint('Stack trace: $stackTrace');

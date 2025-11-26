@@ -90,27 +90,17 @@ class SettingsPage extends StatelessWidget {
       // Check again after delay
       if (!context.mounted) return;
 
-      // Close loading dialog and navigate
+      // Close loading dialog
+      // AuthGate's StreamBuilder will automatically detect logout and navigate
       if (context.mounted) {
-        scheduleMicrotask(() {
-          if (context.mounted) {
-            try {
-              // Close loading dialog first
-              Navigator.of(context).pop();
-              
-              // Then navigate to login
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(
-                  builder: (context) => const AuthGate(),
-                ),
-                (route) => false,
-              );
-            } catch (e) {
-              debugPrint('Navigation error: $e');
-            }
-          }
-        });
+        try {
+          Navigator.of(context).pop();
+        } catch (e) {
+          debugPrint('Dialog close error: $e');
+        }
       }
+      
+      // No manual navigation needed - AuthGate StreamBuilder will handle it
     } catch (e, stackTrace) {
       // Catch all errors in the entire logout process
       debugPrint('Complete logout error: $e');

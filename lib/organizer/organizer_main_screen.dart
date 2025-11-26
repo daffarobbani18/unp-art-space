@@ -97,21 +97,8 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
       // Check again after delay
       if (!mounted) return;
 
-      // Navigate in next microtask
-      if (mounted) {
-        scheduleMicrotask(() {
-          if (mounted) {
-            try {
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => const AuthGate()),
-                (route) => false,
-              );
-            } catch (navError) {
-              debugPrint('Navigation error: $navError');
-            }
-          }
-        });
-      }
+      // No manual navigation - AuthGate StreamBuilder will detect logout automatically
+      // This prevents double navigation crash
     } catch (e, stackTrace) {
       debugPrint('Complete logout error: $e');
       debugPrint('Stack trace: $stackTrace');
