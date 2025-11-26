@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -36,71 +37,87 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   ];
 
   Future<void> _handleLogout() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text('Apakah Anda yakin ingin keluar?', style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins(color: Colors.grey)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
+    try {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+          content: Text('Apakah Anda yakin ingin keluar?', style: GoogleFonts.poppins()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text('Batal', style: GoogleFonts.poppins(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: Text('Logout', style: GoogleFonts.poppins(color: Colors.white)),
+            ),
+          ],
+        ),
+      ).catchError((e) {
+        debugPrint('Dialog error: $e');
+        return false;
+      });
 
-    if (confirm == true && mounted) {
+      if (confirm != true) return;
+      if (!mounted) return;
+
+      // Perform signOut with error handling
       try {
-        // Perform signOut with complete error handling
-        try {
-          await Supabase.instance.client.auth.signOut().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('Admin logout timeout');
-              return null;
-            },
-          );
-        } catch (signOutError) {
-          debugPrint('SignOut error: $signOutError');
-        }
+        await Supabase.instance.client.auth.signOut().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            debugPrint('Admin logout timeout');
+            return null;
+          },
+        ).catchError((e) {
+          debugPrint('SignOut error: $e');
+          return null;
+        });
+      } catch (signOutError) {
+        debugPrint('SignOut outer error: $signOutError');
+      }
 
-        // Small delay
-        try {
-          await Future.delayed(const Duration(milliseconds: 50));
-        } catch (e) {
-          debugPrint('Delay error: $e');
-        }
-        
-        // Always navigate to login even if signOut fails
-        if (mounted) {
-          try {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-              (route) => false,
-            );
-          } catch (navError) {
-            debugPrint('Navigation error: $navError');
+      // Small delay
+      await Future.delayed(const Duration(milliseconds: 50)).catchError((e) {
+        debugPrint('Delay error: $e');
+        return null;
+      });
+      
+      // Navigate in next microtask
+      if (mounted) {
+        scheduleMicrotask(() {
+          if (mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+                (route) => false,
+              );
+            } catch (navError) {
+              debugPrint('Navigation error: $navError');
+            }
           }
-        }
-      } catch (e) {
-        debugPrint('Complete logout error: $e');
-        // Still navigate to login on error
-        if (mounted) {
-          try {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
-              (route) => false,
-            );
-          } catch (navError) {
-            debugPrint('Final navigation error: $navError');
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Complete logout error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
+      // Navigate in next microtask
+      if (mounted) {
+        scheduleMicrotask(() {
+          if (mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AdminLoginScreen()),
+                (route) => false,
+              );
+            } catch (navError) {
+              debugPrint('Final navigation error: $navError');
+            }
           }
-        }
+        });
       }
     }
   }

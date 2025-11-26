@@ -59,65 +59,73 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
       final shouldLogout = await showDialog<bool>(
         context: context,
         builder: (context) => _buildLogoutDialog(),
-      );
+      ).catchError((e) {
+        debugPrint('Dialog error: $e');
+        return false;
+      });
 
       if (shouldLogout != true) return;
       if (!mounted) return;
 
       setState(() => _isLoggingOut = true);
 
+      // Perform signOut with error handling
       try {
-        // Perform signOut with complete error handling
-        try {
-          await Supabase.instance.client.auth.signOut().timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              debugPrint('Organizer logout timeout');
-              return null;
-            },
-          );
-        } catch (signOutError) {
-          debugPrint('SignOut error: $signOutError');
-        }
-
-        // Small delay
-        try {
-          await Future.delayed(const Duration(milliseconds: 50));
-        } catch (e) {
-          debugPrint('Delay error: $e');
-        }
-
-        // Always navigate even if signOut fails
-        if (mounted) {
-          try {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AuthGate()),
-              (route) => false,
-            );
-          } catch (navError) {
-            debugPrint('Navigation error: $navError');
-          }
-        }
-      } catch (e) {
-        debugPrint('Logout error: $e');
-        // Still navigate on error
-        if (mounted) {
-          setState(() => _isLoggingOut = false);
-          try {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const AuthGate()),
-              (route) => false,
-            );
-          } catch (navError) {
-            debugPrint('Final navigation error: $navError');
-          }
-        }
+        await Supabase.instance.client.auth.signOut().timeout(
+          const Duration(seconds: 3),
+          onTimeout: () {
+            debugPrint('Organizer logout timeout');
+            return null;
+          },
+        ).catchError((e) {
+          debugPrint('SignOut error: $e');
+          return null;
+        });
+      } catch (signOutError) {
+        debugPrint('SignOut outer error: $signOutError');
       }
-    } catch (e) {
-      // Catch all errors including dialog errors
-      debugPrint('Complete logout process error: $e');
+
+      // Small delay
+      await Future.delayed(const Duration(milliseconds: 50)).catchError((e) {
+        debugPrint('Delay error: $e');
+        return null;
+      });
+
+      // Navigate in next microtask
+      if (mounted) {
+        scheduleMicrotask(() {
+          if (mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AuthGate()),
+                (route) => false,
+              );
+            } catch (navError) {
+              debugPrint('Navigation error: $navError');
+            }
+          }
+        });
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Complete logout error: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       if (mounted) {
         setState(() => _isLoggingOut = false);
+        
+        // Navigate in next microtask
+        scheduleMicrotask(() {
+          if (mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const AuthGate()),
+                (route) => false,
+              );
+            } catch (navError) {
+              debugPrint('Final navigation error: $navError');
+            }
+          }
+        });
       }
     }
   }

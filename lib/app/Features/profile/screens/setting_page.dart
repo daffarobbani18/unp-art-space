@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -14,93 +15,74 @@ class SettingsPage extends StatelessWidget {
       final shouldLogout = await showDialog<bool>(
         context: context,
         builder: (context) => _buildLogoutDialog(context),
-      );
+      ).catchError((e) {
+        debugPrint('Dialog error: $e');
+        return false;
+      });
 
       if (shouldLogout != true) return;
       if (!context.mounted) return;
 
-      // Show loading indicator
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: const CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          ),
-        ),
-      );
-
-      // Perform logout with complete error handling
+      // Perform logout without showing loading dialog (cleaner)
       try {
         await Supabase.instance.client.auth.signOut().timeout(
-          const Duration(seconds: 5),
+          const Duration(seconds: 3),
           onTimeout: () {
             debugPrint('Logout timeout, continuing anyway');
             return null;
           },
-        );
+        ).catchError((e) {
+          debugPrint('SignOut error (continuing): $e');
+          return null;
+        });
       } catch (signOutError) {
-        debugPrint('SignOut error (continuing): $signOutError');
+        debugPrint('SignOut outer error: $signOutError');
       }
 
-      // Small delay to ensure cleanup
-      try {
-        await Future.delayed(const Duration(milliseconds: 100));
-      } catch (e) {
+      // Small delay
+      await Future.delayed(const Duration(milliseconds: 100)).catchError((e) {
         debugPrint('Delay error: $e');
-      }
+        return null;
+      });
 
-      // Close loading dialog
+      // Navigate directly - this will close any open dialogs
       if (context.mounted) {
-        try {
-          Navigator.of(context).pop();
-        } catch (e) {
-          debugPrint('Pop error: $e');
-        }
+        scheduleMicrotask(() {
+          if (context.mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const AuthGate(),
+                ),
+                (route) => false,
+              );
+            } catch (e) {
+              debugPrint('Navigation error: $e');
+            }
+          }
+        });
       }
-
-      // Small delay before navigation
-      try {
-        await Future.delayed(const Duration(milliseconds: 50));
-      } catch (e) {
-        debugPrint('Navigation delay error: $e');
-      }
-
-      // Navigate to AuthGate
-      if (context.mounted) {
-        try {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const AuthGate(),
-            ),
-            (route) => false,
-          );
-        } catch (e) {
-          debugPrint('Navigation error: $e');
-        }
-      }
-    } catch (e) {
+    } catch (e, stackTrace) {
       // Catch all errors in the entire logout process
       debugPrint('Complete logout error: $e');
-      // Try to navigate anyway
+      debugPrint('Stack trace: $stackTrace');
+      
+      // Schedule navigation in next microtask to avoid sync errors
       if (context.mounted) {
-        try {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const AuthGate(),
-            ),
-            (route) => false,
-          );
-        } catch (navError) {
-          debugPrint('Final navigation error: $navError');
-        }
+        scheduleMicrotask(() {
+          if (context.mounted) {
+            try {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const AuthGate(),
+                ),
+                (route) => false,
+              );
+            } catch (navError) {
+              debugPrint('Final navigation error: $navError');
+            }
+          }
+        });
       }
     }
   }
