@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../main/main_app.dart';
 import '../../artwork/screens/artwork_detail_page.dart';
+import '../../artwork/screens/artwork_search_page.dart';
 import '../../events/event_detail_screen.dart';
 import '../../../shared/widgets/custom_network_image.dart';
 
@@ -167,7 +168,14 @@ class _HomePageGlassState extends State<HomePageGlass> {
                                 children: [
                                   _buildGlassIconButton(
                                     icon: Icons.search_rounded,
-                                    onPressed: () {},
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const ArtworkSearchPage(),
+                                        ),
+                                      );
+                                    },
                                   ),
                                   const SizedBox(width: 8),
                                   _buildGlassIconButton(

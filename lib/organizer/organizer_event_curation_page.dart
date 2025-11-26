@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'organizer_analytics_page.dart';
 
 class OrganizerEventCurationPage extends StatefulWidget {
   final dynamic eventId;
@@ -481,6 +482,22 @@ class _OrganizerEventCurationPageState
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.analytics_rounded, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => OrganizerAnalyticsPage(
+                    eventId: widget.eventId.toString(),
+                    eventTitle: widget.eventTitle,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
