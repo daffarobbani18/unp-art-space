@@ -44,34 +44,48 @@ class _OrganizerAnalyticsPageState extends State<OrganizerAnalyticsPage> {
       final artworkIds = submissions.map((s) => s['artwork_id']).toList();
       
       List<Map<String, dynamic>> artworks = [];
-      if (artworkIds.isNotEmpty) {
-        artworks = await supabase
-            .from('artworks')
-            .select('id, title, likes_count, artist_name')
-            .inFilter('id', artworkIds);
-      }
-
-      // Get comments count
+      int totalLikes = 0;
       int totalComments = 0;
-      for (var artworkId in artworkIds) {
-        final comments = await supabase
-            .from('comments')
-            .select('id')
-            .eq('artwork_id', artworkId);
-        totalComments += comments.length;
+      
+      if (artworkIds.isNotEmpty) {
+        // Fetch artworks basic info
+        artworks = List<Map<String, dynamic>>.from(
+          await supabase
+              .from('artworks')
+              .select('id, title, artist_name')
+              .inFilter('id', artworkIds)
+        );
+
+        // Count real-time likes from likes table for each artwork
+        for (var artwork in artworks) {
+          final artworkId = artwork['id'];
+          
+          // Get likes count
+          final likesResponse = await supabase
+              .from('likes')
+              .select('id')
+              .eq('artwork_id', artworkId);
+          
+          final likesCount = likesResponse.length;
+          artwork['likes_count'] = likesCount;
+          totalLikes += likesCount;
+          
+          // Get comments count
+          final commentsResponse = await supabase
+              .from('comments')
+              .select('id')
+              .eq('artwork_id', artworkId);
+          
+          totalComments += commentsResponse.length;
+        }
       }
 
       // Calculate statistics
       final approved = submissions.where((s) => s['status'] == 'approved').length;
       final pending = submissions.where((s) => s['status'] == 'pending').length;
       final rejected = submissions.where((s) => s['status'] == 'rejected').length;
-      
-      final totalLikes = artworks.fold<int>(
-        0, 
-        (sum, artwork) => sum + ((artwork['likes_count'] as int?) ?? 0)
-      );
 
-      // Top artworks by likes
+      // Top artworks by likes (sort by real-time likes count)
       artworks.sort((a, b) => 
         ((b['likes_count'] as int?) ?? 0).compareTo((a['likes_count'] as int?) ?? 0)
       );
