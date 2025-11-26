@@ -338,8 +338,8 @@ class _OnboardingPageState extends State<OnboardingPage>
                 child: Transform.scale(
                   scale: _scaleAnimation.value,
                   child: Container(
-                    width: 280,
-                    height: 280,
+                    width: 380,
+                    height: 380,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: RadialGradient(
@@ -353,8 +353,8 @@ class _OnboardingPageState extends State<OnboardingPage>
                     child: Center(
                       child: Image.asset(
                         content.image,
-                        width: 220,
-                        height: 220,
+                        width: 320,
+                        height: 320,
                         fit: BoxFit.contain,
                       ),
                     ),
