@@ -65,31 +65,23 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
       });
 
       if (shouldLogout != true) return;
-      if (!mounted) return;
 
       setState(() => _isLoggingOut = true);
 
+      // Jalankan signOut dengan error handling
       try {
-        // Lakukan logout
         await Supabase.instance.client.auth.signOut();
-
-        // Beri jeda sedikit agar Supabase benar-benar clear session
-        if (mounted) {
-          await Future.delayed(const Duration(milliseconds: 100));
-        }
+        debugPrint('✅ Organizer logout berhasil');
       } catch (e) {
-        debugPrint("Error saat organizer logout: $e");
-        // Lanjut ke navigasi meskipun error
+        debugPrint("❌ Error saat organizer logout: $e");
+        // Tetap lanjut ke navigasi meskipun signOut gagal
       }
 
-      if (!mounted) return;
-
-      // Pindah paksa ke AuthGate & hapus semua history
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: (context) => const AuthGate(),
-        ),
-        (route) => false, // Hapus semua halaman dari memori
+      // FORCE NAVIGATION - Paksa navigasi menggunakan named route
+      // Hancurkan seluruh stack organizer
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login',
+        (route) => false, // Hapus SEMUA route dari memori
       );
       // This prevents double navigation crash
     } catch (e, stackTrace) {

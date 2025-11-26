@@ -61,29 +61,23 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       });
 
       if (confirm != true) return;
-      if (!mounted) return;
 
+      // Jalankan signOut dengan error handling
       try {
-        // Lakukan logout
         await Supabase.instance.client.auth.signOut();
-
-        // Beri jeda sedikit agar Supabase benar-benar clear session
-        if (mounted) {
-          await Future.delayed(const Duration(milliseconds: 100));
-        }
+        debugPrint('✅ Admin logout berhasil');
       } catch (e) {
-        debugPrint("Error saat admin logout: $e");
-        // Lanjut ke navigasi meskipun error
+        debugPrint("❌ Error saat admin logout: $e");
+        // Tetap lanjut ke navigasi meskipun signOut gagal
       }
 
-      if (!mounted) return;
-
-      // Pindah paksa ke AdminLoginScreen & hapus semua history
+      // FORCE NAVIGATION - Paksa navigasi untuk clear stack
+      // Hancurkan seluruh halaman admin dari memori
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const AdminLoginScreen(),
         ),
-        (route) => false, // Hapus semua halaman dari memori
+        (route) => false, // Hapus SEMUA route dari memori
       );
     } catch (e, stackTrace) {
       debugPrint('Complete logout error: $e');

@@ -3,7 +3,6 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../../../core/navigation/auth_gate.dart';
 import 'edit_profile_page.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -17,9 +16,8 @@ class SettingsPage extends StatelessWidget {
     );
 
     if (shouldLogout != true) return;
-    if (!context.mounted) return;
 
-    // 2. Tampilkan Loading Dialog
+    // 2. Tampilkan Loading Dialog (barrierDismissible: false)
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -58,33 +56,29 @@ class SettingsPage extends StatelessWidget {
       ),
     );
 
+    // 3. Jalankan signOut dengan error handling
     try {
-      // 3. LAKUKAN LOGOUT
       await Supabase.instance.client.auth.signOut();
-
-      // Beri jeda sedikit agar Supabase benar-benar clear session lokalnya
-      if (context.mounted) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
+      debugPrint('✅ Logout berhasil');
     } catch (e) {
-      debugPrint("Error saat logout: $e");
-      // Lanjut saja ke navigasi meskipun error, agar user tidak stuck
+      debugPrint("❌ Error saat logout: $e");
+      // Tetap lanjut ke navigasi meskipun signOut gagal
     }
 
-    if (!context.mounted) return;
+    // 4. Tutup loading dialog dengan rootNavigator
+    // Gunakan rootNavigator: true untuk memastikan pop dialog, bukan page
+    try {
+      Navigator.of(context, rootNavigator: true).pop();
+    } catch (e) {
+      debugPrint('Error pop dialog: $e');
+    }
 
-    // 4. BAGIAN PENTING: "SAPU BERSIH" NAVIGASI
-    // Jangan cuma pop dialog, tapi hancurkan seluruh route sebelumnya.
-
-    // A. Tutup Loading Dialog dulu
-    Navigator.of(context).pop();
-
-    // B. Pindah Paksa ke AuthGate & Hapus History
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(
-        builder: (context) => const AuthGate(),
-      ),
-      (route) => false, // False = Hapus semua halaman sebelumnya dari memori
+    // 5. FORCE NAVIGATION - Hancurkan seluruh stack
+    // Gunakan pushNamedAndRemoveUntil untuk clear semua history
+    // PAKSA navigasi meskipun mounted check, agar user keluar dari page berpotensi crash
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/login',
+      (route) => false, // False = Hapus SEMUA route dari memori
     );
   }
 
