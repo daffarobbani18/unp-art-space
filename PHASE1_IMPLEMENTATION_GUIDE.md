@@ -124,11 +124,23 @@
    - Gradient accent boxes
    - Sorted by most artworks first
 
-#### Navigation:
-Currently accessed programmatically. Can be integrated to:
-- Artwork detail page (tap on artist name)
-- Event submissions (tap on artist profile)
-- Search results (tap on artist info)
+#### Access Points:
+**✅ Integrated and accessible from:**
+1. **Artwork Detail Page** → Tap on artist name/avatar below artwork title
+2. **Search Results Page** → Tap on artist name (with person icon) in artwork card
+3. **Comments Section** → Tap on artist avatar in comment list
+
+**Navigation Code:**
+```dart
+Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => EnhancedArtistProfilePage(
+      artistId: artistId, // UUID string
+    ),
+  ),
+);
+```
 
 #### Data Source:
 ```dart
@@ -314,21 +326,27 @@ IconButton(
 )
 ```
 
-**Future Integration (Enhanced Artist Profile):**
+**Enhanced Artist Profile Integration:**
 ```dart
-// Can be called from:
-// - artwork_detail_page.dart (tap artist name)
-// - artwork_search_page.dart (tap artist info)
-// - organizer_event_curation_page.dart (tap artist profile)
+// ✅ Already integrated in:
+// - artwork_detail_page.dart (tap artist name below title)
+// - artwork_detail_page.dart (tap artist avatar in comments)
+// - artwork_search_page.dart (tap artist name in search results)
 
+// Example usage:
 Navigator.push(
   context,
   MaterialPageRoute(
     builder: (context) => EnhancedArtistProfilePage(
-      artistId: artistId, // UUID string
+      artistId: artistId, // UUID string from artist_id field
     ),
   ),
 );
+
+// Future integration possibilities:
+// - organizer_event_curation_page.dart (tap artist profile in submission)
+// - home_page.dart (featured artists section)
+// - event_detail_screen.dart (participating artists list)
 ```
 
 ---
