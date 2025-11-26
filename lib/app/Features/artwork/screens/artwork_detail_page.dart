@@ -248,8 +248,17 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         (artwork['image_url'] as String?) ??
         '';
 
-    // User/Artist info
-    final users = (artwork['users'] as Map<String, dynamic>?) ?? {};
+    // User/Artist info - handle both Map and null cases safely
+    Map<String, dynamic> users = {};
+    try {
+      final usersData = artwork['users'];
+      if (usersData != null && usersData is Map) {
+        users = Map<String, dynamic>.from(usersData);
+      }
+    } catch (e) {
+      debugPrint('Error parsing users data: $e');
+    }
+    
     final artistName =
         (users['name'] as String?) ??
         (artwork['artist_name'] as String?) ??
@@ -258,7 +267,16 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     final artistAvatar = (users['profile_image_url'] as String?) ?? '';
     final artistBio =
         (users['bio'] as String?) ?? 'Seniman ini belum memiliki bio.';
-    final social = (users['social_media'] as Map<String, dynamic>?) ?? {};
+    
+    Map<String, dynamic> social = {};
+    try {
+      final socialData = users['social_media'];
+      if (socialData != null && socialData is Map) {
+        social = Map<String, dynamic>.from(socialData);
+      }
+    } catch (e) {
+      debugPrint('Error parsing social_media data: $e');
+    }
 
     final description = (artwork['description'] as String?) ?? '';
     final externalLink = (artwork['external_link'] as String?) ?? '';
