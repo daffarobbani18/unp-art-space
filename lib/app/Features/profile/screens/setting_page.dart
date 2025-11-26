@@ -54,25 +54,25 @@ class SettingsPage extends StatelessWidget {
       } catch (e) {
         // Catch any other errors
         debugPrint('Logout process error: $e');
-      } finally {
-        // Always navigate to login regardless of logout success/failure
-        if (context.mounted) {
-          // Close loading dialog
-          Navigator.of(context).pop();
-          
-          // Small delay before navigation
-          await Future.delayed(const Duration(milliseconds: 50));
-          
-          // Navigate to AuthGate (this will clear session and show login)
-          if (context.mounted) {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (context) => const AuthGate(),
-              ),
-              (route) => false,
-            );
-          }
-        }
+      }
+
+      // Always navigate to login regardless of logout success/failure
+      if (context.mounted) {
+        // Close loading dialog
+        Navigator.of(context).pop();
+      }
+
+      // Small delay before navigation
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Navigate to AuthGate (this will clear session and show login)
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(
+            builder: (context) => const AuthGate(),
+          ),
+          (route) => false,
+        );
       }
     }
   }
