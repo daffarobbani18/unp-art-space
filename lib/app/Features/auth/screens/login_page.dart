@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_page.dart';
+import '../../../core/navigation/main_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -64,18 +65,61 @@ Future<void> _login() async {
     if (!mounted) return;
 
     final user = response.user;
-    if (user != null && user.emailConfirmedAt == null) {
-      // Jika login berhasil tapi email belum diverifikasi,
-      // logout secara asynchronous tanpa await untuk mencegah freeze
-      supabase.auth.signOut().catchError((error) {
-        debugPrint('Error saat logout: $error');
-      });
+    if (user == null) {
+      throw Exception('Login gagal. User tidak ditemukan.');
+    }
+
+    // Cek verifikasi email
+    if (user.emailConfirmedAt == null) {
+      // Logout user yang belum verifikasi
+      await supabase.auth.signOut();
+      
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Akun belum aktif. Silakan verifikasi email Anda terlebih dahulu.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ));
+      }
+      return; // Stop execution
+    }
+
+    // Login berhasil dan email sudah diverifikasi
+    if (mounted) {
+      // Cek role user untuk routing
+      final profile = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+      
+      if (!mounted) return;
+      
+      final role = profile?['role'] as String?;
+      
+      // Navigate berdasarkan role
+      if (role == 'organizer') {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+        if (mounted) {
+          Future.delayed(Duration.zero, () {
+            Navigator.of(context).pushReplacementNamed('/organizer_home');
+          });
+        }
+      } else {
+        // Default untuk admin, artist, viewer - ke MainPage
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Akun belum aktif. Silakan verifikasi email Anda.'),
-          backgroundColor: Colors.orange,
-          duration: Duration(seconds: 3),
+          content: Text('Login berhasil!'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
         ));
       }
     }
