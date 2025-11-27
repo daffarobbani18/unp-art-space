@@ -1,0 +1,57 @@
+# GitHub Actions Workflow untuk Deploy ke Azure VM
+name: Deploy Flutter App to Azure VM
+
+# Trigger: Jalankan saat ada push ke branch main
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: # Allow manual trigger
+
+# Jobs yang akan dijalankan
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # 1. Checkout code dari repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. SSH ke Azure VM dan jalankan deployment
+      - name: SSH into Azure VM and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USERNAME }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            echo "🚀 Starting deployment to Azure VM..."
+            
+            # Navigate to project directory
+            cd /var/www/unp-art-space
+            
+            # Set safe directory (avoid git ownership issues)
+            git config --global --add safe.directory /var/www/unp-art-space
+            
+            # Pull latest code from GitHub
+            echo "📥 Pulling latest code..."
+            git fetch origin
+            git reset --hard origin/main
+            
+            # Install/Update Flutter dependencies
+            echo "📦 Getting Flutter dependencies..."
+            /snap/bin/flutter pub get
+            
+            # Build Flutter web with Supabase credentials
+            echo "🔨 Building Flutter web..."
+            /snap/bin/flutter build web --release \
+              --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
+              --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+            
+            # Copy build to web server directory (if using nginx/apache)
+            # Uncomment if needed:
+            # sudo cp -r build/web/* /var/www/html/
+            
+            echo "✅ Deployment completed successfully!"
+            echo "🌐 Website should be live at your Azure domain"
