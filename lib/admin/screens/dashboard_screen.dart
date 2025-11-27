@@ -59,10 +59,10 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
         Supabase.instance.client.from('artworks').select('id').eq('status', 'approved'),
         Supabase.instance.client.from('artworks').select('id').eq('status', 'rejected'),
         
-        // Users statistics
-        Supabase.instance.client.from('users').select('id').eq('role', 'artist'),
-        Supabase.instance.client.from('users').select('id').eq('role', 'organizer'),
-        Supabase.instance.client.from('users').select('id'),
+        // Users statistics (using profiles table)
+        Supabase.instance.client.from('profiles').select('id').eq('role', 'artist'),
+        Supabase.instance.client.from('profiles').select('id').eq('role', 'organizer'),
+        Supabase.instance.client.from('profiles').select('id'),
         
         // Events statistics
         Supabase.instance.client.from('events').select('id'),
