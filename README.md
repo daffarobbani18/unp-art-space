@@ -12,8 +12,8 @@
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
 [🌐 Live Demo](https://unp-art-space.vercel.app) • [📱 Download APK](https://vepmvxiddwmpetxfdwjn.supabase.co/storage/v1/object/public/downloads/app-release.apk) • [📖 Documentation](#-dokumentasi)
-URL    :    http://unp-art-space.daffaspace.me/
-            https://campus-art-space.vercel.app/         
+[URL    :    https://www.unp-art-space.daffaspace.me/]
+            [https://campus-art-space.vercel.app/]         
 
 </div>
 
