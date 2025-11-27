@@ -153,6 +153,26 @@ Future<void> _login() async {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterPage()));
   }
 
+  // Auto-fill credentials untuk testing
+  void _autoFillCredentials(String role) {
+    setState(() {
+      switch (role) {
+        case 'Viewer':
+          _emailController.text = 'ereretolong123@gmail.com';
+          _passwordController.text = '11223344';
+          break;
+        case 'Artist':
+          _emailController.text = 'd.robbani18@gmail.com';
+          _passwordController.text = '11223344';
+          break;
+        case 'Event Organizer':
+          _emailController.text = 'barasiah.info@gmail.com';
+          _passwordController.text = 'barasiah.info@gmail.com';
+          break;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -269,6 +289,10 @@ Future<void> _login() async {
                 ),
               ),
               const SizedBox(height: 32),
+
+              // Development Mode - Auto Fill
+              _buildDevelopmentMode(),
+              const SizedBox(height: 24),
 
               // Form
               Form(
@@ -431,6 +455,114 @@ Future<void> _login() async {
         ),
       ),
       validator: validator,
+    );
+  }
+
+  Widget _buildDevelopmentMode() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.developer_mode,
+                color: Colors.greenAccent,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Mode Development - Auto Fill (Seed Account):',
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildAutoFillButton(
+                  label: 'Viewer',
+                  color: const Color(0xFF9333EA), // Purple
+                  onTap: () => _autoFillCredentials('Viewer'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildAutoFillButton(
+                  label: 'Artist',
+                  color: const Color(0xFF3B82F6), // Blue
+                  onTap: () => _autoFillCredentials('Artist'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _buildAutoFillButton(
+                  label: 'Organizer',
+                  color: const Color(0xFFEA580C), // Orange
+                  onTap: () => _autoFillCredentials('Event Organizer'),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Klik untuk mengisi form otomatis, lalu klik Login',
+            style: GoogleFonts.poppins(
+              color: Colors.white54,
+              fontSize: 11,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutoFillButton({
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: color.withOpacity(0.5),
+              width: 1.5,
+            ),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
