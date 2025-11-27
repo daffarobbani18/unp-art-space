@@ -13,9 +13,13 @@ class WebLandingPage extends StatefulWidget {
 class _WebLandingPageState extends State<WebLandingPage> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   final ScrollController _scrollController = ScrollController();
+  bool _isDownloading = false;
   
   // URL placeholder untuk download APK
   final String _apkDownloadUrl = 'https://vepmvxiddwmpetxfdwjn.supabase.co/storage/v1/object/public/downloads/app-release.apk';
+
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -24,6 +28,16 @@ class _WebLandingPageState extends State<WebLandingPage> with SingleTickerProvid
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
+    );
+    
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.1),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
+    
     _animationController.forward();
   }
 
