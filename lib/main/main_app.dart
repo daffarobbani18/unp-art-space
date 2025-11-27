@@ -56,7 +56,6 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/login': (context) => const LoginPage(),
-        '/': (context) => const SplashScreen(),
         '/organizer_home': (context) => const OrganizerMainScreen(),
       },
       onGenerateRoute: (settings) {
