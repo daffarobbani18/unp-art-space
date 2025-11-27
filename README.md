@@ -93,7 +93,7 @@
 
 | Splash Screen | Onboarding 1 | Onboarding 2 | Onboarding 3 |
 |:---:|:---:|:---:|:---:|
-| ![Splash](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Splash+Screen) | ![Onboard1](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+1) | ![Onboard2](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+2) | ![Onboard3](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+3) |
+| ![Splash](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Splash+Screen) | ![Onboard1](https://github.com/daffarobbani18/unp-art-space/issues/1) | ![Onboard2](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+2) | ![Onboard3](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+3) |
 
 | Login Screen |
 |:---:|
