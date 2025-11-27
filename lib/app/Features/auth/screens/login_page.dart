@@ -460,7 +460,7 @@ Future<void> _login() async {
 
   Widget _buildDevelopmentMode() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
@@ -470,26 +470,31 @@ Future<void> _login() async {
         ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               Icon(
                 Icons.developer_mode,
                 color: Colors.greenAccent,
-                size: 16,
+                size: 14,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Mode Development - Auto Fill (Seed Account):',
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Mode Development - Auto Fill:',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
@@ -499,7 +504,7 @@ Future<void> _login() async {
                   onTap: () => _autoFillCredentials('Viewer'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: _buildAutoFillButton(
                   label: 'Artist',
@@ -507,7 +512,7 @@ Future<void> _login() async {
                   onTap: () => _autoFillCredentials('Artist'),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: _buildAutoFillButton(
                   label: 'Organizer',
@@ -517,15 +522,17 @@ Future<void> _login() async {
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            'Klik untuk mengisi form otomatis, lalu klik Login',
+            'Klik untuk auto-fill, lalu Login',
             style: GoogleFonts.poppins(
               color: Colors.white54,
-              fontSize: 11,
+              fontSize: 10,
               fontStyle: FontStyle.italic,
             ),
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
@@ -543,7 +550,7 @@ Future<void> _login() async {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           decoration: BoxDecoration(
             color: color.withOpacity(0.2),
             borderRadius: BorderRadius.circular(8),
@@ -556,10 +563,12 @@ Future<void> _login() async {
             label,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
               color: Colors.white,
             ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
