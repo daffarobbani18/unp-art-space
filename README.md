@@ -89,21 +89,33 @@
 
 <div align="center">
 
-### 📱 Mobile App
+### 🎬 Onboarding & Authentication
 
-| Login Screen | Home Gallery | Artwork Detail |
-|:---:|:---:|:---:|
-| ![Login](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Login+Screen) | ![Home](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Home+Gallery) | ![Detail](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Artwork+Detail) |
+| Splash Screen | Onboarding 1 | Onboarding 2 | Onboarding 3 |
+|:---:|:---:|:---:|:---:|
+| ![Splash](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Splash+Screen) | ![Onboard1](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+1) | ![Onboard2](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+2) | ![Onboard3](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Onboarding+3) |
 
-| Upload Artwork | Profile Page | Event Dashboard |
-|:---:|:---:|:---:|
-| ![Upload](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Upload+Artwork) | ![Profile](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Profile+Page) | ![Event](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Event+Dashboard) |
+| Login Screen |
+|:---:|
+| ![Login](https://via.placeholder.com/250x500/1E1E2C/FFFFFF?text=Login+Screen) |
 
-### 🌐 Web Platform
+### 🛡️ Admin Dashboard
 
-| Landing Page | Admin Dashboard |
-|:---:|:---:|
-| ![Landing](https://via.placeholder.com/600x400/1E1E2C/FFFFFF?text=Landing+Page) | ![Dashboard](https://via.placeholder.com/600x400/1E1E2C/FFFFFF?text=Admin+Dashboard) |
+| Admin Dashboard |
+|:---:|
+| ![Dashboard](https://via.placeholder.com/600x400/1E1E2C/FFFFFF?text=Admin+Dashboard) |
+
+### 🎨 Artist Features
+
+| Home Gallery | Artwork Detail | Event Detail | Profile Page |
+|:---:|:---:|:---:|:---:|
+| ![Home](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Home+Gallery) | ![Artwork](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Artwork+Detail) | ![Event](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Event+Detail) | ![Profile](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Profile+Page) |
+
+### 📅 Organizer Features
+
+| Organizer Home | Event Detail | Event Dashboard | QR Scanner |
+|:---:|:---:|:---:|:---:|
+| ![OrgHome](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Organizer+Home) | ![OrgEvent](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Event+Detail) | ![OrgDash](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=Event+Dashboard) | ![QRScan](https://via.placeholder.com/200x400/1E1E2C/FFFFFF?text=QR+Scanner) |
 
 </div>
 
@@ -149,8 +161,8 @@ graph TB
 1️⃣ **Clone Repository**
 
 ```bash
-git clone https://github.com/daffarobbani18/unp-art-space-mobile.git
-cd unp-art-space-mobile
+git clone https://github.com/daffarobbani18/unp-art-space.git
+cd unp-art-space
 ```
 
 2️⃣ **Install Dependencies**
@@ -352,16 +364,6 @@ unp-art-space-mobile/
 ---
 
 ## 🔧 Development
-
-### 🧪 Testing Credentials (Development Mode)
-
-Saat di halaman login, klik salah satu button untuk auto-fill:
-
-| Role | Email | Password |
-|------|-------|----------|
-| **Viewer** | ereretolong123@gmail.com | 11223344 |
-| **Artist** | d.robbani18@gmail.com | 11223344 |
-| **Organizer** | barasiah.info@gmail.com | barasiah.info@gmail.com |
 
 ### 🛠️ Common Commands
 
