@@ -10,6 +10,7 @@ import '../organizer/organizer_main_screen.dart';
 import '../app/Features/artwork/screens/artwork_detail_page.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
 import '../app/Features/auth/screens/login_page.dart';
+import '../pages/web_landing_page.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
 late final SupabaseClient supabase;
@@ -61,9 +62,36 @@ class MyApp extends StatelessWidget {
       onGenerateRoute: (settings) {
         debugPrint('🔗 Navigation to: ${settings.name}');
         
-        // Handle deep linking for /submission/{uuid} (QR Code from event submissions)
-        if (settings.name != null && settings.name!.startsWith('/submission/')) {
-          final submissionId = settings.name!.replaceFirst('/submission/', '');
+        // Parse URI for better route handling
+        final uri = Uri.parse(settings.name ?? '/');
+        
+        // ============================================
+        // PLATFORM-AWARE ROOT ROUTE HANDLING
+        // ============================================
+        if (uri.path == '/') {
+          if (kIsWeb) {
+            // Web Browser: Show Landing Page with Download Button
+            debugPrint('🌐 Web detected: Showing Landing Page');
+            return MaterialPageRoute(
+              builder: (context) => const WebLandingPage(),
+              settings: settings,
+            );
+          } else {
+            // Mobile App: Show Splash Screen
+            debugPrint('📱 Mobile detected: Showing Splash Screen');
+            return MaterialPageRoute(
+              builder: (context) => const SplashScreen(),
+              settings: settings,
+            );
+          }
+        }
+        
+        // ============================================
+        // DEEP LINK: /submission/{uuid}
+        // QR Code dari Event Submissions
+        // ============================================
+        if (uri.path.startsWith('/submission/')) {
+          final submissionId = uri.path.replaceFirst('/submission/', '');
           
           if (submissionId.isNotEmpty) {
             debugPrint('✅ Deep link detected: submission/$submissionId');
@@ -74,9 +102,13 @@ class MyApp extends StatelessWidget {
           }
         }
         
-        // Handle deep linking for /artwork/{id} (Legacy support for direct artwork links)
-        if (settings.name != null && settings.name!.startsWith('/artwork/')) {
-          final artworkIdString = settings.name!.replaceFirst('/artwork/', '');
+        // ============================================
+        // DEEP LINK: /artwork/{id}
+        // Legacy support untuk direct artwork links
+        // Tetap berfungsi untuk QR Code artwork
+        // ============================================
+        if (uri.path.startsWith('/artwork/')) {
+          final artworkIdString = uri.path.replaceFirst('/artwork/', '');
           final artworkId = int.tryParse(artworkIdString);
           
           if (artworkId != null) {
@@ -88,7 +120,9 @@ class MyApp extends StatelessWidget {
           }
         }
         
-        // Return null for other routes (will use default routing)
+        // ============================================
+        // DEFAULT: Return null untuk named routes
+        // ============================================
         return null;
       },
     );
