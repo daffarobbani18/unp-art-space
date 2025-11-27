@@ -11,7 +11,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[🌐 Live Demo]([https://unp-art-space.vercel.app](https://campus-art-space.vercel.app/)) • [📱 Download APK]([https://vepmvxiddwmpetxfdwjn.supabase.co/storage/v1/object/public/downloads/app-release.apk](https://www.unp-art-space.daffaspace.me/)) • [📖 Documentation](#-dokumentasi)
+[🌐 Live Demo]([https://campus-art-space.vercel.app/]) • [📱 Download APK]([https://vepmvxiddwmpetxfdwjn.supabase.co/storage/v1/object/public/downloads/app-release.apk](https://www.unp-art-space.daffaspace.me/)) • [📖 Documentation](#-dokumentasi)
    
 
 </div>
