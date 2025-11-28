@@ -237,7 +237,7 @@ class _WebLandingPageState extends State<WebLandingPage>
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'UNP Art Space',
+                    'Campus Art Space',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -815,7 +815,7 @@ class _WebLandingPageState extends State<WebLandingPage>
 
           // Copyright
           Text(
-            '© 2025 UNP Art Space. All Rights Reserved.',
+            '© 2025 Campus Art Space. All Rights Reserved.',
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 14,

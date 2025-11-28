@@ -32,7 +32,7 @@ class AdminApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'UNP Art Space - Admin Panel',
+      title: 'Campus Art Space - Admin Panel',
       theme: ThemeData(
         primarySwatch: Colors.blue,
         useMaterial3: true,

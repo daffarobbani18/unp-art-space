@@ -308,7 +308,7 @@ class _SplashScreenState extends State<SplashScreen>
           child: AnimatedTextKit(
             animatedTexts: [
               TypewriterAnimatedText(
-                'UNP ART SPACE',
+                'CAMPUS ART SPACE',
                 textStyle: GoogleFonts.poppins(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,

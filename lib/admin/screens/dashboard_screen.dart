@@ -201,7 +201,7 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Ringkasan sistem UNP Art Space',
+                              'Ringkasan sistem Campus Art Space',
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 color: Colors.white.withOpacity(0.7),

@@ -27,7 +27,7 @@ class AuthGate extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'UNP Art Space',
+                    'Campus Art Space',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,

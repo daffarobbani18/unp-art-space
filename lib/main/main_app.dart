@@ -47,7 +47,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'UNP Art Space',
+      title: 'Campus Art Space',
       theme: ThemeData(
         primarySwatch: Colors.deepPurple,
         useMaterial3: true,

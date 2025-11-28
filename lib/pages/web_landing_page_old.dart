@@ -304,7 +304,7 @@ class _WebLandingPageState extends State<WebLandingPage> with SingleTickerProvid
 
   Widget _buildTitle(bool isSmallScreen) {
     return Text(
-      'UNP Art Space',
+      'Campus Art Space',
       textAlign: TextAlign.center,
       style: GoogleFonts.poppins(
         fontSize: isSmallScreen ? 40 : 64,
@@ -499,7 +499,7 @@ class _WebLandingPageState extends State<WebLandingPage> with SingleTickerProvid
         Divider(color: Colors.white.withOpacity(0.1), thickness: 1),
         const SizedBox(height: 16),
         Text(
-          '© 2025 UNP Art Space. All rights reserved.',
+          '© 2025 Campus Art Space. All rights reserved.',
           textAlign: TextAlign.center,
           style: GoogleFonts.poppins(
             fontSize: 12,

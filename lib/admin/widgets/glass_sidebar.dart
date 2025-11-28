@@ -76,7 +76,7 @@ class _GlassSidebarState extends State<GlassSidebar> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'UNP Art Space',
+                                'Campus Art Space',
                                 style: GoogleFonts.poppins(
                                   color: Colors.white,
                                   fontSize: 18,

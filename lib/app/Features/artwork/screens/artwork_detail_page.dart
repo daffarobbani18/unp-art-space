@@ -2110,7 +2110,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       final shareText = '''
 🎨 $title
 
-Lihat karya seni ini di UNP Art Space!
+Lihat karya seni ini di Campus Art Space!
 https://unp-art-space.vercel.app/artwork/$artworkId
 
 #UNPArtSpace #KaryaSeni

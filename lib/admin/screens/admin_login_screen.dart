@@ -262,7 +262,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                             ],
                           ).createShader(bounds),
                           child: Text(
-                            'UNP ART SPACE',
+                            'CAMPUS ART SPACE',
                             style: GoogleFonts.poppins(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -388,7 +388,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                         const SizedBox(height: 24),
                         
                         Text(
-                          '© 2024 UNP Art Space. All rights reserved.',
+                          '© 2024 Campus Art Space. All rights reserved.',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: Colors.white.withOpacity(0.4),

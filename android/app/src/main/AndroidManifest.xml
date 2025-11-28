@@ -7,7 +7,7 @@
 
     <application
         android:usesCleartextTraffic="true"
-        android:label="unp_art_space"
+        android:label="Campus Art Space"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

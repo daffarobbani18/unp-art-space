@@ -174,7 +174,7 @@ class _OrganizerEventCurationPageState
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    'UNP Art Space',
+                    'Campus Art Space',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
