@@ -888,9 +888,9 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
             artworks!inner(
               id,
               title,
-              year,
-              category,
-              profiles!inner(full_name)
+              artist_name,
+              created_at,
+              category
             )
           ''')
           .eq('event_id', widget.eventId)
@@ -960,14 +960,26 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
       // Convert to ArtworkModel list
       final artworks = response.map((item) {
         final artwork = item['artworks'] as Map<String, dynamic>;
-        final profile = artwork['profiles'] as Map<String, dynamic>;
+        final submissionId = item['id'] as String; // UUID dari event_submissions
+        
+        // Format created_at to year only
+        String yearStr = '-';
+        if (artwork['created_at'] != null) {
+          try {
+            final createdAt = DateTime.parse(artwork['created_at']);
+            yearStr = createdAt.year.toString();
+          } catch (e) {
+            yearStr = '-';
+          }
+        }
         
         return ArtworkModel(
+          submissionId: submissionId, // QR akan point ke /submission/{uuid}
           id: artwork['id'].toString(),
           title: artwork['title'] ?? 'Untitled',
-          artistName: profile['full_name'] ?? 'Unknown Artist',
+          artistName: artwork['artist_name'] ?? 'Unknown Artist',
           category: artwork['category'] ?? 'Uncategorized',
-          year: artwork['year']?.toString() ?? '-',
+          year: yearStr,
         );
       }).toList();
 

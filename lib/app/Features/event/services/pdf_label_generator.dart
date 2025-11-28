@@ -8,13 +8,15 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 /// Model untuk artwork yang akan di-print
 class ArtworkModel {
-  final String id;
+  final String submissionId; // UUID dari event_submissions
+  final String id; // ID artwork (kept for compatibility)
   final String title;
   final String artistName;
   final String category;
   final String year;
 
   ArtworkModel({
+    required this.submissionId,
     required this.id,
     required this.title,
     required this.artistName,
@@ -231,7 +233,7 @@ class PdfLabelGenerator {
     required pw.Font fontRegular,
     required pw.Font fontMedium,
   }) {
-    final qrUrl = 'https://campus-art-space.vercel.app/artwork/${artwork.id}';
+    final qrUrl = 'https://campus-art-space.vercel.app/submission/${artwork.submissionId}';
 
     return pw.Container(
       width: labelWidth,
