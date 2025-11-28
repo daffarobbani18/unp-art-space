@@ -12,6 +12,7 @@ import 'package:project1/app/core/utils/http_overrides.dart';
 import '../app/Features/auth/screens/login_page.dart';
 import '../pages/web_landing_page.dart';
 import '../app/core/navigation/main_page.dart';
+import '../admin/screens/admin_login_screen.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
 late final SupabaseClient supabase;
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/home': (context) => const MainPage(),
         '/organizer_home': (context) => const OrganizerMainScreen(),
+        '/admin': (context) => const AdminLoginScreen(),
       },
       onGenerateRoute: (settings) {
         debugPrint('🔗 Navigation to: ${settings.name}');
