@@ -112,74 +112,127 @@ class _OrganizerAnalyticsPageState extends State<OrganizerAnalyticsPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Analytics',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        centerTitle: true,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1a1a2e),
-              Color(0xFF16213e),
-              Color(0xFF0f3460),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Color(0xFF8B5CF6),
+    // Check if this widget is used as standalone or embedded
+    final bool isEmbedded = ModalRoute.of(context)?.settings.name == null;
+    
+    final content = _isLoading
+        ? const Center(
+            child: CircularProgressIndicator(
+              color: Color(0xFF8B5CF6),
+            ),
+          )
+        : RefreshIndicator(
+            onRefresh: _loadAnalytics,
+            color: const Color(0xFF8B5CF6),
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                // Info Banner (hanya tampil jika embedded di tab)
+                if (isEmbedded) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B82F6).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF3B82F6).withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.analytics,
+                              color: Color(0xFF3B82F6),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Statistik dan performa event secara real-time',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadAnalytics,
-                  color: const Color(0xFF8B5CF6),
-                  child: ListView(
-                    padding: const EdgeInsets.all(20),
-                    children: [
-                      // Event Title
-                      _buildEventHeader(),
-                      const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                ],
 
-                      // Overview Cards
-                      _buildOverviewCards(),
-                      const SizedBox(height: 24),
+                // Event Title (only for standalone)
+                if (!isEmbedded) ...[
+                  _buildEventHeader(),
+                  const SizedBox(height: 24),
+                ],
 
-                      // Submission Status Chart
-                      _buildSubmissionChart(),
-                      const SizedBox(height: 24),
+                // Overview Cards
+                _buildOverviewCards(),
+                const SizedBox(height: 24),
 
-                      // Engagement Stats
-                      _buildEngagementStats(),
-                      const SizedBox(height: 24),
+                // Submission Status Chart
+                _buildSubmissionChart(),
+                const SizedBox(height: 24),
 
-                      // Top Artworks
-                      _buildTopArtworks(),
-                    ],
-                  ),
-                ),
+                // Engagement Stats
+                _buildEngagementStats(),
+                const SizedBox(height: 24),
+
+                // Top Artworks
+                _buildTopArtworks(),
+              ],
+            ),
+          );
+    
+    // Return with or without Scaffold based on usage
+    if (isEmbedded) {
+      // Embedded in TabView - no Scaffold needed
+      return content;
+    } else {
+      // Standalone page - wrap with Scaffold and AppBar
+      return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            'Analytics',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          centerTitle: true,
         ),
-      ),
-    );
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF1a1a2e),
+                Color(0xFF16213e),
+                Color(0xFF0f3460),
+              ],
+            ),
+          ),
+          child: SafeArea(child: content),
+        ),
+      );
+    }
   }
 
   Widget _buildEventHeader() {
