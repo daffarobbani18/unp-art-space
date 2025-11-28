@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'organizer_event_curation_page.dart';
 import 'organizer_analytics_page.dart';
+import '../app/Features/event/services/pdf_label_generator.dart';
 
 /// Halaman Detail Event untuk Organizer
 /// Menampilkan semua fitur event management dalam tab-based navigation
@@ -700,9 +701,7 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
             title: 'Export QR Code',
             subtitle: 'Cetak PDF berisi QR code semua karya yang disetujui',
             color: const Color(0xFF9333EA),
-            onTap: () {
-              _showComingSoonDialog('Export QR Code');
-            },
+            onTap: _exportQRCodeLabels,
           ),
 
           const SizedBox(height: 12),
@@ -847,6 +846,198 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
         ),
       ),
     );
+  }
+
+  /// Export QR Code labels untuk semua artwork yang approved
+  Future<void> _exportQRCodeLabels() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF9333EA)),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Memuat data artwork...',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      // Fetch approved artworks from event_submissions
+      final response = await supabase
+          .from('event_submissions')
+          .select('''
+            id,
+            artwork_id,
+            artworks!inner(
+              id,
+              title,
+              year,
+              category,
+              profiles!inner(full_name)
+            )
+          ''')
+          .eq('event_id', widget.eventId)
+          .eq('status', 'approved');
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      if (response.isEmpty) {
+        // No approved artworks
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF1E1E2E),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF59E0B).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.warning,
+                      color: Color(0xFFF59E0B),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Tidak Ada Data',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Belum ada karya yang disetujui untuk event ini. Silakan setujui beberapa karya terlebih dahulu.',
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 14,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Tutup',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFF9333EA),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Convert to ArtworkModel list
+      final artworks = response.map((item) {
+        final artwork = item['artworks'] as Map<String, dynamic>;
+        final profile = artwork['profiles'] as Map<String, dynamic>;
+        
+        return ArtworkModel(
+          id: artwork['id'].toString(),
+          title: artwork['title'] ?? 'Untitled',
+          artistName: profile['full_name'] ?? 'Unknown Artist',
+          category: artwork['category'] ?? 'Uncategorized',
+          year: artwork['year']?.toString() ?? '-',
+        );
+      }).toList();
+
+      // Generate and preview PDF
+      await PdfLabelGenerator.generateAndPreview(
+        artworks: artworks,
+        eventTitle: widget.eventTitle,
+      );
+
+    } catch (e) {
+      // Close loading if still open
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      // Show error dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: const Color(0xFF1E1E2E),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.error,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Error',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'Gagal membuat PDF: $e',
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Tutup',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFFEF4444),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    }
   }
 
   void _showComingSoonDialog(String feature) {
