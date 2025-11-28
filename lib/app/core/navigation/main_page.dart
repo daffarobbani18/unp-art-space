@@ -5,6 +5,7 @@ import '../../Features/upload/screens/upload_page.dart';
 import '../../Features/notification/screens/notification_page.dart';
 import '../../Features/core_navigation/screens/profile_page.dart';
 import '../../shared/widgets/custom_bottom_nav_bar.dart';
+import '../../../shared/widgets/mobile_only_dialog.dart';
 
 
 class MainPage extends StatefulWidget {
@@ -31,6 +32,15 @@ class _MainPageState extends State<MainPage> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Tampilkan dialog mobile-only untuk web
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MobileOnlyDialog.showIfWeb(context);
     });
   }
 

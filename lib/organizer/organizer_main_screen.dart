@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import '../app/core/navigation/auth_gate.dart';
 import 'create_event_screen.dart';
 import 'organizer_event_detail_page.dart';
+import '../shared/widgets/mobile_only_dialog.dart';
 
 class OrganizerMainScreen extends StatefulWidget {
   const OrganizerMainScreen({Key? key}) : super(key: key);
@@ -24,6 +25,10 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
   void initState() {
     super.initState();
     _loadOrganizerInfo();
+    // Tampilkan dialog mobile-only untuk web
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MobileOnlyDialog.showIfWeb(context);
+    });
   }
 
   Future<void> _loadOrganizerInfo() async {
