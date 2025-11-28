@@ -6,7 +6,7 @@ import 'package:faker/faker.dart';
 // KONFIGURASI SUPABASE
 // ========================================
 const String SUPABASE_URL = 'https://vepmvxiddwmpetxfdwjn.supabase.co';
-const String SERVICE_ROLE_KEY = 'YOUR_SERVICE_ROLE_KEY_HERE'; // Ganti dengan Service Role Key
+const String SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlcG12eGlkZHdtcGV0eGZkd2puIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTQyMzkyMCwiZXhwIjoyMDc0OTk5OTIwfQ.lTBWwtQ97jUFZ-OG2f0SfPr-ptoXy-fMWjvX6JxRdyw'; // Ganti dengan Service Role Key
 
 // ========================================
 // MAIN FUNCTION

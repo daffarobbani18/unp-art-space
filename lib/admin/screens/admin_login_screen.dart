@@ -142,6 +142,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
     }
   }
 
+  // Auto-fill credentials untuk testing
+  void _autoFillAdminCredentials() {
+    setState(() {
+      _emailController.text = 'admin@campus.art';
+      _passwordController.text = 'admin123';
+    });
+  }
+
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -326,7 +334,12 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
-                                const SizedBox(height: 32),
+                                const SizedBox(height: 24),
+                                
+                                // Development Mode - Auto Fill
+                                _buildDevelopmentMode(),
+                                
+                                const SizedBox(height: 24),
                                 
                                 GlassTextField(
                                   controller: _emailController,
@@ -403,6 +416,78 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDevelopmentMode() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.greenAccent.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.developer_mode,
+                color: Colors.greenAccent,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Mode Development',
+                style: GoogleFonts.poppins(
+                  color: Colors.white70,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _autoFillAdminCredentials,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Colors.redAccent.withOpacity(0.5),
+                  width: 1.5,
+                ),
+              ),
+              child: Text(
+                'Admin',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Klik untuk auto-fill admin credentials',
+            style: GoogleFonts.poppins(
+              color: Colors.white54,
+              fontSize: 10,
+              fontStyle: FontStyle.italic,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }

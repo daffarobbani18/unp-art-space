@@ -158,16 +158,16 @@ Future<void> _login() async {
     setState(() {
       switch (role) {
         case 'Viewer':
-          _emailController.text = 'ereretolong123@gmail.com';
-          _passwordController.text = '11223344';
+          _emailController.text = 'viewer@campus.art';
+          _passwordController.text = 'viewer123';
           break;
         case 'Artist':
-          _emailController.text = 'd.robbani18@gmail.com';
-          _passwordController.text = '11223344';
+          _emailController.text = 'artist@campus.art';
+          _passwordController.text = 'artist123';
           break;
         case 'Event Organizer':
-          _emailController.text = 'barasiah.info@gmail.com';
-          _passwordController.text = 'barasiah.info@gmail.com';
+          _emailController.text = 'organizer@campus.art';
+          _passwordController.text = 'organizer123';
           break;
       }
     });
