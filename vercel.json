@@ -17,16 +17,8 @@
   ],
   "rewrites": [
     {
-      "source": "/build/web/(.*)",
-      "destination": "/build/web/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/build/web/$1"
-    },
-    {
       "source": "/((?!.*\\.).*)",
-      "destination": "/build/web/index.html"
+      "destination": "/index.html"
     }
   ]
 }
