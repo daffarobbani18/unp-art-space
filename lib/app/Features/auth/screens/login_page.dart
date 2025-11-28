@@ -1,9 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'register_page.dart';
 import '../../../core/navigation/main_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -522,9 +524,53 @@ Future<void> _login() async {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 10),
+          // Admin Panel Access Button (Web only)
+          if (kIsWeb) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _openAdminPanel,
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFDC2626).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFDC2626).withOpacity(0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.admin_panel_settings,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Buka Admin Panel',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+          ],
           Text(
-            'Klik untuk auto-fill, lalu Login',
+            kIsWeb 
+              ? 'Klik untuk auto-fill, lalu Login'
+              : 'Klik untuk auto-fill, lalu Login',
             style: GoogleFonts.poppins(
               color: Colors.white54,
               fontSize: 10,
@@ -537,6 +583,29 @@ Future<void> _login() async {
         ],
       ),
     );
+  }
+
+  Future<void> _openAdminPanel() async {
+    final currentUrl = Uri.base;
+    final adminUrl = Uri(
+      scheme: currentUrl.scheme,
+      host: currentUrl.host,
+      port: currentUrl.port,
+      path: '/admin',
+    );
+    
+    if (await canLaunchUrl(adminUrl)) {
+      await launchUrl(adminUrl, mode: LaunchMode.externalApplication);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Tidak dapat membuka Admin Panel: ${adminUrl.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildAutoFillButton({
