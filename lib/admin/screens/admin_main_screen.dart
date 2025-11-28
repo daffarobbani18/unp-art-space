@@ -132,109 +132,121 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
 
     return Scaffold(
       body: AnimatedBackground(
-        child: Row(
+        child: Stack(
           children: [
-            // Glass Sidebar
-            Column(
+            Row(
               children: [
-                Expanded(
-                  child: GlassSidebar(
-                    items: _sidebarItems,
-                    currentRoute: _sidebarItems[_selectedIndex].route,
-                    onItemTap: (route) {
-                      final index = _sidebarItems.indexWhere(
-                        (item) => item.route == route,
-                      );
-                      if (index != -1) {
-                        setState(() {
-                          _selectedIndex = index;
-                          _currentRoute = route;
-                        });
-                      }
-                    },
-                    isCollapsed: _isCollapsed,
-                  ),
-                ),
-                
-                // User Info & Logout Section
-                Container(
+                // Glass Sidebar
+                SizedBox(
                   width: _isCollapsed ? 80 : 260,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    border: Border(
-                      top: BorderSide(
-                        color: Colors.white.withOpacity(0.1),
-                        width: 1,
-                      ),
-                    ),
-                  ),
                   child: Column(
                     children: [
-                      if (!_isCollapsed) ...[
-                        GlassCard(
-                          padding: const EdgeInsets.all(12),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 40,
-                                height: 40,
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF6366F1),
-                                      Color(0xFF8B5CF6),
-                                    ],
-                                  ),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Icon(
-                                  Icons.person,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                      Expanded(
+                        child: GlassSidebar(
+                          items: _sidebarItems,
+                          currentRoute: _sidebarItems[_selectedIndex].route,
+                          onItemTap: (route) {
+                            final index = _sidebarItems.indexWhere(
+                              (item) => item.route == route,
+                            );
+                            if (index != -1) {
+                              setState(() {
+                                _selectedIndex = index;
+                                _currentRoute = route;
+                              });
+                            }
+                          },
+                          isCollapsed: _isCollapsed,
+                        ),
+                      ),
+                      
+                      // User Info & Logout Section
+                      Container(
+                        width: _isCollapsed ? 80 : 260,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: Colors.white.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            if (!_isCollapsed) ...[
+                              GlassCard(
+                                padding: const EdgeInsets.all(12),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      'Admin',
-                                      style: GoogleFonts.poppins(
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF6366F1),
+                                            Color(0xFF8B5CF6),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: const Icon(
+                                        Icons.person,
                                         color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
+                                        size: 20,
                                       ),
                                     ),
-                                    Text(
-                                      user?.email ?? '',
-                                      style: GoogleFonts.poppins(
-                                        color: Colors.white.withOpacity(0.6),
-                                        fontSize: 11,
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Admin',
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                          Text(
+                                            user?.email ?? '',
+                                            style: GoogleFonts.poppins(
+                                              color: Colors.white.withOpacity(0.6),
+                                              fontSize: 11,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ],
                                       ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ],
                                 ),
                               ),
+                              const SizedBox(height: 12),
                             ],
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      
-                      SizedBox(
-                        width: double.infinity,
-                        child: GlassButton(
-                          text: _isCollapsed ? '' : 'Logout',
-                          onPressed: _handleLogout,
-                          type: GlassButtonType.danger,
-                          icon: Icons.logout_rounded,
+                            
+                            SizedBox(
+                              width: double.infinity,
+                              child: GlassButton(
+                                text: _isCollapsed ? '' : 'Logout',
+                                onPressed: _handleLogout,
+                                type: GlassButtonType.danger,
+                                icon: Icons.logout_rounded,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
+                ),
+
+                // Main Content
+                Expanded(
+                  child: _screens[_selectedIndex],
                 ),
               ],
             ),
@@ -277,11 +289,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
                   ),
                 ),
               ),
-            ),
-
-            // Main Content
-            Expanded(
-              child: _screens[_selectedIndex],
             ),
           ],
         ),

@@ -48,10 +48,13 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
   }
 
   Future<void> _loadDashboardData() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     _animationController.reset();
     
     try {
+      debugPrint('🔄 Loading dashboard data...');
+      
       // Load all data in parallel for faster loading
       final results = await Future.wait([
         // Artworks statistics
@@ -83,6 +86,9 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
             .limit(5),
       ]);
 
+      debugPrint('✅ Dashboard data loaded successfully');
+      
+      if (!mounted) return;
       setState(() {
         _pendingArtworks = (results[0] as List).length;
         _approvedArtworks = (results[1] as List).length;
@@ -98,14 +104,20 @@ class _DashboardScreenState extends State<DashboardScreen> with SingleTickerProv
       });
       
       _animationController.forward();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading dashboard data: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
+      if (!mounted) return;
       setState(() => _isLoading = false);
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error loading data: $e'),
             backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
