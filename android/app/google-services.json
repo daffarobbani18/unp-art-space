@@ -1,15 +1,15 @@
 {
   "project_info": {
     "project_number": "375936773031",
-    "project_id": "unp-art-space",
-    "storage_bucket": "unp-art-space.firebasestorage.app"
+    "project_id": "campus-art-space",
+    "storage_bucket": "campus-art-space.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
         "mobilesdk_app_id": "1:375936773031:android:e30f6462bff512fa7b2482",
         "android_client_info": {
-          "package_name": "com.example.project1"
+          "package_name": "com.campus.artspace"
         }
       },
       "oauth_client": [],
