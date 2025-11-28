@@ -90,9 +90,41 @@ class DatabaseSeeder {
       print('  - Deleting profiles...');
       await supabase.from('profiles').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
+      // Delete auth users for test accounts
+      print('  - Deleting auth users...');
+      await _deleteAuthUsers();
+
       print('✅ Cleanup completed!\n');
     } catch (e) {
       print('⚠️  Warning during cleanup: $e\n');
+    }
+  }
+
+  // Delete auth users by email
+  Future<void> _deleteAuthUsers() async {
+    final testEmails = [
+      'admin@campus.art',
+      'organizer@campus.art',
+      'artist@campus.art',
+      'viewer@campus.art',
+    ];
+
+    for (final email in testEmails) {
+      try {
+        // Get user by email
+        final users = await supabase.auth.admin.listUsers();
+        final user = users.firstWhere(
+          (u) => u.email == email,
+          orElse: () => throw Exception('User not found'),
+        );
+        
+        // Delete user
+        await supabase.auth.admin.deleteUser(user.id);
+        print('    ✓ Deleted auth user: $email');
+      } catch (e) {
+        // User doesn't exist, skip
+        print('    - Auth user not found: $email (skipped)');
+      }
     }
   }
 
@@ -156,16 +188,17 @@ class DatabaseSeeder {
     String? bio,
     String? specialization,
   }) async {
-    // Create auth user
-    final response = await supabase.auth.admin.createUser(
-      AdminUserAttributes(
-        email: email,
-        password: password,
-        emailConfirm: true, // Auto-confirm email
-      ),
-    );
+    try {
+      // Create auth user
+      final response = await supabase.auth.admin.createUser(
+        AdminUserAttributes(
+          email: email,
+          password: password,
+          emailConfirm: true, // Auto-confirm email
+        ),
+      );
 
-    final userId = response.user!.id;
+      final userId = response.user!.id;
 
     // Insert into profiles
     await supabase.from('profiles').insert({
@@ -174,22 +207,26 @@ class DatabaseSeeder {
       'username': email.split('@')[0],
     });
 
-    // Insert into users (extended profile)
-    await supabase.from('users').insert({
-      'id': userId,
-      'name': name,
-      'email': email,
-      'role': role,
-      'bio': bio,
-      'specialization': specialization,
-      'social_media': {
-        'instagram': '@${email.split('@')[0]}',
-        'twitter': '@${email.split('@')[0]}',
-      },
-      'profile_image_url': 'https://i.pravatar.cc/300?u=$userId',
-    });
+      // Insert into users (extended profile)
+      await supabase.from('users').insert({
+        'id': userId,
+        'name': name,
+        'email': email,
+        'role': role,
+        'bio': bio,
+        'specialization': specialization,
+        'social_media': {
+          'instagram': '@${email.split('@')[0]}',
+          'twitter': '@${email.split('@')[0]}',
+        },
+        'profile_image_url': 'https://i.pravatar.cc/300?u=$userId',
+      });
 
-    return userId;
+      return userId;
+    } catch (e) {
+      print('    ⚠️  Error creating user $email: $e');
+      rethrow;
+    }
   }
 
   // ========================================
