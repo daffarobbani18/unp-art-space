@@ -1,17 +1,17 @@
-# 🎨 UNP Art Space
+# 🎨 Campus Art Space
 
 <div align="center">
 
-![UNP Art Space Logo](https://img.shields.io/badge/UNP-Art%20Space-8B5CF6?style=for-the-badge&logo=flutter&logoColor=white)
+![Campus Art Space Logo](https://img.shields.io/badge/Campus-Art%20Space-8B5CF6?style=for-the-badge&logo=flutter&logoColor=white)
 
-**Galeri Seni Digital & Manajemen Pameran Kampus**
+**Modern Digital Art Gallery & Campus Exhibition Management Platform**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.35.2-02569B?style=flat-square&logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.6.0-0175C2?style=flat-square&logo=dart)](https://dart.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=flat-square&logo=supabase)](https://supabase.com)
 [![License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](LICENSE)
 
-[🌐 Live Demo](https://campus-art-space.vercel.app/) • [📱 Download APK](https://www.unp-art-space.daffaspace.me/) • [📖 Documentation](#-dokumentasi)
+[🌐 Live Demo](https://campus-art-space.vercel.app/) • [📱 Download APK](https://www.campus-art-space.daffaspace.me/) • [📖 Documentation](#-dokumentasi)
    
 
 </div>
@@ -36,53 +36,58 @@
 
 ---
 
-## ✨ Tentang Aplikasi
+## ✨ About The Project
 
-**UNP Art Space** adalah platform digital inovatif yang dirancang khusus untuk mahasiswa dan dosen Universitas Negeri Padang (UNP) dalam mengelola, mempamerkan, dan mengapresiasi karya seni digital. Aplikasi ini memfasilitasi ekosistem seni kampus yang interaktif dan modern.
+**Campus Art Space** is a comprehensive digital platform designed to revolutionize art exhibition management and community engagement in educational institutions. Built with Flutter and powered by Supabase, this full-stack application provides a complete ecosystem for artists, organizers, and art enthusiasts to connect, showcase, and appreciate digital artwork.
 
-### 🎯 Tujuan
+### 🎯 Project Goals
 
-- 🖼️ Menyediakan galeri digital untuk showcase karya seni mahasiswa
-- 📅 Memudahkan manajemen event pameran seni virtual & offline
-- 🤝 Membangun komunitas seniman di lingkungan kampus
-- 📱 Memberikan akses mudah melalui mobile & web platform
-- ✅ Menjamin kualitas konten melalui sistem approval admin
+- 🖼️ **Digital Gallery**: Showcase student and faculty artwork in a modern, accessible format
+- 📅 **Event Management**: Streamline virtual and physical art exhibition organization
+- 🤝 **Community Building**: Foster an interactive artistic community within campus
+- 📱 **Cross-Platform**: Seamless experience across mobile (Android/iOS) and web
+- ✅ **Quality Assurance**: Curated content through admin moderation system
+- 🎨 **Professional Portfolio**: Enable artists to build their digital presence
 
 ---
 
-## 🎯 Fitur Utama
+## ✨ Key Features
 
-### 🎨 Untuk Artist (Seniman)
+### 🎨 For Artists
 
-- ✅ **Upload Karya Seni** - Unggah karya dalam format gambar/video
-- 🖼️ **Portfolio Digital** - Galeri pribadi dengan profil seniman
-- 💬 **Interaksi Sosial** - Like, komentar, dan follow artist lain
-- 📊 **Analytics Dashboard** - Lihat statistik views dan engagement
-- 🏷️ **Kategorisasi** - Organisir karya berdasarkan kategori seni
+- ✅ **Artwork Upload System** - Multi-format support (images, videos) with metadata management
+- 🖼️ **Digital Portfolio** - Professional gallery showcase with artist profile and biography
+- 💬 **Social Engagement** - Like, comment, and follow features with real-time interactions
+- 📊 **Analytics Dashboard** - Track views, engagement metrics, and audience insights
+- 🏷️ **Smart Categorization** - Organize artworks by categories with advanced filtering
+- 📱 **Mobile-First Design** - Seamless experience across all devices
 
-### 📅 Untuk Event Organizer
+### 📅 For Event Organizers
 
-- 📋 **Manajemen Event** - Buat dan kelola pameran seni virtual/offline
-- 📝 **Registrasi Submission** - Terima karya untuk event tertentu
-- 🎫 **QR Code System** - Generate QR untuk setiap karya di pameran
-- 📊 **Dashboard Organizer** - Monitor statistik dan submission event
-- 📢 **Announcements** - Broadcast pengumuman ke participants
+- 📋 **Event Management** - Create and manage virtual/physical art exhibitions
+- 📝 **Submission System** - Accept and curate artwork submissions for specific events
+- 🎫 **QR Code Integration** - Generate unique QR codes for each exhibited artwork
+- 📊 **Organizer Dashboard** - Monitor event statistics, submissions, and participant engagement
+- 📢 **Announcement System** - Broadcast updates and notifications to event participants
+- 📈 **Curation Tools** - Review, approve, or reject artwork submissions with feedback
 
-### 👤 Untuk Viewer (Pengunjung)
+### 👤 For Viewers
 
-- 🔍 **Explore Galeri** - Jelajahi karya seni dari berbagai seniman
-- 💖 **Save Favorites** - Simpan karya favorit ke collection
-- 💬 **Komentar & Like** - Berikan apresiasi pada karya seni
-- 🔔 **Notifikasi** - Update terbaru dari artist & event
-- 📱 **QR Scanner** - Scan QR di pameran untuk detail karya
+- 🔍 **Explore Gallery** - Browse artworks from various artists with advanced search and filters
+- 💖 **Favorites Collection** - Save and organize favorite artworks in personal collections
+- 💬 **Interactive Engagement** - Comment, like, and share appreciation for artworks
+- 🔔 **Real-time Notifications** - Stay updated on new artworks, events, and artist activities
+- 📱 **QR Code Scanner** - Scan QR codes at exhibitions to view detailed artwork information
+- 🌐 **Multi-platform Access** - Seamless experience on mobile, tablet, and web
 
-### 🛡️ Untuk Admin
+### 🛡️ For Administrators
 
-- ✅ **Content Moderation** - Approve/reject artwork submissions
-- 👥 **User Management** - Kelola users dan role assignments
-- 📊 **Analytics Dashboard** - Statistik lengkap platform
-- 🏷️ **Category Management** - Atur kategori karya seni
-- 📢 **Announcement System** - Broadcast info ke seluruh users
+- ✅ **Content Moderation** - Review and approve/reject artwork submissions with quality control
+- 👥 **User Management** - Manage user accounts, roles, and permissions system-wide
+- 📊 **Platform Analytics** - Comprehensive statistics dashboard with user, artwork, and event metrics
+- 🏷️ **Category Management** - Create, edit, and organize artwork categories
+- 📢 **Broadcast System** - Send platform-wide announcements to all users
+- 🔐 **Security Controls** - Row-level security policies and access control management
 
 ---
 
@@ -122,7 +127,7 @@
 
 ---
 
-## 🏗️ Arsitektur
+## 🏗️ Architecture Overview
 
 ```mermaid
 graph TB
@@ -141,70 +146,79 @@ graph TB
 
 ### 🔐 Security Architecture
 
-- **Row Level Security (RLS)** - Policy-based access control di database
-- **JWT Authentication** - Secure token-based auth via Supabase
-- **Role-Based Access** - 4 role: Admin, Artist, Organizer, Viewer
-- **Email Verification** - Mandatory untuk aktivasi akun
+- **Row Level Security (RLS)** - Database-level policy-based access control for data isolation
+- **JWT Authentication** - Secure token-based authentication via Supabase Auth
+- **Role-Based Access Control (RBAC)** - Four distinct roles: Admin, Artist, Organizer, Viewer
+- **Email Verification** - Mandatory email verification for account activation
+- **Secure Storage** - Encrypted file storage with access control policies
+- **API Rate Limiting** - Protection against abuse and unauthorized access
 
 ---
 
-## 🚀 Instalasi & Setup
+## 🚀 Installation & Setup
 
 ### 📋 Prerequisites
 
 - **Flutter SDK**: `>= 3.35.2`
 - **Dart SDK**: `>= 3.6.0`
-- **Android Studio** / **VS Code** dengan Flutter extension
-- **Git** untuk version control
+- **Android Studio** or **VS Code** with Flutter extension
+- **Git** for version control
+- **Device/Emulator** for mobile testing
 
-### 🔧 Setup Project
+### 🔧 Project Setup
 
-1️⃣ **Clone Repository**
+#### 1️⃣ Clone Repository
 
 ```bash
 git clone https://github.com/daffarobbani18/unp-art-space.git
 cd unp-art-space
 ```
 
-2️⃣ **Install Dependencies**
+#### 2️⃣ Install Dependencies
 
 ```bash
 flutter pub get
 ```
 
-3️⃣ **Setup Supabase Configuration**
+#### 3️⃣ Supabase Configuration
 
-Buat file `.env` di root project (opsional jika menggunakan environment variables):
+Create a `.env` file in the project root (optional, for custom environments):
 
 ```env
 SUPABASE_URL=https://vepmvxiddwmpetxfdwjn.supabase.co
 SUPABASE_ANON_KEY=your_anon_key_here
 ```
 
-> **Note**: Untuk production, credentials sudah hardcoded di `lib/main/main_app.dart`
+> **Note**: Production credentials are configured in `lib/main/main_app.dart`
 
-4️⃣ **Run Application**
+#### 4️⃣ Run Application
 
-**Mobile (Android/iOS):**
+**Mobile Development (Android/iOS):**
 ```bash
 flutter run
 ```
 
-**Web:**
+**Web Development:**
 ```bash
 flutter run -d chrome
 ```
 
-**Build untuk Production:**
+**Production Builds:**
 ```bash
 # Android APK
 flutter build apk --release
 
-# Web
-flutter build web --release
+# Android App Bundle (for Play Store)
+flutter build appbundle --release
 
 # iOS (macOS only)
 flutter build ios --release
+
+# Web
+flutter build web --release --target=lib/main/main_app.dart
+
+# Admin Web Portal
+flutter build web --release --target=lib/main/main_admin.dart
 ```
 
 ---
@@ -254,36 +268,40 @@ dependencies:
 
 ---
 
-## 👥 Role & Permissions
+## 👥 Roles & Permissions
 
 ### 🎨 Artist
-- ✅ Upload karya seni
-- ✅ Edit/delete karya sendiri
-- ✅ View analytics karya
-- ✅ Submit ke event pameran
-- ✅ Like & comment karya lain
+- ✅ Upload and manage artworks (images/videos)
+- ✅ Edit or delete personal artworks
+- ✅ View artwork analytics and engagement metrics
+- ✅ Submit artworks to exhibition events
+- ✅ Interact with other artworks (like, comment)
+- ✅ Build and customize artist profile
 
 ### 📅 Event Organizer
-- ✅ Semua permission Artist
-- ✅ Create & manage events
-- ✅ Approve/reject submissions
-- ✅ Generate QR codes
-- ✅ View event analytics
+- ✅ **All Artist permissions**, plus:
+- ✅ Create and manage art exhibition events
+- ✅ Review, approve, or reject artwork submissions
+- ✅ Generate QR codes for exhibited artworks
+- ✅ Access event analytics and participant insights
+- ✅ Send announcements to event participants
 
 ### 👤 Viewer
-- ✅ Browse galeri
-- ✅ Like & comment
-- ✅ Follow artists
-- ✅ Save favorites
-- ✅ Scan QR codes
+- ✅ Browse and explore artwork galleries
+- ✅ Like and comment on artworks
+- ✅ Follow favorite artists
+- ✅ Save artworks to personal favorites
+- ✅ Scan QR codes at exhibitions
+- ✅ Receive notifications on new content
 
-### 🛡️ Admin
-- ✅ Semua permission di atas
-- ✅ Approve/reject artworks
-- ✅ User management
-- ✅ Category management
-- ✅ Platform-wide analytics
-- ✅ Broadcast announcements
+### 🛡️ Administrator
+- ✅ **All permissions from above roles**, plus:
+- ✅ Moderate and approve/reject submitted artworks
+- ✅ Manage users, roles, and account statuses
+- ✅ Create and manage artwork categories
+- ✅ Access platform-wide analytics dashboard
+- ✅ Broadcast system-wide announcements
+- ✅ Configure platform settings and policies
 
 ---
 
@@ -316,50 +334,53 @@ Captions:     Poppins Regular (12-13px)
 
 ### 🎭 UI Components
 
-- **Glass Morphism**: Backdrop blur dengan opacity untuk cards
-- **Gradient Buttons**: Linear gradient purple to blue
-- **Smooth Animations**: Fade & slide transitions
-- **Responsive Design**: Adaptive untuk mobile, tablet, desktop
+- **Glass Morphism Cards**: Backdrop blur with transparency for modern aesthetic
+- **Gradient Buttons**: Smooth purple-to-blue gradients for CTAs
+- **Smooth Animations**: Fade, slide, and scale transitions for fluid UX
+- **Responsive Design**: Adaptive layouts for mobile, tablet, and desktop
+- **Dark Theme**: Optimized for reduced eye strain and OLED displays
+- **Material 3**: Google's latest design system with dynamic theming
 
 ---
 
-## 📁 Struktur Project
+## 📁 Project Structure
 
 ```
-unp-art-space-mobile/
-├── 📱 android/                 # Android native code
-├── 🍎 ios/                     # iOS native code
-├── 🌐 web/                     # Web build config
+campus-art-space/
+├── 📱 android/                 # Android native configuration
+├── 🍎 ios/                     # iOS native configuration
+├── 🌐 web/                     # Web build configuration
 ├── 📦 lib/
 │   ├── 🎨 app/
 │   │   ├── Features/
-│   │   │   ├── auth/          # Login, Register
-│   │   │   ├── home/          # Home gallery
-│   │   │   ├── artwork/       # Artwork CRUD & detail
-│   │   │   ├── upload/        # Upload artwork
-│   │   │   ├── profile/       # User profile
-│   │   │   ├── search/        # Search & filter
-│   │   │   └── notification/  # Push notifications
+│   │   │   ├── auth/          # Authentication (Login, Register)
+│   │   │   ├── home/          # Home gallery & feed
+│   │   │   ├── artwork/       # Artwork CRUD & detail views
+│   │   │   ├── upload/        # Artwork upload system
+│   │   │   ├── profile/       # User profile management
+│   │   │   ├── search/        # Search & advanced filters
+│   │   │   └── notification/  # Real-time notifications
 │   │   └── core/
-│   │       ├── navigation/    # Routes & navigation
-│   │       ├── screens/       # Splash, onboarding
-│   │       └── utils/         # Helpers & constants
+│   │       ├── navigation/    # App routing & navigation
+│   │       ├── screens/       # Splash, onboarding screens
+│   │       └── utils/         # Helper functions & constants
 │   ├── 👔 admin/
-│   │   └── screens/           # Admin dashboard & moderation
+│   │   ├── screens/           # Admin dashboard & moderation
+│   │   └── widgets/           # Admin-specific UI components
 │   ├── 📅 organizer/
-│   │   └── screens/           # Event management
+│   │   └── screens/           # Event management system
 │   ├── 🔧 shared/
-│   │   └── widgets/           # Reusable components
+│   │   └── widgets/           # Reusable UI components
 │   ├── 🌐 pages/
-│   │   └── web_landing_page.dart
+│   │   └── web_landing_page.dart  # Public landing page
 │   └── 🚀 main/
-│       ├── main_app.dart      # Mobile entry point
-│       └── main_admin.dart    # Admin portal entry
+│       ├── main_app.dart      # Mobile app entry point
+│       └── main_admin.dart    # Admin web portal entry point
 ├── 🎨 assets/
-│   └── images/                # Logo & static images
-├── 📜 schema.sql              # Database schema
-├── 🔐 supabase_*.sql          # Supabase migrations
-└── 📋 pubspec.yaml            # Dependencies
+│   └── images/                # App logo & static images
+├── 📜 schema.sql              # PostgreSQL database schema
+├── 🔐 supabase_*.sql          # Supabase migration scripts
+└── 📋 pubspec.yaml            # Flutter dependencies & configuration
 ```
 
 ---
@@ -369,34 +390,43 @@ unp-art-space-mobile/
 ### 🛠️ Common Commands
 
 ```bash
-# Format code
-flutter format .
+# Code Quality
+flutter format .                  # Format code with Dart style
+flutter analyze                   # Run static code analysis
 
-# Analyze code
-flutter analyze
+# Dependency Management
+flutter pub get                   # Install dependencies
+flutter pub upgrade               # Upgrade packages
+flutter pub outdated              # Check for outdated packages
 
-# Clean build
-flutter clean
+# Build & Run
+flutter clean                     # Clean build artifacts
+flutter run                       # Run in debug mode
+flutter run -d <device_id>        # Run on specific device
+flutter devices                   # List connected devices
 
-# Get dependencies
-flutter pub get
+# Production Builds
+flutter build apk --release       # Android APK
+flutter build appbundle --release # Android App Bundle
+flutter build web --release       # Web production build
+flutter build ios --release       # iOS (macOS only)
 
-# Run on specific device
-flutter run -d <device_id>
-
-# Build APK
-flutter build apk --release
-
-# Build Web
-flutter build web --release
+# Testing
+flutter test                      # Run unit tests
+flutter test --coverage           # Generate coverage report
 ```
 
 ### 🐛 Debugging Tips
 
-1. **Hot Reload**: Press `r` di terminal saat app running
-2. **Hot Restart**: Press `R` untuk full restart
-3. **DevTools**: `flutter pub global run devtools`
-4. **Logs**: `flutter logs` atau `adb logcat` (Android)
+1. **Hot Reload**: Press `r` in terminal while app is running (instant UI updates)
+2. **Hot Restart**: Press `R` for full app restart (preserves state)
+3. **DevTools**: Run `flutter pub global run devtools` for advanced debugging
+4. **Logs**: 
+   - Flutter: `flutter logs`
+   - Android: `adb logcat`
+   - iOS: View logs in Xcode console
+5. **Inspector**: Enable Flutter Inspector in VS Code or Android Studio
+6. **Performance Profiling**: Use DevTools Performance tab for optimization
 
 ---
 
@@ -404,55 +434,76 @@ flutter build web --release
 
 ### 📱 Mobile Deployment
 
-**Android:**
-1. Build APK: `flutter build apk --release`
-2. Upload ke Supabase Storage: `/downloads/app-release.apk`
-3. Update download URL di landing page
+#### Android
+1. **Build Release APK/App Bundle:**
+   ```bash
+   flutter build apk --release              # For direct APK distribution
+   flutter build appbundle --release        # For Google Play Store
+   ```
+2. **Upload to Distribution:**
+   - Direct Download: Upload to Supabase Storage (`/downloads/app-release.apk`)
+   - Google Play Store: Upload app bundle via Play Console
+3. **Update Landing Page:** Update download URL in `web_landing_page.dart`
 
-**iOS:**
-1. Configure signing di Xcode
-2. Build: `flutter build ios --release`
-3. Upload ke App Store Connect
+#### iOS
+1. **Configure Code Signing:**
+   - Open project in Xcode
+   - Set up Team and Provisioning Profile
+2. **Build for Distribution:**
+   ```bash
+   flutter build ios --release
+   ```
+3. **Upload to App Store:**
+   - Archive in Xcode
+   - Submit via App Store Connect
 
 ### 🌐 Web Deployment
 
-**Azure VM (Production):**
+#### Production (Azure VM)
 ```bash
-# SSH to VM
-ssh user@azure-vm-ip
+# SSH into Azure VM
+ssh user@your-azure-vm-ip
 
-# Navigate to project
-cd /var/www/unp-art-space
+# Navigate to project directory
+cd /var/www/campus-art-space
 
 # Pull latest changes
 git pull origin main
 
-# Build
-flutter build web --release
+# Install/update dependencies
+flutter pub get
 
-# Restart web server
+# Build for production
+flutter build web --release --target=lib/main/main_app.dart
+
+# Restart Nginx server
 sudo systemctl restart nginx
 ```
 
-**Vercel (Staging):**
-- Auto-deploy on push to `main` branch
-- URL: https://unp-art-space.vercel.app
+#### Staging (Vercel)
+- **Auto-Deploy**: Automatically deploys on push to `main` branch
+- **Manual Deploy**: Push to `staging` branch for preview
+- **Preview URL**: https://campus-art-space.vercel.app
 
 ### 🔄 CI/CD Pipeline (GitHub Actions)
 
-Workflow: `.github/workflows/azure-deploy.yml`
+**Workflow File:** `.github/workflows/azure-deploy.yml`
 
 **Triggers:**
-- Push to `main` branch
-- Manual workflow dispatch
+- Push to `main` branch (auto-deploy)
+- Pull request to `main` (build validation)
+- Manual workflow dispatch (on-demand deploy)
 
-**Steps:**
-1. Checkout code
-2. SSH to Azure VM
-3. Git pull
-4. Flutter pub get
-5. Flutter build web
-6. Deploy
+**Pipeline Steps:**
+1. ✅ Checkout source code
+2. ✅ Setup Flutter environment
+3. ✅ Install dependencies (`flutter pub get`)
+4. ✅ Run code analysis (`flutter analyze`)
+5. ✅ Build web application (`flutter build web --release`)
+6. ✅ SSH into Azure VM
+7. ✅ Deploy build artifacts
+8. ✅ Restart web server (Nginx)
+9. ✅ Send deployment notification
 
 ---
 
@@ -461,75 +512,137 @@ Workflow: `.github/workflows/azure-deploy.yml`
 ### 📋 Main Tables
 
 ```sql
-profiles          # User profiles dengan role
-artworks          # Karya seni dengan metadata
-categories        # Kategori seni
-artwork_likes     # Relasi likes
-artwork_comments  # Komentar & replies
-events            # Event pameran
-event_submissions # Submission karya ke event
-announcements     # Pengumuman platform
-notifications     # User notifications
+-- User Management
+profiles          # User profiles with role-based access (artist, organizer, admin, viewer)
+
+-- Artwork Management
+artworks          # Artwork entries with metadata (title, description, category, status)
+categories        # Art categories and classification system
+
+-- Social Features
+artwork_likes     # User likes on artworks (many-to-many relationship)
+artwork_comments  # Comments and threaded replies on artworks
+
+-- Event Management
+events            # Art exhibition events (virtual/physical)
+event_submissions # Artwork submissions for specific events
+
+-- Communication
+announcements     # Platform-wide announcements from admins
+notifications     # Real-time user notifications
+
+-- Analytics
+artwork_views     # Track artwork view counts and engagement
+event_analytics   # Event participation and submission statistics
 ```
 
 ### 🔐 Row Level Security (RLS)
 
-Semua table protected dengan RLS policies:
-- Users hanya bisa edit data mereka sendiri
-- Admin punya akses penuh ke semua data
-- Organizers bisa manage event mereka
-- Public read access untuk approved content
+All tables are protected with PostgreSQL Row Level Security policies:
+
+- ✅ **Ownership-Based Access**: Users can only modify their own data
+- ✅ **Role-Based Access**: Admin role has full CRUD access across all tables
+- ✅ **Event Organizers**: Can manage their own events and submissions
+- ✅ **Public Read Access**: Approved content is publicly viewable
+- ✅ **Status-Based Filtering**: Only `approved` or `published` content visible to non-owners
+- ✅ **Secure Mutations**: Create/Update/Delete operations require authentication
+
+**Example RLS Policy:**
+```sql
+-- Users can only update their own artworks
+CREATE POLICY "Users can update own artworks"
+ON artworks FOR UPDATE
+USING (auth.uid() = user_id);
+
+-- Admins can view all artworks regardless of status
+CREATE POLICY "Admins can view all artworks"
+ON artworks FOR SELECT
+USING (auth.jwt() ->> 'role' = 'admin');
+```
 
 ---
 
-## 🤝 Kontribusi
+## 🤝 Contributing
 
-Kami welcome kontribusi dari komunitas! 🎉
+We welcome contributions from the community! 🎉
 
 ### 📝 How to Contribute
 
-1. **Fork** repository ini
-2. **Clone** fork kamu: `git clone https://github.com/your-username/unp-art-space-mobile.git`
-3. **Create branch**: `git checkout -b feature/amazing-feature`
-4. **Commit changes**: `git commit -m "feat: add amazing feature"`
-5. **Push to branch**: `git push origin feature/amazing-feature`
-6. **Open Pull Request** dengan deskripsi lengkap
+1. **Fork** this repository to your GitHub account
+2. **Clone** your fork locally:
+   ```bash
+   git clone https://github.com/your-username/campus-art-space.git
+   cd campus-art-space
+   ```
+3. **Create a feature branch**:
+   ```bash
+   git checkout -b feature/amazing-feature
+   ```
+4. **Make your changes** and commit using conventional commits:
+   ```bash
+   git commit -m "feat: add amazing feature"
+   ```
+5. **Push to your fork**:
+   ```bash
+   git push origin feature/amazing-feature
+   ```
+6. **Open a Pull Request** with a detailed description of your changes
 
 ### 📜 Commit Convention
 
-Gunakan [Conventional Commits](https://www.conventionalcommits.org/):
+We follow [Conventional Commits](https://www.conventionalcommits.org/) specification:
 
 ```
-feat:     New feature
+feat:     New feature implementation
 fix:      Bug fix
-docs:     Documentation changes
-style:    Code style (formatting, semicolons, etc)
-refactor: Code refactoring
-test:     Adding tests
-chore:    Maintenance tasks
+docs:     Documentation updates
+style:    Code style changes (formatting, whitespace)
+refactor: Code refactoring without functionality changes
+test:     Adding or updating tests
+chore:    Maintenance tasks, dependency updates
+perf:     Performance improvements
+ci:       CI/CD configuration changes
 ```
 
-### 🐛 Report Bug
+**Examples:**
+```bash
+feat(artwork): add video upload support
+fix(auth): resolve login redirect issue
+docs(readme): update installation instructions
+```
 
-Temukan bug? [Buat issue](https://github.com/daffarobbani18/unp-art-space-mobile/issues/new) dengan:
-- Deskripsi bug yang jelas
-- Steps to reproduce
-- Expected vs actual behavior
-- Screenshots (jika applicable)
-- Device & OS info
+### 🐛 Report Bugs
+
+Found a bug? [Create an issue](https://github.com/daffarobbani18/campus-art-space/issues/new) with:
+- ✅ Clear bug description
+- ✅ Steps to reproduce
+- ✅ Expected vs actual behavior
+- ✅ Screenshots (if applicable)
+- ✅ Device & OS information
+- ✅ Flutter/Dart version
+
+### 💡 Feature Requests
+
+Have an idea? [Open a feature request](https://github.com/daffarobbani18/campus-art-space/issues/new) with:
+- ✅ Clear feature description
+- ✅ Use case and benefits
+- ✅ Proposed implementation (optional)
+- ✅ Mockups or wireframes (if applicable)
 
 ---
 
 ## 👨‍💻 Developer
 
 **Daffa Robbani**
-- 📧 Email: d.robbani18@gmail.com
+- 📧 Email: [d.robbani18@gmail.com](mailto:d.robbani18@gmail.com)
 - 🐙 GitHub: [@daffarobbani18](https://github.com/daffarobbani18)
 - 💼 LinkedIn: [Daffa Robbani](https://linkedin.com/in/daffarobbani)
+- 🌐 Portfolio: [daffarobbani.dev](https://daffarobbani.dev) *(if applicable)*
 
-**Universitas Negeri Padang**
-- 📍 Padang, Sumatera Barat, Indonesia
-- 🌐 Website: [unp.ac.id](https://unp.ac.id)
+**Academic Affiliation**
+- 🎓 **Institution**: Universitas Negeri Padang (UNP)
+- 📍 **Location**: Padang, West Sumatra, Indonesia
+- 🌐 **Website**: [unp.ac.id](https://unp.ac.id)
 
 ---
 
@@ -563,10 +676,12 @@ SOFTWARE.
 
 ## 🌟 Acknowledgments
 
-- **Flutter Team** - Framework yang amazing
-- **Supabase Team** - Backend as a Service yang powerful
-- **Universitas Negeri Padang** - Dukungan dan fasilitas
-- **Open Source Community** - Inspirasi dan package dependencies
+- **Flutter Team** - For the amazing cross-platform framework
+- **Supabase Team** - For providing a powerful and developer-friendly BaaS
+- **Universitas Negeri Padang** - For academic support and resources
+- **Open Source Community** - For the incredible packages and libraries that made this project possible
+- **Google Fonts** - For the beautiful Poppins typography
+- **Contributors** - Everyone who has contributed to improving this platform
 
 ---
 
