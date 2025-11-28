@@ -223,7 +223,7 @@ class DatabaseSeeder {
         'event_date': DateTime.now().add(Duration(days: 30 + (i * 15))).toIso8601String(),
         'location': faker.address.city(),
         'image_url': 'https://picsum.photos/seed/event$i/800/600',
-        'status': 'open',
+        'status': 'approved', // Changed from 'open' to 'approved' so events appear in home page
         'organizer_id': organizerId,
       }).select('id').single();
 

@@ -57,7 +57,9 @@ dart run bin/seed_database.dart
 
 ### 🎨 Content
 
-- ✅ **3 Events** (status: open) by Organizer
+- ✅ **3 Events** (status: approved) by Organizer
+  - Langsung approved agar muncul di home page
+  - Dapat dilihat oleh semua user (artist, viewer)
 - ✅ **10 Artworks** by Artist
   - 7 approved (dapat dilihat publik)
   - 3 pending (menunggu admin approval)
@@ -87,7 +89,9 @@ Script berjalan dalam 5 tahap:
 
 ### 3️⃣ Generate Content
 ```
-🎨 Organizer membuat 3 event
+🎨 Organizer membuat 3 event (status: approved)
+   - Event langsung approved agar muncul di home page
+   - Semua user dapat melihat event
    Artist upload 10 artwork (status: pending)
 ```
 
