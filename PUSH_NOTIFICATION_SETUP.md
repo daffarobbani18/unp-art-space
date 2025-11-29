@@ -23,12 +23,27 @@
 5. **Download** `google-services.json`
 6. Copy file ke: `android/app/google-services.json` (sudah ada, replace saja)
 
-### 1.3 Get Server Key (untuk backend)
+### 1.3 Enable FCM API V1 dan Get Service Account
+
+**⚠️ PENTING: Service Account = Kunci Admin Firebase**
+File ini memberikan akses penuh ke Firebase project. Jangan pernah:
+- ❌ Commit ke Git/GitHub
+- ❌ Share di public
+- ❌ Hardcode di aplikasi
+
 1. Di Firebase Console → **Project Settings** (⚙️ icon)
 2. Tab **"Cloud Messaging"**
-3. Cari **"Cloud Messaging API (Legacy)"** → klik **"Manage API"**
-4. **Enable** API jika belum
-5. Copy **"Server key"** → simpan untuk nanti
+3. Cari **"Cloud Messaging API (V1)"** → klik **"Manage"**
+4. **Enable** "Firebase Cloud Messaging API" jika belum
+5. Kembali ke Firebase Console → **Project Settings** → Tab **"Service accounts"**
+6. Klik **"Generate new private key"**
+7. Download file JSON (misalnya: `unp-art-space-firebase-adminsdk.json`)
+8. **SIMPAN FILE INI DENGAN AMAN** - tambahkan ke `.gitignore`:
+
+```gitignore
+# Firebase Service Account (NEVER COMMIT!)
+*firebase-adminsdk*.json
+```
 
 ---
 
@@ -84,12 +99,23 @@ supabase functions new send-push-notification
 
 Copy isi file `supabase/functions/send-push-notification/index.ts` dari project ini.
 
-### 3.5 Set Firebase Server Key Secret
+### 3.5 Set Firebase Service Account Secret
 ```bash
-supabase secrets set FIREBASE_SERVER_KEY=your_firebase_server_key_here
+# Copy isi file JSON service account
+supabase secrets set FIREBASE_SERVICE_ACCOUNT="$(cat unp-art-space-firebase-adminsdk.json)"
 ```
 
-Replace `your_firebase_server_key_here` dengan Server Key dari Step 1.3
+**Windows PowerShell:**
+```powershell
+# Read file dan set sebagai secret
+$serviceAccount = Get-Content unp-art-space-firebase-adminsdk.json -Raw
+supabase secrets set FIREBASE_SERVICE_ACCOUNT="$serviceAccount"
+```
+
+Atau set manual via Supabase Dashboard:
+1. Buka Project → Settings → Edge Functions → Secrets
+2. Add secret: `FIREBASE_SERVICE_ACCOUNT`
+3. Paste seluruh isi file JSON service account
 
 ### 3.6 Deploy Edge Function
 ```bash
@@ -174,6 +200,18 @@ flutter logs
 Cari error `firebase_messaging` atau `FCM`
 
 ---
+
+## 🆕 FCM API V1 vs Legacy
+
+| Feature | Legacy API (Deprecated) | V1 API (New) |
+|---------|------------------------|--------------|
+| Status | ❌ Will be removed June 2024 | ✅ Active & Maintained |
+| Auth | Server Key | OAuth 2.0 Access Token |
+| Security | Less secure (static key) | More secure (rotating token) |
+| Features | Basic | Enhanced targeting & analytics |
+| Future support | None | Full support |
+
+**Kita menggunakan FCM API V1** agar tidak perlu migrasi di masa depan!
 
 ## 💰 Cost Estimation
 

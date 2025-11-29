@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "375936773031",
+    "project_number": "575139286878",
     "project_id": "campus-art-space",
     "storage_bucket": "campus-art-space.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:375936773031:android:e30f6462bff512fa7b2482",
+        "mobilesdk_app_id": "1:575139286878:android:65ccf4cb5fd40cec3649cf",
         "android_client_info": {
           "package_name": "com.campus.artspace"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDzFmJlgeYVB8xS05W4V3TDJWUoD5GIXMo"
+          "current_key": "AIzaSyAfDXnta2COIy4200nt66ALu1ngge0jaKA"
         }
       ],
       "services": {
