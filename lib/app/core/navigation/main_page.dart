@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../Features/home/screens/home_page_glass.dart';
 import '../../Features/search/screens/search_page.dart';
 import '../../Features/upload/screens/upload_page.dart';
-import '../../Features/notification/screens/notification_page.dart';
+import '../../Features/notifications/screens/notification_center_page.dart';
 import '../../Features/core_navigation/screens/profile_page.dart';
 import '../../shared/widgets/custom_bottom_nav_bar.dart';
 import '../../../shared/widgets/mobile_only_dialog.dart';
@@ -24,7 +24,7 @@ class _MainPageState extends State<MainPage> {
     HomePageGlass(),
     SearchPage(),
     UploadPage(),
-    NotificationPage(),
+    NotificationCenterPage(),
     ProfilePage(),
   ];
 

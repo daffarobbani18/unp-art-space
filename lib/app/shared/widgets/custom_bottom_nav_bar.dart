@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import '../../Features/notifications/services/notification_service.dart';
 
 class CustomBottomNavBar extends StatefulWidget {
   final int selectedIndex;
@@ -19,6 +20,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -106,6 +108,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                   index: 3,
                   icon: Icons.notifications_rounded,
                   label: 'Notifikasi',
+                  showBadge: true,
                 ),
                 _buildNavItem(
                   index: 4,
@@ -125,6 +128,7 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
     required IconData icon,
     required String label,
     bool isCenter = false,
+    bool showBadge = false,
   }) {
     final isSelected = widget.selectedIndex == index;
 
@@ -149,46 +153,97 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar>
                 ),
                 child: ScaleTransition(
                   scale: isSelected ? _scaleAnimation : const AlwaysStoppedAnimation(1.0),
-                  child: Container(
-                    width: isCenter ? 57 : 47,
-                    height: isCenter ? 57 : 47,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: isSelected
-                          ? const LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFFF6B6B),
-                                Color(0xFFFF8E53),
-                              ],
-                            )
-                          : null,
-                      color: isSelected ? null : Colors.transparent,
-                      border: isSelected
-                          ? Border.all(
-                              color: Colors.white.withOpacity(0.5),
-                              width: 2.0,
-                            )
-                          : null,
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: const Color(0xFFFF6B6B).withOpacity(0.4),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                                offset: const Offset(0, 5),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: Center(
-                      child: Icon(
-                        icon,
-                        color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
-                        size: isCenter ? 26 : 22,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: isCenter ? 57 : 47,
+                        height: isCenter ? 57 : 47,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: isSelected
+                              ? const LinearGradient(
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                  colors: [
+                                    Color(0xFFFF6B6B),
+                                    Color(0xFFFF8E53),
+                                  ],
+                                )
+                              : null,
+                          color: isSelected ? null : Colors.transparent,
+                          border: isSelected
+                              ? Border.all(
+                                  color: Colors.white.withOpacity(0.5),
+                                  width: 2.0,
+                                )
+                              : null,
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: const Color(0xFFFF6B6B).withOpacity(0.4),
+                                    blurRadius: 20,
+                                    spreadRadius: 2,
+                                    offset: const Offset(0, 5),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Center(
+                          child: Icon(
+                            icon,
+                            color: isSelected ? Colors.white : Colors.white.withOpacity(0.4),
+                            size: isCenter ? 26 : 22,
+                          ),
+                        ),
                       ),
-                    ),
+                      // Badge for notifications
+                      if (showBadge)
+                        Positioned(
+                          top: -2,
+                          right: -2,
+                          child: StreamBuilder<int>(
+                            stream: _notificationService.unreadCountStream(),
+                            builder: (context, snapshot) {
+                              final unreadCount = snapshot.data ?? 0;
+                              if (unreadCount == 0) return const SizedBox.shrink();
+                              
+                              return Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEF4444),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFFEF4444).withOpacity(0.5),
+                                      blurRadius: 4,
+                                      spreadRadius: 1,
+                                    ),
+                                  ],
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
                   ),
                 ),
               ),
