@@ -45,12 +45,29 @@ INSERT INTO public.notifications (
 );
 */
 
--- Test 3: Multiple notifications
+-- Test 3: Event approved notification
+INSERT INTO public.notifications (
+  user_id,
+  type,
+  title,
+  message,
+  icon_type,
+  is_read
+) VALUES (
+  '468ccb0b-afec-412a-8ecd-3bb1c80965b8',
+  'event_approved',
+  'Event Disetujui',
+  'Selamat! Event "Pameran Seni 2025" telah disetujui dan dipublikasikan.',
+  'check',
+  false
+);
+
+-- Test 4: Multiple notifications
 INSERT INTO public.notifications (user_id, type, title, message, icon_type, is_read)
 VALUES 
   ('468ccb0b-afec-412a-8ecd-3bb1c80965b8', 'submission_new', 'Submission Baru #1', 'Karya "Painting 1" didaftarkan', 'submission', false),
   ('468ccb0b-afec-412a-8ecd-3bb1c80965b8', 'submission_new', 'Submission Baru #2', 'Karya "Painting 2" didaftarkan', 'submission', false),
-  ('468ccb0b-afec-412a-8ecd-3bb1c80965b8', 'submission_new', 'Submission Baru #3', 'Karya "Painting 3" didaftarkan', 'submission', true);
+  ('468ccb0b-afec-412a-8ecd-3bb1c80965b8', 'event_approved', 'Event Disetujui', 'Event "Workshop Melukis" disetujui', 'check', true);
 
 -- Verify notifications were created
 SELECT 

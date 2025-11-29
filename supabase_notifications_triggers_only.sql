@@ -179,6 +179,48 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Function to notify organizer when event status changes (approved/rejected)
+CREATE OR REPLACE FUNCTION notify_event_status_change()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only notify if status changed from 'pending' to 'approved' or 'rejected'
+  IF OLD.status = 'pending' AND (NEW.status = 'approved' OR NEW.status = 'rejected') THEN
+    -- Only create notification if organizer_id exists
+    IF NEW.organizer_id IS NOT NULL THEN
+      INSERT INTO public.notifications (
+        user_id,
+        type,
+        title,
+        message,
+        event_id,
+        icon_type
+      ) VALUES (
+        NEW.organizer_id,
+        CASE 
+          WHEN NEW.status = 'approved' THEN 'event_approved'
+          WHEN NEW.status = 'rejected' THEN 'event_rejected'
+        END,
+        CASE 
+          WHEN NEW.status = 'approved' THEN 'Event Disetujui'
+          WHEN NEW.status = 'rejected' THEN 'Event Ditolak'
+        END,
+        CASE 
+          WHEN NEW.status = 'approved' THEN 'Selamat! Event "' || COALESCE(NEW.title, 'Event Anda') || '" telah disetujui dan dipublikasikan.'
+          WHEN NEW.status = 'rejected' THEN 'Event "' || COALESCE(NEW.title, 'Event Anda') || '" ditolak. ' || COALESCE(NEW.rejection_reason, 'Silakan periksa kembali detail event Anda.')
+        END,
+        NEW.id,
+        CASE 
+          WHEN NEW.status = 'approved' THEN 'check'
+          WHEN NEW.status = 'rejected' THEN 'close'
+        END
+      );
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ============================================
 -- 4. CREATE TRIGGERS
 -- ============================================
@@ -187,6 +229,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 DROP TRIGGER IF EXISTS artwork_status_notification_trigger ON public.artworks;
 DROP TRIGGER IF EXISTS new_submission_notification_trigger ON public.event_submissions;
 DROP TRIGGER IF EXISTS submission_status_notification_trigger ON public.event_submissions;
+DROP TRIGGER IF EXISTS event_status_notification_trigger ON public.events;
 
 -- Trigger for artwork status changes
 CREATE TRIGGER artwork_status_notification_trigger
@@ -205,6 +248,12 @@ CREATE TRIGGER submission_status_notification_trigger
   AFTER UPDATE OF status ON public.event_submissions
   FOR EACH ROW
   EXECUTE FUNCTION notify_submission_status_change();
+
+-- Trigger for event status changes (approved/rejected by admin)
+CREATE TRIGGER event_status_notification_trigger
+  AFTER UPDATE OF status ON public.events
+  FOR EACH ROW
+  EXECUTE FUNCTION notify_event_status_change();
 
 -- ============================================
 -- 5. TEST NOTIFICATION (for organizer)
@@ -239,7 +288,8 @@ BEGIN
   RAISE NOTICE '✅ Notification triggers and policies created successfully!';
   RAISE NOTICE '📝 To test: Uncomment and run the INSERT statement above';
   RAISE NOTICE '🔔 Triggers will auto-create notifications for:';
-  RAISE NOTICE '   - New submissions to events';
-  RAISE NOTICE '   - Submission approvals/rejections';
-  RAISE NOTICE '   - Artwork approvals/rejections';
+  RAISE NOTICE '   - Event approvals/rejections (to organizer)';
+  RAISE NOTICE '   - New submissions to events (to organizer)';
+  RAISE NOTICE '   - Submission approvals/rejections (to artist)';
+  RAISE NOTICE '   - Artwork approvals/rejections (to artist)';
 END $$;
