@@ -2,12 +2,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:url_strategy/url_strategy.dart';
 import '../app/core/screens/splash_screen.dart';
 import '../organizer/organizer_main_screen.dart';
 import '../app/Features/artwork/screens/artwork_detail_page.dart';
+import '../app/Features/notifications/services/firebase_messaging_service.dart';
 import 'package:project1/app/core/utils/http_overrides.dart';
 import '../app/Features/auth/screens/login_page.dart';
 import '../pages/web_landing_page.dart';
@@ -16,6 +19,13 @@ import '../admin/screens/admin_login_screen.dart';
 
 // Variabel global untuk akses Supabase client di seluruh aplikasi
 late final SupabaseClient supabase;
+
+// Background message handler
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+  debugPrint('📬 Background message: ${message.notification?.title}');
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +39,17 @@ Future<void> main() async {
 
   // Inisialisasi locale Indonesian untuk intl package
   await initializeDateFormatting('id_ID', null);
+
+  // Inisialisasi Firebase (hanya untuk mobile)
+  if (!kIsWeb) {
+    try {
+      await Firebase.initializeApp();
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      debugPrint('✅ Firebase initialized');
+    } catch (e) {
+      debugPrint('❌ Firebase initialization error: $e');
+    }
+  }
 
   // Inisialisasi Supabase
   await Supabase.initialize(

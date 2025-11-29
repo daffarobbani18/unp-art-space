@@ -1,11 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../Features/auth/screens/login_page.dart';
+import '../../Features/notifications/services/firebase_messaging_service.dart';
 import 'main_page.dart';
 import '../../../organizer/organizer_main_screen.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends StatefulWidget {
   const AuthGate({Key? key}) : super(key: key);
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  final FirebaseMessagingService _fcmService = FirebaseMessagingService();
+  bool _fcmInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeFCM();
+  }
+
+  Future<void> _initializeFCM() async {
+    if (_fcmInitialized || kIsWeb) return;
+    
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session != null) {
+      await _fcmService.initialize();
+      _fcmInitialized = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
