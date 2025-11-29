@@ -432,7 +432,20 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
           .eq('organizer_id', _currentUserId!)
           .order('created_at', ascending: false),
       builder: (context, snapshot) {
+        // Debug info
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          debugPrint('🔄 Loading events for organizer: $_currentUserId');
+        }
+        
+        if (snapshot.hasData) {
+          debugPrint('📊 Events loaded: ${snapshot.data!.length} events');
+          if (snapshot.data!.isNotEmpty) {
+            debugPrint('📋 First event: ${snapshot.data!.first}');
+          }
+        }
+        
         if (snapshot.hasError) {
+          debugPrint('❌ Error loading events: ${snapshot.error}');
           return Center(
             child: _buildGlassCard(
               child: Column(
@@ -453,12 +466,15 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    snapshot.error.toString(),
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Colors.white60,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      snapshot.error.toString(),
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: Colors.white60,
+                      ),
                     ),
                   ),
                 ],
@@ -467,7 +483,7 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
           );
         }
 
-        if (!snapshot.hasData) {
+        if (!snapshot.hasData || snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
