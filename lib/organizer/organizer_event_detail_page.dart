@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import 'organizer_event_curation_page.dart';
 import 'organizer_analytics_page.dart';
+import 'organizer_edit_event_page.dart';
 import '../app/Features/event/services/pdf_label_generator.dart';
 
 /// Halaman Detail Event untuk Organizer
@@ -729,9 +730,7 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
             title: 'Edit Event',
             subtitle: 'Ubah informasi, tanggal, atau deskripsi event',
             color: const Color(0xFF10B981),
-            onTap: () {
-              _showComingSoonDialog('Edit Event');
-            },
+            onTap: _navigateToEditEvent,
           ),
 
           const SizedBox(height: 12),
@@ -741,9 +740,7 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
             title: 'Ganti Banner',
             subtitle: 'Update gambar banner event',
             color: const Color(0xFFF59E0B),
-            onTap: () {
-              _showComingSoonDialog('Ganti Banner');
-            },
+            onTap: _navigateToEditEvent, // Same function, banner change is inside edit page
           ),
 
           const SizedBox(height: 24),
@@ -1049,6 +1046,41 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _navigateToEditEvent() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OrganizerEditEventPage(
+          eventId: widget.eventId.toString(),
+          currentTitle: widget.eventTitle,
+          currentContent: _eventData?['content'],
+          currentEventDate: _eventData?['event_date'] != null
+              ? DateTime.parse(_eventData!['event_date'])
+              : null,
+          currentLocation: _eventData?['location'],
+          currentImageUrl: _eventData?['image_url'],
+        ),
+      ),
+    );
+
+    // Refresh data if event was updated
+    if (result == true && mounted) {
+      _loadEventData();
+      // Show refresh indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Event berhasil diperbarui! Data sedang dimuat ulang...',
+            style: GoogleFonts.poppins(),
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
     }
   }
 
