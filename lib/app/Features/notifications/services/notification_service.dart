@@ -90,16 +90,27 @@ class NotificationService {
   /// Stream of notifications (real-time updates)
   Stream<List<NotificationModel>> notificationsStream() {
     final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return Stream.value([]);
+    print('🔔 NotificationService: Current user ID = $userId');
+    
+    if (userId == null) {
+      print('❌ NotificationService: No user logged in');
+      return Stream.value([]);
+    }
 
     return _supabase
         .from('notifications')
         .stream(primaryKey: ['id'])
         .eq('user_id', userId)
         .order('created_at', ascending: false)
-        .map((data) => data
-            .map((json) => NotificationModel.fromJson(json))
-            .toList());
+        .map((data) {
+          print('📊 NotificationService: Received ${data.length} notifications from stream');
+          if (data.isNotEmpty) {
+            print('📋 First notification data: ${data.first}');
+          }
+          return data
+              .map((json) => NotificationModel.fromJson(json))
+              .toList();
+        });
   }
 
   /// Stream of unread count (real-time)

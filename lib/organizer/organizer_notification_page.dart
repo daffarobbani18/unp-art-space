@@ -43,7 +43,9 @@ class _OrganizerNotificationPageState extends State<OrganizerNotificationPage> {
                 child: StreamBuilder<List<NotificationModel>>(
                   stream: _notificationService.notificationsStream(),
                   builder: (context, snapshot) {
+                    // Debug logging
                     if (snapshot.connectionState == ConnectionState.waiting) {
+                      debugPrint('🔔 Loading notifications for organizer...');
                       return const Center(
                         child: CircularProgressIndicator(
                           valueColor:
@@ -53,10 +55,16 @@ class _OrganizerNotificationPageState extends State<OrganizerNotificationPage> {
                     }
 
                     if (snapshot.hasError) {
+                      debugPrint('❌ Error loading notifications: ${snapshot.error}');
                       return _buildErrorState(snapshot.error.toString());
                     }
 
                     final notifications = snapshot.data ?? [];
+                    debugPrint('🔔 Notifications loaded: ${notifications.length} notifications');
+                    
+                    if (notifications.isNotEmpty) {
+                      debugPrint('📋 First notification: ${notifications.first.id} - ${notifications.first.title}');
+                    }
 
                     if (notifications.isEmpty) {
                       return _buildEmptyState();
