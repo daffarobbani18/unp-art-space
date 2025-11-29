@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadEvents() async {
     try {
+      // Only show approved events (excludes pending, rejected, and completed)
       final response = await supabase
           .from('events')
           .select('*')
