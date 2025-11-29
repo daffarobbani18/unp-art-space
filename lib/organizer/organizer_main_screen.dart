@@ -5,8 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../app/core/navigation/auth_gate.dart';
+import '../app/Features/notifications/services/notification_service.dart';
 import 'create_event_screen.dart';
 import 'organizer_event_detail_page.dart';
+import 'organizer_notification_page.dart';
 import '../shared/widgets/mobile_only_dialog.dart';
 
 class OrganizerMainScreen extends StatefulWidget {
@@ -20,6 +22,7 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
   bool _isLoggingOut = false;
   String _organizerName = 'Organizer';
   String? _currentUserId;
+  final NotificationService _notificationService = NotificationService();
 
   @override
   void initState() {
@@ -302,6 +305,86 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
               ],
             ),
           ),
+          
+          // Notification Button
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const OrganizerNotificationPage(),
+                  ),
+                );
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: StreamBuilder<int>(
+                  stream: _notificationService.unreadCountStream(),
+                  builder: (context, snapshot) {
+                    final unreadCount = snapshot.data ?? 0;
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                        if (unreadCount > 0)
+                          Positioned(
+                            right: -4,
+                            top: -4,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFEF4444),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF0F2027),
+                                  width: 1.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(0xFFEF4444).withOpacity(0.5),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
+                                  ),
+                                ],
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                style: GoogleFonts.poppins(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           
           // Logout Button
           Material(
