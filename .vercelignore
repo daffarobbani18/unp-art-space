@@ -1,0 +1,41 @@
+a# Build artifacts (exclude semua kecuali build/web)
+build/app
+build/flutter_assets
+build/image_picker_android
+build/native_assets
+build/path_provider_android
+build/share_plus
+build/shared_preferences_android
+build/sqflite_android
+build/url_launcher_android
+build/video_compress
+build/video_player_android
+build/video_thumbnail
+build/458dc06092bd89503a708f6e8f474c26
+build/cb5621f77a8de81436150699d145ec32
+build/flutter_plugin_android_lifecycle
+build/reports
+
+# Android
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Test
+test/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Dart/Flutter
+.dart_tool/
+.packages
+pubspec.lock
+
+# Misc
+*.log
+.DS_Store
