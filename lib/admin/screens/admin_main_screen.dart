@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'admin_login_screen.dart';
+import '../../app/Features/notifications/services/firebase_messaging_service.dart';
 import 'dashboard_screen.dart';
 import 'work_moderation_screen.dart';
 import 'event_moderation_screen.dart';
@@ -87,8 +88,12 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
 
       if (confirm != true) return;
 
-      // Jalankan signOut dengan error handling
+      // Cleanup FCM token & Jalankan signOut dengan error handling
       try {
+        // Nonaktifkan FCM token sebelum logout
+        await FirebaseMessagingService().deleteFCMToken();
+        debugPrint('✅ FCM token cleaned up');
+        
         await Supabase.instance.client.auth.signOut();
         debugPrint('✅ Admin logout berhasil');
       } catch (e) {

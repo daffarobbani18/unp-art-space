@@ -124,7 +124,16 @@ class FirebaseMessagingService {
       debugPrint('📱 Platform: $platform');
       debugPrint('🎫 Token (first 30 chars): ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
 
-      // Check if token already exists
+      // PENTING: Nonaktifkan semua token lama untuk user ini di device lain
+      // Karena 1 user hanya boleh punya 1 active token per device
+      debugPrint('🔄 Deactivating old tokens for user ${user.id}...');
+      await _supabase
+          .from('fcm_tokens')
+          .update({'is_active': false})
+          .eq('user_id', user.id)
+          .neq('token', token);
+
+      // Check if this specific token already exists (bisa dari user lain atau user ini)
       debugPrint('🔍 Checking if token exists...');
       final existingToken = await _supabase
           .from('fcm_tokens')
@@ -133,18 +142,18 @@ class FirebaseMessagingService {
           .maybeSingle();
 
       if (existingToken != null) {
-        // Update existing token
-        debugPrint('🔄 Token exists, updating...');
+        // Update existing token - ganti user_id ke user yang baru login
+        debugPrint('🔄 Token exists (old user_id: ${existingToken['user_id']}), updating to new user_id: ${user.id}...');
         final response = await _supabase
             .from('fcm_tokens')
             .update({
-              'user_id': user.id,
+              'user_id': user.id, // PENTING: Update ke user yang baru login
               'is_active': true,
               'updated_at': DateTime.now().toIso8601String(),
             })
             .eq('token', token)
             .select();
-        debugPrint('✅ FCM token updated in database');
+        debugPrint('✅ FCM token ownership transferred to current user');
         debugPrint('📊 Update response: $response');
       } else {
         // Insert new token

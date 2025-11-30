@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:intl/intl.dart';
 import '../app/core/navigation/auth_gate.dart';
 import '../app/Features/notifications/services/notification_service.dart';
+import '../app/Features/notifications/services/firebase_messaging_service.dart';
 import 'create_event_screen.dart';
 import 'organizer_event_detail_page.dart';
 import 'organizer_notification_page.dart';
@@ -76,8 +77,12 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
 
       setState(() => _isLoggingOut = true);
 
-      // Jalankan signOut dengan error handling
+      // Cleanup FCM token & Jalankan signOut dengan error handling
       try {
+        // Nonaktifkan FCM token sebelum logout
+        await FirebaseMessagingService().deleteFCMToken();
+        debugPrint('✅ FCM token cleaned up');
+        
         await Supabase.instance.client.auth.signOut();
         debugPrint('✅ Organizer logout berhasil');
       } catch (e) {

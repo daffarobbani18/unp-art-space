@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'edit_profile_page.dart';
+import '../../notifications/services/firebase_messaging_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({Key? key}) : super(key: key);
@@ -56,8 +57,12 @@ class SettingsPage extends StatelessWidget {
       ),
     );
 
-    // 3. Jalankan signOut dengan error handling
+    // 3. Cleanup FCM token & Jalankan signOut dengan error handling
     try {
+      // Nonaktifkan FCM token sebelum logout
+      await FirebaseMessagingService().deleteFCMToken();
+      debugPrint('✅ FCM token cleaned up');
+      
       await Supabase.instance.client.auth.signOut();
       debugPrint('✅ Logout berhasil');
     } catch (e) {
