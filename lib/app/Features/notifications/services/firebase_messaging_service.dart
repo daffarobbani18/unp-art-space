@@ -30,14 +30,30 @@ class FirebaseMessagingService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        // Get FCM token
+        // Get FCM token with timeout
         debugPrint('📡 Getting FCM token...');
-        final token = await _firebaseMessaging.getToken();
-        if (token != null) {
-          debugPrint('📱 FCM Token received: ${token.substring(0, 30)}...');
-          await _saveFCMToken(token);
-        } else {
-          debugPrint('⚠️ FCM token is null!');
+        try {
+          final token = await _firebaseMessaging.getToken().timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              debugPrint('⏱️ FCM getToken() timeout after 10 seconds');
+              return null;
+            },
+          );
+          
+          if (token != null) {
+            debugPrint('📱 FCM Token received: ${token.substring(0, 30)}...');
+            await _saveFCMToken(token);
+          } else {
+            debugPrint('⚠️ FCM token is null!');
+            debugPrint('💡 Possible causes:');
+            debugPrint('   - Firebase not fully initialized');
+            debugPrint('   - No internet connection');
+            debugPrint('   - Google Play Services outdated');
+            debugPrint('   - google-services.json mismatch');
+          }
+        } catch (tokenError) {
+          debugPrint('❌ Error getting FCM token: $tokenError');
         }
 
         // Listen for token refresh

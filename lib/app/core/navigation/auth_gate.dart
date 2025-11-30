@@ -20,7 +20,12 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    _initializeFCM();
+    // Delay FCM init untuk memberi waktu Firebase fully initialize
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        _initializeFCM();
+      }
+    });
   }
 
   Future<void> _initializeFCM() async {
@@ -40,12 +45,23 @@ class _AuthGateState extends State<AuthGate> {
       print('🚀 [AuthGate] Initializing FCM service...');
       try {
         await _fcmService.initialize();
+        if (!mounted) return;
         setState(() {
           _fcmInitialized = true;
         });
         print('✅ [AuthGate] FCM initialized successfully');
       } catch (e) {
         print('❌ [AuthGate] Error initializing FCM: $e');
+        
+        // Retry after 3 seconds if failed
+        print('🔄 [AuthGate] Will retry FCM init in 3 seconds...');
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted && !_fcmInitialized) {
+            print('🔄 [AuthGate] Retrying FCM initialization...');
+            _fcmInitialized = false; // Reset flag
+            _initializeFCM();
+          }
+        });
       }
     } else {
       print('⚠️ [AuthGate] No session, FCM not initialized');
