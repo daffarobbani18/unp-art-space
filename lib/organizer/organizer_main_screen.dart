@@ -80,7 +80,7 @@ class _OrganizerMainScreenState extends State<OrganizerMainScreen> {
       // Cleanup FCM token & Jalankan signOut dengan error handling
       try {
         // Nonaktifkan FCM token sebelum logout
-        await FirebaseMessagingService().deleteFCMToken();
+        await FirebaseMessagingService().logout();
         debugPrint('✅ FCM token cleaned up');
         
         await Supabase.instance.client.auth.signOut();

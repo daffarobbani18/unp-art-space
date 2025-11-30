@@ -314,21 +314,21 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Delete FCM token when user logs out
-  Future<void> deleteFCMToken() async {
+  /// Logout - DON'T delete token, biarkan untuk transfer ownership
+  Future<void> logout() async {
     try {
-      final token = await _firebaseMessaging.getToken();
-      if (token != null) {
-        await _supabase
-            .from('fcm_tokens')
-            .update({'is_active': false})
-            .eq('token', token);
-        
-        await _firebaseMessaging.deleteToken();
-        debugPrint('✅ FCM token deleted');
-      }
+      debugPrint('🔥 FCM logout called');
+      debugPrint('💡 Token akan di-transfer ke user berikutnya (tidak dihapus)');
+      
+      // JANGAN panggil deleteToken() - biarkan token tetap ada
+      // Token akan otomatis di-transfer ownership saat user baru login
+      // via RPC upsert_fcm_token() dengan ON CONFLICT DO UPDATE
+      
+      // await _firebaseMessaging.deleteToken(); // ❌ JANGAN!
+      
+      debugPrint('✅ FCM logout completed - token ready for transfer');
     } catch (e) {
-      debugPrint('❌ Error deleting FCM token: $e');
+      debugPrint('❌ Error during FCM logout: $e');
     }
   }
 }

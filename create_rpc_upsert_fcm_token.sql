@@ -17,8 +17,9 @@ SET search_path = public
 AS $$
 DECLARE
   v_result json;
-  v_operation text;
+  v_operation text;  -- 'insert' atau 'update'
   v_token_id uuid;
+  v_row_inserted boolean;
 BEGIN
   -- Log untuk debugging
   RAISE NOTICE '🔧 upsert_fcm_token called';
@@ -60,23 +61,31 @@ BEGIN
     device_id = EXCLUDED.device_id,
     is_active = true,
     updated_at = now()
-  RETURNING id, (xmax = 0) AS inserted INTO v_token_id, v_operation;
+  RETURNING id INTO v_token_id;
   
-  -- v_operation akan true jika INSERT, false jika UPDATE
-  IF v_operation THEN
+  -- Cek apakah ini INSERT atau UPDATE dengan melihat xmax
+  -- xmax = 0 berarti baris baru (INSERT)
+  -- xmax > 0 berarti baris sudah ada dan di-update (UPDATE)
+  SELECT (xmax = 0) INTO v_row_inserted 
+  FROM fcm_tokens 
+  WHERE id = v_token_id;
+  
+  IF v_row_inserted THEN
+    v_operation := 'insert';
     RAISE NOTICE '  ✅ Token INSERTED (new token)';
   ELSE
+    v_operation := 'update';
     RAISE NOTICE '  ✅ Token UPDATED (ownership transferred)';
   END IF;
   
   -- Return hasil
   SELECT json_build_object(
     'success', true,
-    'operation', CASE WHEN v_operation THEN 'insert' ELSE 'update' END,
+    'operation', v_operation,
     'token_id', v_token_id,
     'user_id', p_user_id,
     'message', CASE 
-      WHEN v_operation THEN 'FCM token saved successfully'
+      WHEN v_row_inserted THEN 'FCM token saved successfully'
       ELSE 'FCM token ownership transferred'
     END
   ) INTO v_result;
