@@ -38,6 +38,11 @@ class _AuthGateState extends State<AuthGate> {
     return StreamBuilder<AuthState>(
       stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
+        // Initialize FCM saat user login
+        if (snapshot.hasData && snapshot.data?.session != null && !_fcmInitialized && !kIsWeb) {
+          _initializeFCM();
+        }
+        
         // Tampilkan loading dengan splash screen yang bagus
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(

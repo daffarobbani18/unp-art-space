@@ -1,15 +1,21 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class FirebaseMessagingService {
   final FirebaseMessaging _firebaseMessaging = FirebaseMessaging.instance;
   final SupabaseClient _supabase = Supabase.instance.client;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
 
   /// Initialize Firebase Messaging
   Future<void> initialize() async {
     try {
-      // Request permission for iOS
+      // Initialize local notifications first
+      await _initializeLocalNotifications();
+
+      // Request permission for iOS & Android
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
@@ -41,14 +47,71 @@ class FirebaseMessagingService {
     }
   }
 
+  /// Initialize local notifications with channel
+  Future<void> _initializeLocalNotifications() async {
+    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosSettings = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+    
+    const initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationTapped,
+    );
+
+    // Create Android notification channel for high importance
+    const androidChannel = AndroidNotificationChannel(
+      'high_importance_channel', // Same as in AndroidManifest
+      'High Importance Notifications',
+      description: 'This channel is used for important notifications.',
+      importance: Importance.high,
+      playSound: true,
+      enableVibration: true,
+      showBadge: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(androidChannel);
+
+    debugPrint('✅ Local notifications initialized');
+  }
+
+  /// Handle notification tap
+  void _onNotificationTapped(NotificationResponse response) {
+    debugPrint('📬 Notification tapped: ${response.payload}');
+    
+    if (response.payload != null) {
+      try {
+        // Parse payload if it's JSON
+        // You can add navigation logic here
+        debugPrint('Payload: ${response.payload}');
+      } catch (e) {
+        debugPrint('Error parsing notification payload: $e');
+      }
+    }
+  }
+
   /// Save FCM token to database
   Future<void> _saveFCMToken(String token) async {
     try {
+      debugPrint('💾 Attempting to save FCM token...');
+      
       final user = _supabase.auth.currentUser;
       if (user == null) {
         debugPrint('❌ No user logged in, skipping FCM token save');
         return;
       }
+
+      debugPrint('✅ User authenticated: ${user.id}');
+      debugPrint('📧 User email: ${user.email}');
 
       // Get platform
       String platform = 'android';
@@ -58,7 +121,11 @@ class FirebaseMessagingService {
         platform = 'web';
       }
 
+      debugPrint('📱 Platform: $platform');
+      debugPrint('🎫 Token (first 30 chars): ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
+
       // Check if token already exists
+      debugPrint('🔍 Checking if token exists...');
       final existingToken = await _supabase
           .from('fcm_tokens')
           .select()
@@ -67,27 +134,98 @@ class FirebaseMessagingService {
 
       if (existingToken != null) {
         // Update existing token
-        await _supabase
+        debugPrint('🔄 Token exists, updating...');
+        final response = await _supabase
             .from('fcm_tokens')
             .update({
               'user_id': user.id,
               'is_active': true,
               'updated_at': DateTime.now().toIso8601String(),
             })
-            .eq('token', token);
+            .eq('token', token)
+            .select();
         debugPrint('✅ FCM token updated in database');
+        debugPrint('📊 Update response: $response');
       } else {
         // Insert new token
-        await _supabase.from('fcm_tokens').insert({
-          'user_id': user.id,
-          'token': token,
-          'platform': platform,
-          'is_active': true,
-        });
-        debugPrint('✅ FCM token saved to database');
+        debugPrint('➕ Token not found, inserting new...');
+        
+        try {
+          final response = await _supabase
+              .from('fcm_tokens')
+              .insert({
+                'user_id': user.id,
+                'token': token,
+                'platform': platform,
+                'is_active': true,
+              })
+              .select()
+              .single();
+          
+          debugPrint('✅ FCM token saved to database successfully!');
+          debugPrint('📊 Insert response: $response');
+          debugPrint('🆔 Token ID: ${response['id']}');
+        } catch (insertError, insertStack) {
+          debugPrint('❌ INSERT FAILED!');
+          debugPrint('❌ Error: $insertError');
+          debugPrint('📋 Stack: $insertStack');
+          
+          // Cek apakah ini RLS error
+          if (insertError.toString().contains('policy') || 
+              insertError.toString().contains('RLS') ||
+              insertError.toString().contains('permission')) {
+            debugPrint('🔒 KEMUNGKINAN RLS POLICY BLOCK!');
+            debugPrint('💡 Cek RLS policy di Supabase Dashboard');
+          }
+          
+          rethrow;
+        }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error saving FCM token: $e');
+      debugPrint('📋 Stack trace: $stackTrace');
+    }
+  }
+
+  /// Show local notification for foreground messages
+  Future<void> _showForegroundNotification(RemoteMessage message) async {
+    try {
+      final notification = message.notification;
+      if (notification == null) return;
+
+      const androidDetails = AndroidNotificationDetails(
+        'high_importance_channel',
+        'High Importance Notifications',
+        channelDescription: 'This channel is used for important notifications',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: true,
+        enableVibration: true,
+        icon: '@mipmap/ic_launcher',
+      );
+
+      const iosDetails = DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+      );
+
+      const notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      await _localNotifications.show(
+        message.hashCode,
+        notification.title ?? 'Notification',
+        notification.body ?? '',
+        notificationDetails,
+        payload: jsonEncode(message.data),
+      );
+
+      debugPrint('✅ Local notification displayed');
+    } catch (e) {
+      debugPrint('❌ Error showing local notification: $e');
     }
   }
 
@@ -100,7 +238,10 @@ class FirebaseMessagingService {
       debugPrint('Body: ${message.notification?.body}');
       debugPrint('Data: ${message.data}');
 
-      // You can show local notification here or update UI
+      // Show local notification when message arrives in foreground
+      _showForegroundNotification(message);
+      
+      // Handle notification data
       _handleNotificationData(message.data);
     });
 
