@@ -36,6 +36,14 @@ BEGIN
   
   RAISE NOTICE '  ✅ Deactivated % old tokens', FOUND;
   
+  -- Step 1.5: AUTO-CLEANUP - Hapus token inactive yang sudah lama (> 7 hari)
+  DELETE FROM fcm_tokens
+  WHERE user_id = p_user_id
+    AND is_active = false
+    AND updated_at < now() - INTERVAL '7 days';
+  
+  RAISE NOTICE '  🗑️ Deleted % expired tokens (>7 days old)', FOUND;
+  
   -- Step 2: Upsert token - INSERT atau UPDATE jika sudah ada
   INSERT INTO fcm_tokens (
     user_id,
