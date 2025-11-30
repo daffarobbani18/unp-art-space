@@ -99,10 +99,10 @@ class FirebaseMessagingService {
     }
   }
 
-  /// Save FCM token to database
+  /// Save FCM token to database using RPC (bypass RLS)
   Future<void> _saveFCMToken(String token) async {
     try {
-      debugPrint('💾 Attempting to save FCM token...');
+      debugPrint('💾 Attempting to save FCM token via RPC...');
       
       final user = _supabase.auth.currentUser;
       if (user == null) {
@@ -124,75 +124,45 @@ class FirebaseMessagingService {
       debugPrint('📱 Platform: $platform');
       debugPrint('🎫 Token (first 30 chars): ${token.substring(0, token.length > 30 ? 30 : token.length)}...');
 
-      // PENTING: Nonaktifkan semua token lama untuk user ini di device lain
-      // Karena 1 user hanya boleh punya 1 active token per device
-      debugPrint('🔄 Deactivating old tokens for user ${user.id}...');
-      await _supabase
-          .from('fcm_tokens')
-          .update({'is_active': false})
-          .eq('user_id', user.id)
-          .neq('token', token);
+      // PENTING: Gunakan RPC function untuk bypass RLS
+      debugPrint('🔧 Calling RPC: upsert_fcm_token...');
+      
+      final result = await _supabase.rpc('upsert_fcm_token', params: {
+        'p_token': token,
+        'p_user_id': user.id,
+        'p_platform': platform,
+        'p_device_id': null, // Bisa diisi device ID jika ada
+      });
 
-      // Check if this specific token already exists (bisa dari user lain atau user ini)
-      debugPrint('🔍 Checking if token exists...');
-      final existingToken = await _supabase
-          .from('fcm_tokens')
-          .select()
-          .eq('token', token)
-          .maybeSingle();
-
-      if (existingToken != null) {
-        // Update existing token - ganti user_id ke user yang baru login
-        debugPrint('🔄 Token exists (old user_id: ${existingToken['user_id']}), updating to new user_id: ${user.id}...');
-        final response = await _supabase
-            .from('fcm_tokens')
-            .update({
-              'user_id': user.id, // PENTING: Update ke user yang baru login
-              'is_active': true,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('token', token)
-            .select();
-        debugPrint('✅ FCM token ownership transferred to current user');
-        debugPrint('📊 Update response: $response');
-      } else {
-        // Insert new token
-        debugPrint('➕ Token not found, inserting new...');
+      debugPrint('📊 RPC Response: $result');
+      
+      if (result != null && result['success'] == true) {
+        final operation = result['operation'];
+        final message = result['message'];
         
-        try {
-          final response = await _supabase
-              .from('fcm_tokens')
-              .insert({
-                'user_id': user.id,
-                'token': token,
-                'platform': platform,
-                'is_active': true,
-              })
-              .select()
-              .single();
-          
+        if (operation == 'insert') {
           debugPrint('✅ FCM token saved to database successfully!');
-          debugPrint('📊 Insert response: $response');
-          debugPrint('🆔 Token ID: ${response['id']}');
-        } catch (insertError, insertStack) {
-          debugPrint('❌ INSERT FAILED!');
-          debugPrint('❌ Error: $insertError');
-          debugPrint('📋 Stack: $insertStack');
-          
-          // Cek apakah ini RLS error
-          if (insertError.toString().contains('policy') || 
-              insertError.toString().contains('RLS') ||
-              insertError.toString().contains('permission')) {
-            debugPrint('🔒 KEMUNGKINAN RLS POLICY BLOCK!');
-            debugPrint('💡 Cek RLS policy di Supabase Dashboard');
-          }
-          
-          rethrow;
+        } else {
+          debugPrint('✅ FCM token ownership transferred to current user');
         }
+        
+        debugPrint('📝 Message: $message');
+        debugPrint('🆔 Token ID: ${result['token_id']}');
+      } else {
+        debugPrint('⚠️ RPC returned non-success result');
+        debugPrint('❌ Error: ${result?['error']}');
+        debugPrint('📋 Detail: ${result?['detail']}');
       }
+      
     } catch (e, stackTrace) {
-      debugPrint('❌ Error saving FCM token: $e');
+      debugPrint('❌ Error calling RPC upsert_fcm_token: $e');
       debugPrint('📋 Stack trace: $stackTrace');
+      
+      // Fallback info
+      if (e.toString().contains('upsert_fcm_token')) {
+        debugPrint('💡 Pastikan RPC function sudah dibuat di database!');
+        debugPrint('💡 Jalankan: create_rpc_upsert_fcm_token.sql');
+      }
     }
   }
 
