@@ -24,12 +24,31 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _initializeFCM() async {
-    if (_fcmInitialized || kIsWeb) return;
+    print('🔍 [AuthGate] _initializeFCM called');
+    print('🔍 [AuthGate] _fcmInitialized: $_fcmInitialized');
+    print('🔍 [AuthGate] kIsWeb: $kIsWeb');
+    
+    if (_fcmInitialized || kIsWeb) {
+      print('⏭️ [AuthGate] Skipping FCM init (already initialized or web)');
+      return;
+    }
     
     final session = Supabase.instance.client.auth.currentSession;
+    print('🔍 [AuthGate] Session exists: ${session != null}');
+    
     if (session != null) {
-      await _fcmService.initialize();
-      _fcmInitialized = true;
+      print('🚀 [AuthGate] Initializing FCM service...');
+      try {
+        await _fcmService.initialize();
+        setState(() {
+          _fcmInitialized = true;
+        });
+        print('✅ [AuthGate] FCM initialized successfully');
+      } catch (e) {
+        print('❌ [AuthGate] Error initializing FCM: $e');
+      }
+    } else {
+      print('⚠️ [AuthGate] No session, FCM not initialized');
     }
   }
 

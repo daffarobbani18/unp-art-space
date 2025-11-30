@@ -12,10 +12,13 @@ class FirebaseMessagingService {
   /// Initialize Firebase Messaging
   Future<void> initialize() async {
     try {
+      debugPrint('🚀 Starting FCM initialization...');
+      
       // Initialize local notifications first
       await _initializeLocalNotifications();
 
       // Request permission for iOS & Android
+      debugPrint('🔑 Requesting FCM permission...');
       final settings = await _firebaseMessaging.requestPermission(
         alert: true,
         badge: true,
@@ -28,22 +31,33 @@ class FirebaseMessagingService {
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
         // Get FCM token
+        debugPrint('📡 Getting FCM token...');
         final token = await _firebaseMessaging.getToken();
         if (token != null) {
-          debugPrint('📱 FCM Token: $token');
+          debugPrint('📱 FCM Token received: ${token.substring(0, 30)}...');
           await _saveFCMToken(token);
+        } else {
+          debugPrint('⚠️ FCM token is null!');
         }
 
         // Listen for token refresh
-        _firebaseMessaging.onTokenRefresh.listen(_saveFCMToken);
+        debugPrint('👂 Setting up token refresh listener...');
+        _firebaseMessaging.onTokenRefresh.listen((newToken) {
+          debugPrint('🔄 FCM Token refreshed: ${newToken.substring(0, 30)}...');
+          _saveFCMToken(newToken);
+        });
 
         // Setup message handlers
+        debugPrint('📬 Setting up message handlers...');
         _setupMessageHandlers();
+        
+        debugPrint('✅ FCM initialization completed successfully!');
       } else {
-        debugPrint('❌ FCM Permission denied');
+        debugPrint('❌ FCM Permission denied by user');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       debugPrint('❌ Error initializing FCM: $e');
+      debugPrint('📋 Stack trace: $stackTrace');
     }
   }
 
