@@ -47,10 +47,9 @@ BEGIN
   END IF;
   */
 
-  -- HARDCODED: Set your project URL and service role key here
-  -- Get from: Supabase Dashboard → Settings → API
+  -- HARDCODED: Service role key from Supabase Dashboard → Settings → API
   v_function_url := 'https://vepmvxiddwmpetxfdwjn.supabase.co/functions/v1/detect-ai';
-  v_service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlcG12eGlkZHdtcGV0eGZkd2puIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyOTY4MzA1NywiZXhwIjoyMDQ1MjU5MDU3fQ.UOT9eSKSUkkPn-VlhZHKjvwK2HlCQF9-uGW9tOHgpRo';
+  v_service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlcG12eGlkZHdtcGV0eGZkd2puIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTQyMzkyMCwiZXhwIjoyMDc0OTk5OTIwfQ.lTBWwtQ97jUFZ-OG2f0SfPr-ptoXy-fMWjvX6JxRdyw';
   
   RAISE NOTICE '🔧 Function URL: %', v_function_url;
   
