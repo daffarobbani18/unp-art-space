@@ -47,23 +47,16 @@ BEGIN
   END IF;
   */
 
-  -- Build Edge Function URL
-  -- Format: https://PROJECT_REF.supabase.co/functions/v1/detect-ai
-  v_function_url := current_setting('app.settings.supabase_url', true) || '/functions/v1/detect-ai';
+  -- HARDCODED: Set your project URL and service role key here
+  -- Get from: Supabase Dashboard → Settings → API
+  v_function_url := 'https://vepmvxiddwmpetxfdwjn.supabase.co/functions/v1/detect-ai';
+  v_service_key := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlcG12eGlkZHdtcGV0eGZkd2puIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyOTY4MzA1NywiZXhwIjoyMDQ1MjU5MDU3fQ.UOT9eSKSUkkPn-VlhZHKjvwK2HlCQF9-uGW9tOHgpRo';
   
-  -- Get service role key from app settings
-  v_service_key := current_setting('app.settings.service_role_key', true);
-
-  -- If settings not found, use default (you MUST set these!)
-  IF v_function_url IS NULL OR v_function_url = '/functions/v1/detect-ai' THEN
-    -- IMPORTANT: Replace with your actual project URL
-    v_function_url := 'https://vepmvxiddwmpetxfdwjn.supabase.co/functions/v1/detect-ai';
-    RAISE NOTICE '⚠️ Using hardcoded function URL: %', v_function_url;
-  END IF;
-
-  IF v_service_key IS NULL THEN
-    RAISE NOTICE '❌ ERROR: service_role_key not set!';
-    RAISE NOTICE '💡 Run: ALTER DATABASE postgres SET app.settings.service_role_key = ''your_key'';';
+  RAISE NOTICE '🔧 Function URL: %', v_function_url;
+  
+  IF v_service_key IS NULL OR v_service_key = '' THEN
+    RAISE NOTICE '❌ ERROR: service_role_key not set in trigger function!';
+    RAISE NOTICE '💡 Edit this SQL file and set v_service_key variable';
     RETURN NEW;
   END IF;
 
@@ -125,20 +118,17 @@ COMMENT ON TRIGGER trigger_artwork_ai_detection ON public.artworks IS
 COMMIT;
 
 -- =============================================================================
--- STEP 4: Set configuration (IMPORTANT!)
+-- STEP 4: Configuration
 -- =============================================================================
 
--- Set Supabase URL (replace with your project URL)
-ALTER DATABASE postgres 
-SET app.settings.supabase_url = 'https://vepmvxiddwmpetxfdwjn.supabase.co';
+-- ✅ Configuration is now HARDCODED in trigger function (see line 48-49)
+-- No need to set database parameters (causes permission error)
 
--- Set Service Role Key (replace with your actual key)
--- IMPORTANT: Get from Supabase Dashboard → Settings → API → service_role key
-ALTER DATABASE postgres 
-SET app.settings.service_role_key = 'YOUR_SERVICE_ROLE_KEY_HERE';
-
--- Reload configuration
-SELECT pg_reload_conf();
+-- To update URL or key, edit the trigger function directly:
+-- 1. Find line: v_function_url := 'https://...'
+-- 2. Find line: v_service_key := 'eyJhbGci...'
+-- 3. Update values
+-- 4. Run: CREATE OR REPLACE FUNCTION trigger_ai_detection() ...
 
 -- =============================================================================
 -- VERIFICATION
@@ -160,12 +150,11 @@ SELECT
 FROM pg_proc
 WHERE proname = 'trigger_ai_detection';
 
--- Check configuration
+-- Check trigger function source (verify hardcoded values)
 SELECT 
-  name,
-  setting
-FROM pg_settings
-WHERE name LIKE 'app.settings.%';
+  pg_get_functiondef(oid) as function_definition
+FROM pg_proc
+WHERE proname = 'trigger_ai_detection';
 
 -- =============================================================================
 -- TESTING
