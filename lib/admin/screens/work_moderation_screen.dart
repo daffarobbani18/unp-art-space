@@ -5,6 +5,7 @@ import '../../app/shared/widgets/custom_network_image.dart';
 import '../widgets/glass_app_bar.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
+import 'artwork_detail_screen.dart';
 
 class ModerationScreen extends StatefulWidget {
   const ModerationScreen({super.key});
@@ -358,9 +359,20 @@ class _ArtworkCardState extends State<_ArtworkCard> {
       child: AnimatedScale(
         scale: _isHovered ? 1.03 : 1.0,
         duration: const Duration(milliseconds: 200),
-        child: GlassCard(
-          padding: const EdgeInsets.all(16),
-          child: Column(
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ArtworkDetailScreen(
+                  artworkId: widget.artwork['id'] as int,
+                ),
+              ),
+            );
+          },
+          child: GlassCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image
@@ -484,6 +496,7 @@ class _ArtworkCardState extends State<_ArtworkCard> {
             ],
           ),
         ),
+          ),
       ),
     );
   }
