@@ -634,6 +634,150 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                           content: statusText,
                         ),
 
+                        // AI Detection Warning Card
+                        if ((artwork['is_ai_suspected'] == true) && 
+                            (artwork['status'] ?? '').toString().toLowerCase() == 'pending') ...[
+                          const SizedBox(height: 12),
+                          _buildGlassCard(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    const Color(0xFFFF6584).withOpacity(0.15),
+                                    const Color(0xFFFFA726).withOpacity(0.15),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: const Color(0xFFFF6584).withOpacity(0.5),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          gradient: const LinearGradient(
+                                            colors: [
+                                              Color(0xFFFF6584),
+                                              Color(0xFFFFA726),
+                                            ],
+                                          ),
+                                          borderRadius: BorderRadius.circular(10),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: const Color(0xFFFF6584).withOpacity(0.3),
+                                              blurRadius: 8,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                        child: const Icon(
+                                          Icons.analytics_outlined,
+                                          color: Colors.white,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Terindikasi AI',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 6,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFFF6584).withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                            color: const Color(0xFFFF6584),
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          '${((artwork['ai_generated_score'] ?? 0.0) * 100).toStringAsFixed(0)}%',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Sistem kami mendeteksi bahwa karya ini kemungkinan dibuat menggunakan AI dengan tingkat kepercayaan ${((artwork['ai_generated_score'] ?? 0.0) * 100).toStringAsFixed(1)}%.',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            color: Colors.white.withOpacity(0.95),
+                                            height: 1.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ClipRRect(
+                                          borderRadius: BorderRadius.circular(8),
+                                          child: LinearProgressIndicator(
+                                            value: (artwork['ai_generated_score'] ?? 0.0) as double,
+                                            backgroundColor: Colors.white.withOpacity(0.1),
+                                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                              Color(0xFFFF6584),
+                                            ),
+                                            minHeight: 8,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.info_outline,
+                                              color: Color(0xFFFFA726),
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: Text(
+                                                'Karya ini sedang dalam proses review lebih ketat oleh admin.',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  color: Colors.white.withOpacity(0.85),
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 16),
 
                         // Description Glass Card
