@@ -5,6 +5,7 @@ import '../widgets/glass_app_bar.dart';
 import '../widgets/glass_card.dart';
 import '../widgets/glass_button.dart';
 import '../widgets/glass_text_field.dart';
+import 'user_detail_screen.dart';
 
 class UserManagementScreen extends StatefulWidget {
   const UserManagementScreen({super.key});
@@ -63,6 +64,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     });
   }
 
+  Future<void> _openUserDetail(Map<String, dynamic> user) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => UserDetailScreen(user: user),
+      ),
+    );
+
+    // Reload users if changes were made
+    if (result == true) {
+      _loadUsers();
+    }
+  }
+
   Future<void> _updateUserRole(String userId, String newRole) async {
     try {
       await Supabase.instance.client
@@ -70,11 +85,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           .update({'role': newRole})
           .eq('id', userId);
 
+      // Update profiles table as well
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'role': newRole})
+          .eq('id', userId);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Role berhasil diubah menjadi $newRole'),
-            backgroundColor: Colors.green,
+            content: Text(
+              'Role berhasil diubah menjadi $newRole',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFF4CAF50),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           ),
         );
         _loadUsers();
@@ -82,7 +108,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(
+              'Error: $e',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: const Color(0xFFFF6584),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
         );
       }
     }
@@ -234,13 +268,14 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                               crossAxisCount: crossAxisCount,
                               crossAxisSpacing: 20,
                               mainAxisSpacing: 20,
-                              childAspectRatio: 1.2,
+                              childAspectRatio: 0.85,
                             ),
                             itemCount: _filteredUsers.length,
                             itemBuilder: (context, index) {
                               final user = _filteredUsers[index];
                               return _UserCard(
                                 user: user,
+                                onTap: () => _openUserDetail(user),
                                 onRoleChange: (newRole) => _updateUserRole(
                                   user['id'].toString(),
                                   newRole,
@@ -301,10 +336,12 @@ class _RoleFilterTab extends StatelessWidget {
 
 class _UserCard extends StatefulWidget {
   final Map<String, dynamic> user;
+  final VoidCallback onTap;
   final Function(String) onRoleChange;
 
   const _UserCard({
     required this.user,
+    required this.onTap,
     required this.onRoleChange,
   });
 
@@ -411,14 +448,16 @@ class _UserCardState extends State<_UserCard> {
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: AnimatedScale(
-        scale: _isHovered ? 1.03 : 1.0,
-        duration: const Duration(milliseconds: 200),
-        child: GlassCard(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _isHovered ? 1.03 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: GlassCard(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
               // Profile Image
               Row(
                 children: [
@@ -538,17 +577,22 @@ class _UserCardState extends State<_UserCard> {
               
               const Spacer(),
               
-              // Change Role Button
+              // View Details Button
               SizedBox(
                 width: double.infinity,
                 child: GlassButton(
-                  text: 'Ubah Role',
-                  onPressed: _showRoleChangeDialog,
-                  type: GlassButtonType.outline,
-                  icon: Icons.swap_horiz,
+                  text: 'Lihat Detail',
+                  onPressed: (e) {
+                    e?.stopPropagation();
+                    widget.onTap();
+                  },
+                  type: GlassButtonType.primary,
+                  icon: Icons.arrow_forward,
                 ),
               ),
             ],
+              ),
+            ),
           ),
         ),
       ),
