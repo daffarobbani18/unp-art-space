@@ -239,7 +239,7 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
                                     crossAxisCount: 2,
                                     crossAxisSpacing: 24,
                                     mainAxisSpacing: 24,
-                                    childAspectRatio: 1.8,
+                                    childAspectRatio: 2.2,
                                   ),
                                   itemCount: _events.length,
                                   itemBuilder: (context, index) {
@@ -413,21 +413,21 @@ class _EventCardState extends State<_EventCard> {
             fit: BoxFit.cover,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         
         // Title
         Text(
           widget.event.title,
           style: GoogleFonts.poppins(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
-            height: 1.3,
+            height: 1.2,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         
         // Organizer
         Row(
@@ -451,7 +451,7 @@ class _EventCardState extends State<_EventCard> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         
         // Date
         Row(
@@ -475,7 +475,7 @@ class _EventCardState extends State<_EventCard> {
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         
         // Location
         if (widget.event.location != null) ...[
@@ -500,14 +500,14 @@ class _EventCardState extends State<_EventCard> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
         
         const Spacer(),
         
         // Actions
         if (widget.showActions) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(

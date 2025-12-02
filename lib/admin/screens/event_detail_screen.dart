@@ -246,7 +246,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'Tanggal tidak tersedia';
-    return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(date);
+    try {
+      return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(date);
+    } catch (e) {
+      // Fallback jika locale Indonesia tidak tersedia
+      return DateFormat('EEEE, dd MMMM yyyy').format(date);
+    }
   }
 
   String _formatTime(DateTime? date) {
