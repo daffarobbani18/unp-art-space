@@ -541,6 +541,86 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
                                   ),
                                 ] else ...[
+                                  // AI Detection Warning if any artwork is suspected
+                                  if (artworks.any((artwork) => 
+                                      artwork['is_ai_suspected'] == true && 
+                                      (artwork['status'] ?? '').toString().toLowerCase() == 'pending')) ...[
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: BackdropFilter(
+                                          filter: ImageFilter.blur(
+                                            sigmaX: 8,
+                                            sigmaY: 8,
+                                          ),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(16),
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                colors: [
+                                                  const Color(0xFFFF6584).withOpacity(0.15),
+                                                  const Color(0xFFFFA726).withOpacity(0.15),
+                                                ],
+                                              ),
+                                              borderRadius: BorderRadius.circular(12),
+                                              border: Border.all(
+                                                color: const Color(0xFFFF6584).withOpacity(0.4),
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              children: [
+                                                Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    gradient: const LinearGradient(
+                                                      colors: [
+                                                        Color(0xFFFF6584),
+                                                        Color(0xFFFFA726),
+                                                      ],
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(8),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.analytics_outlined,
+                                                    color: Colors.white,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'Karya Terdeteksi AI',
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 14,
+                                                          fontWeight: FontWeight.bold,
+                                                          color: Colors.white,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        'Beberapa karya Anda terindikasi dibuat dengan AI dan sedang dalam review ketat oleh admin.',
+                                                        style: GoogleFonts.poppins(
+                                                          fontSize: 11,
+                                                          color: Colors.white.withOpacity(0.85),
+                                                          height: 1.4,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
@@ -721,6 +801,73 @@ class _ProfilePageState extends State<ProfilePage> {
                                                               ),
                                                             ),
                                                           ),
+
+                                                          // AI Detection Badge - Only show if suspected and pending
+                                                          if (artwork['is_ai_suspected'] == true && 
+                                                              status.toLowerCase() == 'pending')
+                                                            Positioned(
+                                                              left: 8,
+                                                              bottom: 8,
+                                                              child: ClipRRect(
+                                                                borderRadius:
+                                                                    BorderRadius.circular(
+                                                                      8,
+                                                                    ),
+                                                                child: BackdropFilter(
+                                                                  filter:
+                                                                      ImageFilter.blur(
+                                                                        sigmaX: 5,
+                                                                        sigmaY: 5,
+                                                                      ),
+                                                                  child: Container(
+                                                                    padding:
+                                                                        const EdgeInsets.symmetric(
+                                                                          horizontal:
+                                                                              6,
+                                                                          vertical:
+                                                                              4,
+                                                                        ),
+                                                                    decoration: BoxDecoration(
+                                                                      gradient: LinearGradient(
+                                                                        colors: [
+                                                                          const Color(0xFFFF6584).withOpacity(0.3),
+                                                                          const Color(0xFFFFA726).withOpacity(0.3),
+                                                                        ],
+                                                                      ),
+                                                                      borderRadius:
+                                                                          BorderRadius.circular(
+                                                                            8,
+                                                                          ),
+                                                                      border: Border.all(
+                                                                        color: const Color(0xFFFF6584).withOpacity(
+                                                                          0.6,
+                                                                        ),
+                                                                      ),
+                                                                    ),
+                                                                    child: Row(
+                                                                      mainAxisSize: MainAxisSize.min,
+                                                                      children: [
+                                                                        const Icon(
+                                                                          Icons.analytics_outlined,
+                                                                          color: Color(0xFFFF6584),
+                                                                          size: 10,
+                                                                        ),
+                                                                        const SizedBox(width: 4),
+                                                                        Text(
+                                                                          'AI',
+                                                                          style: GoogleFonts.poppins(
+                                                                            color: Colors.white,
+                                                                            fontWeight:
+                                                                                FontWeight.w700,
+                                                                            fontSize: 9,
+                                                                          ),
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ),
 
                                                           // Edit & Delete - Glass Circular Buttons
                                                           if (_isOwnProfile)
