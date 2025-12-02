@@ -409,11 +409,11 @@ class _EventCardState extends State<_EventCard> {
           child: CustomNetworkImage(
             imageUrl: widget.event.imageUrl ?? '',
             width: double.infinity,
-            height: 180,
+            height: 140,
             fit: BoxFit.cover,
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         
         // Title
         Text(
@@ -427,7 +427,7 @@ class _EventCardState extends State<_EventCard> {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         
         // Organizer
         Row(
@@ -531,10 +531,10 @@ class _EventCardState extends State<_EventCard> {
               ),
             ],
           ),
-        ] else ...[
-          const SizedBox(height: 8),
+        ] else ..[
+          const SizedBox(height: 4),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: _getStatusColor().withOpacity(0.2),
               borderRadius: BorderRadius.circular(20),
@@ -552,7 +552,7 @@ class _EventCardState extends State<_EventCard> {
                   widget.event.statusDisplayText,
                   style: GoogleFonts.poppins(
                     color: _getStatusColor(),
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
