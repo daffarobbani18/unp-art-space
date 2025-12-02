@@ -1,86 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../app/shared/widgets/custom_network_image.dart';
+import '../models/event_model.dart';
+import '../widgets/glass_app_bar.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/glass_button.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class EventDetailScreen extends StatefulWidget {
-  final Map<String, dynamic> event;
-  final VoidCallback? onEventUpdated;
+  final EventModel event;
 
   const EventDetailScreen({
     super.key,
     required this.event,
-    this.onEventUpdated,
   });
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
 }
 
-class _EventDetailScreenState extends State<EventDetailScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
-  
+class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _isProcessing = false;
-  Map<String, dynamic>? _artistDetails;
-  bool _isLoadingArtist = true;
+  late EventModel _currentEvent;
+  Map<String, dynamic>? _organizerDetails;
+  bool _isLoadingOrganizer = true;
+  int _submissionsCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutCubic,
-    ));
-
-    _animationController.forward();
-    _loadArtistDetails();
+    _currentEvent = widget.event;
+    _loadOrganizerDetails();
+    _loadSubmissionsCount();
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadArtistDetails() async {
-    if (widget.event['artist_id'] == null) {
-      setState(() => _isLoadingArtist = false);
+  Future<void> _loadOrganizerDetails() async {
+    if (_currentEvent.organizerId == null) {
+      setState(() => _isLoadingOrganizer = false);
       return;
     }
 
     try {
-      final response = await Supabase.instance.client
+      final userResponse = await Supabase.instance.client
           .from('users')
-          .select('id, name, email')
-          .eq('id', widget.event['artist_id'])
+          .select('name, email, profile_image_url, bio, specialization')
+          .eq('id', _currentEvent.organizerId!)
           .maybeSingle();
 
-      if (response != null) {
-        setState(() {
-          _artistDetails = response;
-          _isLoadingArtist = false;
-        });
-      } else {
-        setState(() => _isLoadingArtist = false);
-      }
+      setState(() {
+        _organizerDetails = userResponse;
+        _isLoadingOrganizer = false;
+      });
     } catch (e) {
-      print('Error loading artist: $e');
-      setState(() => _isLoadingArtist = false);
+      setState(() => _isLoadingOrganizer = false);
+    }
+  }
+
+  Future<void> _loadSubmissionsCount() async {
+    try {
+      final response = await Supabase.instance.client
+          .from('event_submissions')
+          .select('id')
+          .eq('event_id', _currentEvent.id);
+
+      setState(() {
+        _submissionsCount = (response as List).length;
+      });
+    } catch (e) {
+      // Handle error silently
     }
   }
 
@@ -88,31 +76,35 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     setState(() => _isProcessing = true);
 
     try {
-      final updateData = {
+      final updateData = <String, dynamic>{
         'status': newStatus,
-        if (rejectionReason != null) 'rejection_reason': rejectionReason,
       };
+
+      if (rejectionReason != null) {
+        updateData['rejection_reason'] = rejectionReason;
+      }
 
       await Supabase.instance.client
           .from('events')
           .update(updateData)
-          .eq('id', widget.event['id']);
+          .eq('id', _currentEvent.id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Event berhasil ${newStatus == 'approved' ? 'disetujui' : 'ditolak'}'),
-            backgroundColor: newStatus == 'approved' ? Colors.green : Colors.red,
+            backgroundColor: newStatus == 'approved' ? const Color(0xFF4CAF50) : const Color(0xFFFF6584),
           ),
         );
-        
-        widget.onEventUpdated?.call();
-        Navigator.pop(context, true);
+        Navigator.pop(context, true); // Return true to indicate status changed
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFFF6584),
+          ),
         );
       }
     } finally {
@@ -122,450 +114,262 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     }
   }
 
-  Future<void> _showRejectDialog() async {
-    final reasonController = TextEditingController();
-    final result = await showDialog<bool>(
+  void _showRejectDialog() {
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.cancel_outlined, color: Colors.red[700]),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 500),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                const Color(0xFF1E1E2C).withOpacity(0.95),
+                const Color(0xFF2D2D3A).withOpacity(0.95),
+              ],
             ),
-            const SizedBox(width: 12),
-            Text('Tolak Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Berikan alasan penolakan:',
-              style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1.5,
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Contoh: Informasi event tidak lengkap, tanggal sudah lewat, dll.',
-                hintStyle: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[400]),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                filled: true,
-                fillColor: Colors.grey[50],
-                contentPadding: const EdgeInsets.all(16),
-              ),
-              style: GoogleFonts.poppins(fontSize: 14),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins(color: Colors.grey[600])),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFF6584), Color(0xFFFFA726)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.cancel, color: Colors.white, size: 24),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'Tolak Event',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Alasan Penolakan',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: reasonController,
+                  maxLines: 4,
+                  style: GoogleFonts.poppins(color: Colors.white),
+                  decoration: InputDecoration(
+                    hintText: 'Masukkan alasan penolakan event ini...',
+                    hintStyle: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.3),
+                    ),
+                    filled: true,
+                    fillColor: Colors.black.withOpacity(0.3),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: Colors.white.withOpacity(0.1),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6366F1),
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Batal',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    GlassButton(
+                      text: 'Tolak Event',
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _updateEventStatus('rejected', rejectionReason: reasonController.text);
+                      },
+                      type: GlassButtonType.danger,
+                      icon: Icons.cancel,
+                    ),
+                  ],
+                ),
+              ],
             ),
-            child: Text('Tolak Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           ),
-        ],
+        ),
       ),
     );
-
-    if (result == true && reasonController.text.trim().isNotEmpty) {
-      await _updateEventStatus('rejected', rejectionReason: reasonController.text.trim());
-    } else if (result == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Alasan penolakan wajib diisi'), backgroundColor: Colors.orange),
-        );
-      }
-    }
   }
 
-  Future<void> _deleteEvent() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.delete_outline, color: Colors.red[700]),
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'Tanggal tidak tersedia';
+    return DateFormat('EEEE, dd MMMM yyyy', 'id_ID').format(date);
+  }
+
+  String _formatTime(DateTime? date) {
+    if (date == null) return '';
+    return DateFormat('HH:mm').format(date);
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, {Color? iconColor}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (iconColor ?? const Color(0xFF6366F1)).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
             ),
-            const SizedBox(width: 12),
-            Text('Hapus Event', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ],
-        ),
-        content: Text(
-          'Apakah Anda yakin ingin menghapus event ini secara permanen?',
-          style: GoogleFonts.poppins(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Batal', style: GoogleFonts.poppins(color: Colors.grey[600])),
+            child: Icon(
+              icon,
+              color: iconColor ?? const Color(0xFF6366F1),
+              size: 20,
+            ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
-            child: Text('Hapus', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
     );
-
-    if (confirm == true) {
-      setState(() => _isProcessing = true);
-      try {
-        await Supabase.instance.client
-            .from('events')
-            .delete()
-            .eq('id', widget.event['id']);
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Event berhasil dihapus'), backgroundColor: Colors.green),
-          );
-          widget.onEventUpdated?.call();
-          Navigator.pop(context, true);
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isProcessing = false);
-        }
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final status = widget.event['status'] ?? 'pending';
-    final eventDate = widget.event['event_date'] != null
-        ? DateTime.parse(widget.event['event_date'])
-        : null;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 1024;
 
     return Scaffold(
-      body: Stack(
-        children: [
-          CustomScrollView(
-            slivers: [
-              // Hero Image AppBar
-              SliverAppBar(
-                expandedHeight: 350,
-                pinned: true,
-                backgroundColor: const Color(0xFF1E3A8A),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Hero(
-                        tag: 'event_${widget.event['id']}',
-                        child: widget.event['image_url'] != null
-                            ? CustomNetworkImage(
-                                imageUrl: widget.event['image_url'],
-                                fit: BoxFit.cover,
-                                borderRadius: 0,
-                              )
-                            : Container(
-                                color: Colors.grey[300],
-                                child: Icon(Icons.event, size: 80, color: Colors.grey[400]),
-                              ),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Colors.transparent,
-                              Colors.black.withOpacity(0.7),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                leading: IconButton(
-                  icon: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.5),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.arrow_back, color: Colors.white),
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ),
-
-              // Content
-              SliverToBoxAdapter(
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position: _slideAnimation,
-                    child: Container(
-                      color: Colors.grey[50],
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title & Status Card
-                          Container(
-                            margin: const EdgeInsets.all(20),
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Status Badge
-                                _buildStatusBadge(status),
-                                const SizedBox(height: 16),
-
-                                // Title
-                                Text(
-                                  widget.event['title'] ?? 'Untitled Event',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Date & Location Info
-                          _buildInfoSection(eventDate),
-
-                          // Artist Info
-                          if (_artistDetails != null || _isLoadingArtist)
-                            _buildArtistSection(),
-
-                          // Description
-                          _buildDescriptionSection(),
-
-                          // Rejection Reason (if rejected)
-                          if (status.toLowerCase() == 'rejected' &&
-                              widget.event['rejection_reason'] != null)
-                            _buildRejectionReasonSection(),
-
-                          const SizedBox(height: 100), // Space for FAB
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // Action Buttons
-          if (!_isProcessing) _buildActionButtons(status),
-
-          // Loading Overlay
-          if (_isProcessing)
-            Container(
-              color: Colors.black.withOpacity(0.5),
-              child: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 16),
-                      Text('Processing...', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-              ),
+      backgroundColor: const Color(0xFF0F0F1E),
+      appBar: GlassAppBar(
+        title: 'Detail Event',
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: SingleChildScrollView(
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(
+              maxWidth: isDesktop ? 1400 : double.infinity,
             ),
-        ],
+            padding: EdgeInsets.all(isDesktop ? 32 : 16),
+            child: isDesktop
+                ? _buildDesktopLayout()
+                : _buildMobileLayout(),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    Color statusColor;
-    IconData statusIcon;
-    String statusLabel;
-
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'disetujui':
-        statusColor = const Color(0xFF059669);
-        statusIcon = Icons.check_circle;
-        statusLabel = 'Disetujui';
-        break;
-      case 'rejected':
-      case 'ditolak':
-        statusColor = const Color(0xFFDC2626);
-        statusIcon = Icons.cancel;
-        statusLabel = 'Ditolak';
-        break;
-      default:
-        statusColor = const Color(0xFFEA580C);
-        statusIcon = Icons.schedule;
-        statusLabel = 'Menunggu Persetujuan';
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: statusColor.withOpacity(0.3), width: 1.5),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(statusIcon, size: 18, color: statusColor),
-          const SizedBox(width: 8),
-          Text(
-            statusLabel,
-            style: GoogleFonts.poppins(
-              color: statusColor,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoSection(DateTime? eventDate) {
-    String formattedDate = 'Belum ditentukan';
-    if (eventDate != null) {
-      try {
-        // Format: "Monday, 12 Nov 2024\n14:30 WIB"
-        final dayNames = ['', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-        final monthNames = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        
-        final dayName = dayNames[eventDate.weekday];
-        final monthName = monthNames[eventDate.month];
-        final day = eventDate.day.toString().padLeft(2, '0');
-        final year = eventDate.year;
-        final hour = eventDate.hour.toString().padLeft(2, '0');
-        final minute = eventDate.minute.toString().padLeft(2, '0');
-        
-        formattedDate = '$dayName, $day $monthName $year\n$hour:$minute WIB';
-      } catch (e) {
-        formattedDate = eventDate.toString();
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildInfoRow(
-            Icons.calendar_today_rounded,
-            'Tanggal & Waktu',
-            formattedDate,
-            const Color(0xFF1E3A8A),
-          ),
-          const SizedBox(height: 20),
-          _buildInfoRow(
-            Icons.location_on_rounded,
-            'Lokasi',
-            widget.event['location'] ?? 'Lokasi belum ditentukan',
-            const Color(0xFF9333EA),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
+  Widget _buildDesktopLayout() {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(width: 16),
+        // Left Column - Image & Details
         Expanded(
+          flex: 3,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                label,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  height: 1.4,
-                ),
-              ),
+              _buildEventImage(),
+              const SizedBox(height: 24),
+              _buildEventContent(),
+            ],
+          ),
+        ),
+        const SizedBox(width: 24),
+        // Right Column - Info & Actions
+        Expanded(
+          flex: 2,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _buildStatusCard(),
+              const SizedBox(height: 16),
+              _buildEventInfoCard(),
+              const SizedBox(height: 16),
+              _buildOrganizerCard(),
+              const SizedBox(height: 16),
+              _buildStatsCard(),
+              if (_currentEvent.isPending) ...[
+                const SizedBox(height: 24),
+                _buildActionButtons(),
+              ],
+              if (_currentEvent.rejectionReason != null) ...[
+                const SizedBox(height: 16),
+                _buildRejectionReasonCard(),
+              ],
             ],
           ),
         ),
@@ -573,35 +377,256 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     );
   }
 
-  Widget _buildArtistSection() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
+  Widget _buildMobileLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _buildEventImage(),
+        const SizedBox(height: 16),
+        _buildStatusCard(),
+        const SizedBox(height: 16),
+        _buildEventInfoCard(),
+        const SizedBox(height: 16),
+        _buildEventContent(),
+        const SizedBox(height: 16),
+        _buildOrganizerCard(),
+        const SizedBox(height: 16),
+        _buildStatsCard(),
+        if (_currentEvent.isPending) ...[
+          const SizedBox(height: 24),
+          _buildActionButtons(),
+        ],
+        if (_currentEvent.rejectionReason != null) ...[
+          const SizedBox(height: 16),
+          _buildRejectionReasonCard(),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  Widget _buildEventImage() {
+    return GlassCard(
+      padding: EdgeInsets.zero,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: CustomNetworkImage(
+          imageUrl: _currentEvent.imageUrl ?? '',
+          height: 400,
+          width: double.infinity,
+          fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusCard() {
+    Color statusColor;
+    IconData statusIcon;
+
+    if (_currentEvent.isPending) {
+      statusColor = const Color(0xFFFFA726);
+      statusIcon = Icons.pending_actions;
+    } else if (_currentEvent.isApproved) {
+      statusColor = const Color(0xFF4CAF50);
+      statusIcon = Icons.check_circle;
+    } else {
+      statusColor = const Color(0xFFFF6584);
+      statusIcon = Icons.cancel;
+    }
+
+    return GlassCard(
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(statusIcon, color: statusColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Status Event',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.6),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _currentEvent.statusDisplayText,
+                  style: GoogleFonts.poppins(
+                    color: statusColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: _isLoadingArtist
-          ? const Center(child: CircularProgressIndicator())
-          : Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF1E3A8A), Color(0xFF9333EA)],
-                    ),
-                    borderRadius: BorderRadius.circular(16),
+    );
+  }
+
+  Widget _buildEventInfoCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
                   ),
-                  child: const Icon(Icons.person, color: Colors.white, size: 28),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.info_outline, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Informasi Event',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildInfoRow(
+            Icons.event,
+            'Tanggal Event',
+            _formatDate(_currentEvent.eventDate),
+          ),
+          if (_currentEvent.eventDate != null)
+            _buildInfoRow(
+              Icons.access_time,
+              'Waktu',
+              _formatTime(_currentEvent.eventDate),
+            ),
+          _buildInfoRow(
+            Icons.location_on,
+            'Lokasi',
+            _currentEvent.location ?? 'Tidak ada lokasi',
+          ),
+          _buildInfoRow(
+            Icons.calendar_today,
+            'Dibuat pada',
+            _formatDate(_currentEvent.createdAt),
+            iconColor: const Color(0xFF8B5CF6),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventContent() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _currentEvent.title,
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.white.withOpacity(0.1),
+                  Colors.white.withOpacity(0.05),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Deskripsi',
+            style: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _currentEvent.content ?? 'Tidak ada deskripsi',
+            style: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              height: 1.6,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrganizerCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Penyelenggara',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          if (_isLoadingOrganizer)
+            const Center(
+              child: CircularProgressIndicator(color: Color(0xFF6366F1)),
+            )
+          else if (_organizerDetails != null) ...[
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(40),
+                  child: CustomNetworkImage(
+                    imageUrl: _organizerDetails!['profile_image_url'] ?? '',
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -609,122 +634,129 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Diajukan oleh',
+                        _organizerDetails!['name'] ?? _currentEvent.organizerName ?? 'Unknown',
                         style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _artistDetails?['name'] ?? 'Unknown Artist',
-                        style: GoogleFonts.poppins(
+                          color: Colors.white,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (_artistDetails?['email'] != null)
+                      if (_organizerDetails!['email'] != null) ...[
+                        const SizedBox(height: 4),
                         Text(
-                          _artistDetails!['email'],
+                          _organizerDetails!['email'],
                           style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.6),
                             fontSize: 12,
-                            color: Colors.grey[600],
                           ),
                         ),
+                      ],
+                      if (_organizerDetails!['specialization'] != null) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6366F1).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            _organizerDetails!['specialization'],
+                            style: GoogleFonts.poppins(
+                              color: const Color(0xFF6366F1),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
               ],
             ),
-    );
-  }
-
-  Widget _buildDescriptionSection() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.description_rounded, color: Colors.grey[700], size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'Deskripsi Event',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+            if (_organizerDetails!['bio'] != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _organizerDetails!['bio'],
+                  style: GoogleFonts.poppins(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            widget.event['content'] ?? 'Tidak ada deskripsi',
-            style: GoogleFonts.poppins(
-              fontSize: 15,
-              height: 1.7,
-              color: Colors.grey[800],
+          ] else
+            Text(
+              _currentEvent.organizerName ?? 'Unknown Organizer',
+              style: GoogleFonts.poppins(
+                color: Colors.white.withOpacity(0.8),
+                fontSize: 14,
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildRejectionReasonSection() {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.red[50],
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.red[200]!, width: 2),
-      ),
+  Widget _buildStatsCard() {
+    return GlassCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.red[100],
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.info_rounded, color: Colors.red[700], size: 20),
+                child: const Icon(Icons.analytics, color: Colors.white, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
-                'Alasan Penolakan',
+                'Statistik',
                 style: GoogleFonts.poppins(
+                  color: Colors.white,
                   fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red[700],
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            widget.event['rejection_reason'],
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              height: 1.6,
-              color: Colors.red[900],
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF6366F1).withOpacity(0.1),
+                  const Color(0xFF8B5CF6).withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatItem(
+                  Icons.send,
+                  'Submissions',
+                  _submissionsCount.toString(),
+                ),
+              ],
             ),
           ),
         ],
@@ -732,71 +764,114 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     );
   }
 
-  Widget _buildActionButtons(String status) {
-    return Positioned(
-      left: 0,
-      right: 0,
-      bottom: 0,
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 20,
-              offset: const Offset(0, -4),
-            ),
-          ],
+  Widget _buildStatItem(IconData icon, String label, String value) {
+    return Column(
+      children: [
+        Icon(icon, color: const Color(0xFF6366F1), size: 28),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        child: SafeArea(
-          child: status.toLowerCase() == 'pending'
-              ? Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => _updateEventStatus('approved'),
-                        icon: const Icon(Icons.check_circle_outline),
-                        label: Text('Setujui', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF059669),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _showRejectDialog,
-                        icon: const Icon(Icons.cancel_outlined),
-                        label: Text('Tolak', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFDC2626),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 0,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : ElevatedButton.icon(
-                  onPressed: _deleteEvent,
-                  icon: const Icon(Icons.delete_outline),
-                  label: Text('Hapus Event', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRejectionReasonCard() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6584), Color(0xFFFFA726)],
                   ),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-        ),
+                child: const Icon(Icons.info, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Alasan Penolakan',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6584).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFFF6584).withOpacity(0.3),
+              ),
+            ),
+            child: Text(
+              _currentEvent.rejectionReason!,
+              style: GoogleFonts.poppins(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return GlassCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Tindakan',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlassButton(
+            text: 'Setujui Event',
+            onPressed: _isProcessing ? () {} : () => _updateEventStatus('approved'),
+            type: GlassButtonType.success,
+            icon: Icons.check_circle,
+            isLoading: _isProcessing,
+            isFullWidth: true,
+          ),
+          const SizedBox(height: 12),
+          GlassButton(
+            text: 'Tolak Event',
+            onPressed: _isProcessing ? () {} : _showRejectDialog,
+            type: GlassButtonType.danger,
+            icon: Icons.cancel,
+            isLoading: _isProcessing,
+            isFullWidth: true,
+          ),
+        ],
       ),
     );
   }
