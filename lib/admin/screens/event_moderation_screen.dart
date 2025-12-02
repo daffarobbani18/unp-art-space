@@ -20,7 +20,7 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
   String _selectedFilter = 'pending';
   List<EventModel> _events = [];
   bool _isLoading = true;
-  Set<String> _processingEvents = {};
+  final Set<String> _processingEvents = {};
 
   @override
   void initState() {
@@ -126,10 +126,6 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 1024;
-    final isTablet = screenWidth > 768 && screenWidth <= 1024;
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: GlassAppBar(
@@ -145,59 +141,52 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
         children: [
           // Filter Tabs
           Padding(
-            padding: EdgeInsets.all(isDesktop ? 32 : 16),
-            child: Center(
-              child: Container(
-                constraints: BoxConstraints(
-                  maxWidth: isDesktop ? 800 : double.infinity,
-                ),
-                child: GlassCard(
-                  padding: const EdgeInsets.all(8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: _FilterTab(
-                          label: 'Pending',
-                          icon: Icons.pending_actions,
-                          isSelected: _selectedFilter == 'pending',
-                          onTap: () => setState(() {
-                            _selectedFilter = 'pending';
-                            _loadEvents();
-                          }),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _FilterTab(
-                          label: 'Approved',
-                          icon: Icons.check_circle,
-                          isSelected: _selectedFilter == 'approved',
-                          onTap: () => setState(() {
-                            _selectedFilter = 'approved';
-                            _loadEvents();
-                          }),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _FilterTab(
-                          label: 'Rejected',
-                          icon: Icons.cancel,
-                          isSelected: _selectedFilter == 'rejected',
-                          onTap: () => setState(() {
-                            _selectedFilter = 'rejected';
-                            _loadEvents();
-                          }),
-                        ),
-                      ),
-                    ],
+            padding: const EdgeInsets.all(24),
+            child: GlassCard(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Pending',
+                      icon: Icons.pending_actions,
+                      isSelected: _selectedFilter == 'pending',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'pending';
+                        _loadEvents();
+                      }),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Approved',
+                      icon: Icons.check_circle,
+                      isSelected: _selectedFilter == 'approved',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'approved';
+                        _loadEvents();
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'Rejected',
+                      icon: Icons.cancel,
+                      isSelected: _selectedFilter == 'rejected',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'rejected';
+                        _loadEvents();
+                      }),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // Events List/Grid
+          // Events Grid
           Expanded(
             child: _isLoading
                 ? const Center(
@@ -224,58 +213,39 @@ class _EventModerationScreenState extends State<EventModerationScreen> {
                           ],
                         ),
                       )
-                    : Center(
-                        child: Container(
-                          constraints: BoxConstraints(
-                            maxWidth: isDesktop ? 1400 : double.infinity,
-                          ),
-                          padding: EdgeInsets.symmetric(
-                            horizontal: isDesktop ? 32 : 16,
-                            vertical: 16,
-                          ),
-                          child: isDesktop
-                              ? GridView.builder(
-                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    crossAxisSpacing: 24,
-                                    mainAxisSpacing: 24,
-                                    childAspectRatio: 2.2,
-                                  ),
-                                  itemCount: _events.length,
-                                  itemBuilder: (context, index) {
-                                    final event = _events[index];
-                                    final isProcessing = _processingEvents.contains(event.id);
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          int crossAxisCount = constraints.maxWidth > 1400
+                              ? 4
+                              : constraints.maxWidth > 1000
+                                  ? 3
+                                  : constraints.maxWidth > 600
+                                      ? 2
+                                      : 1;
+                          return GridView.builder(
+                            padding: const EdgeInsets.all(24),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                              childAspectRatio: 0.75,
+                            ),
+                            itemCount: _events.length,
+                            itemBuilder: (context, index) {
+                              final event = _events[index];
+                              final isProcessing = _processingEvents.contains(event.id);
 
-                                    return _EventCard(
-                                      event: event,
-                                      isProcessing: isProcessing,
-                                      showActions: _selectedFilter == 'pending',
-                                      onApprove: () => _updateEventStatus(event.id, 'approved'),
-                                      onReject: () => _updateEventStatus(event.id, 'rejected'),
-                                      onTap: () => _openEventDetail(event),
-                                    );
-                                  },
-                                )
-                              : ListView.builder(
-                                  itemCount: _events.length,
-                                  itemBuilder: (context, index) {
-                                    final event = _events[index];
-                                    final isProcessing = _processingEvents.contains(event.id);
-
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 16),
-                                      child: _EventCard(
-                                        event: event,
-                                        isProcessing: isProcessing,
-                                        showActions: _selectedFilter == 'pending',
-                                        onApprove: () => _updateEventStatus(event.id, 'approved'),
-                                        onReject: () => _updateEventStatus(event.id, 'rejected'),
-                                        onTap: () => _openEventDetail(event),
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
+                              return _EventCard(
+                                event: event,
+                                isProcessing: isProcessing,
+                                showActions: _selectedFilter == 'pending',
+                                onApprove: () => _updateEventStatus(event.id, 'approved'),
+                                onReject: () => _updateEventStatus(event.id, 'rejected'),
+                                onTap: () => _openEventDetail(event),
+                              );
+                            },
+                          );
+                        },
                       ),
           ),
         ],
@@ -375,282 +345,6 @@ class _EventCardState extends State<_EventCard> {
     return DateFormat('dd MMM yyyy, HH:mm').format(date);
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth > 1024;
-
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedScale(
-          scale: _isHovered ? 1.03 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: GlassCard(
-            padding: EdgeInsets.all(isDesktop ? 16 : 12),
-            child: isDesktop
-                ? _buildDesktopCard()
-                : _buildMobileCard(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDesktopCard() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Event Image
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: CustomNetworkImage(
-            imageUrl: widget.event.imageUrl ?? '',
-            width: double.infinity,
-            height: 140,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(height: 10),
-        
-        // Title
-        Text(
-          widget.event.title,
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 6),
-        
-        // Organizer
-        Row(
-          children: [
-            Icon(
-              Icons.person_outline,
-              color: Colors.white.withOpacity(0.6),
-              size: 14,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                widget.event.organizerName ?? 'Unknown',
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 12,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        
-        // Date
-        Row(
-          children: [
-            Icon(
-              Icons.calendar_today,
-              color: Colors.white.withOpacity(0.6),
-              size: 14,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                _formatDate(widget.event.eventDate),
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 12,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        
-        // Location
-        if (widget.event.location != null) ...[
-          Row(
-            children: [
-              Icon(
-                Icons.location_on_outlined,
-                color: Colors.white.withOpacity(0.6),
-                size: 14,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  widget.event.location!,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-        ],
-        
-        const Spacer(),
-        
-        // Actions
-        if (widget.showActions) ...[
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: GlassButton(
-                  text: 'Setujui',
-                  onPressed: widget.isProcessing ? () {} : widget.onApprove,
-                  type: GlassButtonType.success,
-                  icon: Icons.check,
-                  isLoading: widget.isProcessing,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: GlassButton(
-                  text: 'Tolak',
-                  onPressed: widget.isProcessing ? () {} : widget.onReject,
-                  type: GlassButtonType.danger,
-                  icon: Icons.close,
-                  isLoading: widget.isProcessing,
-                ),
-              ),
-            ],
-          ),
-        ] else ..[
-          const SizedBox(height: 4),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color: _getStatusColor().withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: _getStatusColor().withOpacity(0.5),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(_getStatusIcon(), color: _getStatusColor(), size: 14),
-                const SizedBox(width: 6),
-                Text(
-                  widget.event.statusDisplayText,
-                  style: GoogleFonts.poppins(
-                    color: _getStatusColor(),
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildMobileCard() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Event Image
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: CustomNetworkImage(
-            imageUrl: widget.event.imageUrl ?? '',
-            width: 100,
-            height: 100,
-            fit: BoxFit.cover,
-          ),
-        ),
-        const SizedBox(width: 16),
-        
-        // Event Details
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Title
-              Text(
-                widget.event.title,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              
-              // Organizer
-              Row(
-                children: [
-                  Icon(
-                    Icons.person_outline,
-                    color: Colors.white.withOpacity(0.6),
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      widget.event.organizerName ?? 'Unknown',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              
-              // Date
-              Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today,
-                    color: Colors.white.withOpacity(0.6),
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      _formatDate(widget.event.eventDate),
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Color _getStatusColor() {
     if (widget.event.isPending) return const Color(0xFFFFA726);
     if (widget.event.isApproved) return const Color(0xFF4CAF50);
@@ -661,5 +355,181 @@ class _EventCardState extends State<_EventCard> {
     if (widget.event.isPending) return Icons.pending_actions;
     if (widget.event.isApproved) return Icons.check_circle;
     return Icons.cancel;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: AnimatedScale(
+        scale: _isHovered ? 1.03 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: GlassCard(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: CustomNetworkImage(
+                      imageUrl: widget.event.imageUrl ?? '',
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Title
+                Text(
+                  widget.event.title,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                
+                // Organizer
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.person_outline,
+                      color: Colors.white54,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        widget.event.organizerName ?? 'Unknown',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Date
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today,
+                      color: Colors.white54,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _formatDate(widget.event.eventDate),
+                        style: GoogleFonts.poppins(
+                          color: Colors.white.withOpacity(0.6),
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Location
+                if (widget.event.location != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: Colors.white54,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          widget.event.location!,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                
+                if (widget.showActions) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GlassButton(
+                          text: 'Approve',
+                          onPressed: widget.isProcessing ? () {} : widget.onApprove,
+                          type: GlassButtonType.success,
+                          icon: Icons.check,
+                          isLoading: widget.isProcessing,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: GlassButton(
+                          text: 'Reject',
+                          onPressed: widget.isProcessing ? () {} : widget.onReject,
+                          type: GlassButtonType.danger,
+                          icon: Icons.close,
+                          isLoading: widget.isProcessing,
+                        ),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor().withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: _getStatusColor().withOpacity(0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_getStatusIcon(), color: _getStatusColor(), size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          widget.event.statusDisplayText,
+                          style: GoogleFonts.poppins(
+                            color: _getStatusColor(),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

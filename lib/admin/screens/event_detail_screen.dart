@@ -415,11 +415,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       padding: EdgeInsets.zero,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
-        child: CustomNetworkImage(
-          imageUrl: _currentEvent.imageUrl ?? '',
-          height: 400,
-          width: double.infinity,
-          fit: BoxFit.cover,
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: CustomNetworkImage(
+            imageUrl: _currentEvent.imageUrl ?? '',
+            width: double.infinity,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
