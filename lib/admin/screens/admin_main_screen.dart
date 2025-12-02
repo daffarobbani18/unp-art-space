@@ -9,7 +9,6 @@ import 'work_moderation_screen.dart';
 import 'event_moderation_screen.dart';
 import 'user_management_screen.dart';
 import 'settings_screen.dart';
-import 'admin_validation_page.dart';
 import '../widgets/animated_background.dart';
 import '../widgets/glass_sidebar.dart';
 import '../widgets/glass_button.dart';
@@ -39,11 +38,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       route: 'work_moderation',
     ),
     GlassSidebarItem(
-      icon: Icons.analytics_outlined,
-      title: 'Validasi Karya AI',
-      route: 'ai_validation',
-    ),
-    GlassSidebarItem(
       icon: Icons.event_rounded,
       title: 'Moderasi Event',
       route: 'event_moderation',
@@ -63,7 +57,6 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
   final List<Widget> _screens = [
     const DashboardScreen(),
     const ModerationScreen(),
-    const AdminValidationPage(),
     const EventModerationScreen(),
     const UserManagementScreen(),
     const SettingsScreen(),

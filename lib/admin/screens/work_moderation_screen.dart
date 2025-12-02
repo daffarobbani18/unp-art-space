@@ -34,13 +34,24 @@ class _ModerationScreenState extends State<ModerationScreen> {
         'rejected': ['rejected', 'ditolak'],
       };
       
-      final statusVariants = statusMapping[_selectedFilter] ?? [_selectedFilter];
+      dynamic response;
       
-      final response = await Supabase.instance.client
-          .from('artworks')
-          .select('*')
-          .inFilter('status', statusVariants)
-          .order('created_at', ascending: false);
+      if (_selectedFilter == 'ai_detected') {
+        // Query untuk karya yang terindikasi AI
+        response = await Supabase.instance.client
+            .from('artworks')
+            .select('*')
+            .eq('is_ai_suspected', true)
+            .order('ai_generated_score', ascending: false);
+      } else {
+        final statusVariants = statusMapping[_selectedFilter] ?? [_selectedFilter];
+        
+        response = await Supabase.instance.client
+            .from('artworks')
+            .select('*')
+            .inFilter('status', statusVariants)
+            .order('created_at', ascending: false);
+      }
 
       final artworksList = List<Map<String, dynamic>>.from(response as List);
 
@@ -176,6 +187,18 @@ class _ModerationScreenState extends State<ModerationScreen> {
                       isSelected: _selectedFilter == 'rejected',
                       onTap: () => setState(() {
                         _selectedFilter = 'rejected';
+                        _loadArtworks();
+                      }),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _FilterTab(
+                      label: 'AI Detected',
+                      icon: Icons.analytics_outlined,
+                      isSelected: _selectedFilter == 'ai_detected',
+                      onTap: () => setState(() {
+                        _selectedFilter = 'ai_detected';
                         _loadArtworks();
                       }),
                     ),
@@ -388,6 +411,49 @@ class _ArtworkCardState extends State<_ArtworkCard> {
                   ),
                 ],
               ),
+              
+              // AI Detection Badge
+              if (widget.artwork['is_ai_suspected'] == true) ..[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFFFF6584).withOpacity(0.2),
+                        const Color(0xFFFFA726).withOpacity(0.2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: const Color(0xFFFF6584).withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.analytics_outlined,
+                        color: Color(0xFFFF6584),
+                        size: 12,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'AI: ${((widget.artwork['ai_generated_score'] ?? 0.0) * 100).toStringAsFixed(0)}%',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFFF6584),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               
               if (widget.showActions) ...[
                 const SizedBox(height: 12),
