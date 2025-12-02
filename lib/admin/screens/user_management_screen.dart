@@ -453,57 +453,33 @@ class _UserCardState extends State<_UserCard> {
                     ),
                   ],
                 ),
-              const SizedBox(height: 16),
-              
-              // Name
-              Text(
-                widget.user['name'] ?? 'Unknown User',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                const SizedBox(height: 16),
+                
+                // Name
+                Text(
+                  widget.user['name'] ?? 'Unknown User',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              
-              // Email
-              Row(
-                children: [
-                  const Icon(
-                    Icons.email_outlined,
-                    color: Colors.white54,
-                    size: 14,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      widget.user['email'] ?? 'No email',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white.withOpacity(0.6),
-                        fontSize: 12,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              
-              if (widget.user['specialization'] != null) ...[
                 const SizedBox(height: 4),
+                
+                // Email
                 Row(
                   children: [
                     const Icon(
-                      Icons.work_outline,
+                      Icons.email_outlined,
                       color: Colors.white54,
                       size: 14,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
                       child: Text(
-                        widget.user['specialization'],
+                        widget.user['email'] ?? 'No email',
                         style: GoogleFonts.poppins(
                           color: Colors.white.withOpacity(0.6),
                           fontSize: 12,
@@ -514,20 +490,44 @@ class _UserCardState extends State<_UserCard> {
                     ),
                   ],
                 ),
-              ],
-              
-              const Spacer(),
-              
-              // View Details Button
-              SizedBox(
-                width: double.infinity,
-                child: GlassButton(
-                  text: 'Lihat Detail',
-                  onPressed: widget.onTap,
-                  type: GlassButtonType.primary,
-                  icon: Icons.arrow_forward,
+                
+                if (widget.user['specialization'] != null) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.work_outline,
+                        color: Colors.white54,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          widget.user['specialization'],
+                          style: GoogleFonts.poppins(
+                            color: Colors.white.withOpacity(0.6),
+                            fontSize: 12,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                
+                const Spacer(),
+                
+                // View Details Button
+                SizedBox(
+                  width: double.infinity,
+                  child: GlassButton(
+                    text: 'Lihat Detail',
+                    onPressed: widget.onTap,
+                    type: GlassButtonType.primary,
+                    icon: Icons.arrow_forward,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
