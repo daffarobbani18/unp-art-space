@@ -13,6 +13,7 @@ class GlassButton extends StatefulWidget {
   final double? width;
   final double? height;
   final double? fontSize;
+  final bool isFullWidth;
 
   const GlassButton({
     Key? key,
@@ -24,6 +25,7 @@ class GlassButton extends StatefulWidget {
     this.width,
     this.height,
     this.fontSize,
+    this.isFullWidth = false,
   }) : super(key: key);
 
   @override
@@ -74,7 +76,7 @@ class _GlassButtonState extends State<GlassButton> {
       onExit: (_) => setState(() => _isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        width: widget.width,
+        width: widget.isFullWidth ? double.infinity : widget.width,
         height: widget.height ?? 48,
         decoration: BoxDecoration(
           gradient: widget.type == GlassButtonType.outline
