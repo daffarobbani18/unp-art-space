@@ -413,7 +413,7 @@ class _ArtworkCardState extends State<_ArtworkCard> {
               ),
               
               // AI Detection Badge
-              if (widget.artwork['is_ai_suspected'] == true) ..[
+              if (widget.artwork['is_ai_suspected'] == true) ...[
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
