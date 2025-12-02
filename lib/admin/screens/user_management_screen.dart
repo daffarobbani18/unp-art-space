@@ -380,66 +380,7 @@ class _UserCardState extends State<_UserCard> {
     }
   }
 
-  void _showRoleChangeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: GlassCard(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Ubah Role',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.user['name'] ?? 'Unknown User',
-                style: GoogleFonts.poppins(
-                  color: Colors.white.withOpacity(0.7),
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ...[
-                {'role': 'admin', 'label': 'Admin', 'icon': Icons.admin_panel_settings},
-                {'role': 'artist', 'label': 'Artist', 'icon': Icons.palette},
-                {'role': 'organizer', 'label': 'Organizer', 'icon': Icons.event},
-                {'role': 'viewer', 'label': 'Viewer', 'icon': Icons.person},
-              ].map((roleData) {
-                final isCurrentRole = widget.user['role'] == roleData['role'];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: GlassButton(
-                      text: roleData['label'] as String,
-                      icon: roleData['icon'] as IconData,
-                      onPressed: isCurrentRole
-                          ? () {}
-                          : () {
-                              Navigator.pop(context);
-                              widget.onRoleChange(roleData['role'] as String);
-                            },
-                      type: isCurrentRole
-                          ? GlassButtonType.outline
-                          : GlassButtonType.primary,
-                    ),
-                  ),
-                );
-              }).toList(),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -582,17 +523,12 @@ class _UserCardState extends State<_UserCard> {
                 width: double.infinity,
                 child: GlassButton(
                   text: 'Lihat Detail',
-                  onPressed: (e) {
-                    e?.stopPropagation();
-                    widget.onTap();
-                  },
+                  onPressed: widget.onTap,
                   type: GlassButtonType.primary,
                   icon: Icons.arrow_forward,
                 ),
               ),
             ],
-              ),
-            ),
           ),
         ),
       ),
