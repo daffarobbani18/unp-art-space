@@ -399,60 +399,60 @@ class _UserCardState extends State<_UserCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-              // Profile Image
-              Row(
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          _getRoleColor(role),
-                          _getRoleColor(role).withOpacity(0.7),
-                        ],
+                // Profile Image
+                Row(
+                  children: [
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            _getRoleColor(role),
+                            _getRoleColor(role).withOpacity(0.7),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(30),
                       ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: widget.user['profile_image_url'] != null
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
-                            child: Image.network(
-                              widget.user['profile_image_url'],
-                              fit: BoxFit.cover,
+                      child: widget.user['profile_image_url'] != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(30),
+                              child: Image.network(
+                                widget.user['profile_image_url'],
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : Icon(
+                              _getRoleIcon(role),
+                              color: Colors.white,
+                              size: 30,
                             ),
-                          )
-                        : Icon(
-                            _getRoleIcon(role),
-                            color: Colors.white,
-                            size: 30,
-                          ),
-                  ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
                     ),
-                    decoration: BoxDecoration(
-                      color: _getRoleColor(role).withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _getRoleColor(role),
-                        width: 1,
+                    const Spacer(),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _getRoleColor(role).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _getRoleColor(role),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        role.toUpperCase(),
+                        style: GoogleFonts.poppins(
+                          color: _getRoleColor(role),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                    child: Text(
-                      role.toUpperCase(),
-                      style: GoogleFonts.poppins(
-                        color: _getRoleColor(role),
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               const SizedBox(height: 16),
               
               // Name
