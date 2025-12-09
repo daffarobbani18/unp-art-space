@@ -1,11 +1,12 @@
 # GitHub Actions Workflow untuk Deploy ke Azure VM
 name: Deploy Flutter App to Azure VM
 
+# DISABLED: Manual deployment via Vercel
 # Trigger: Jalankan saat ada push ke branch main
 on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch: # Allow manual trigger
+  # push:
+  #   branches: [ "main" ]
+  workflow_dispatch: # Allow manual trigger only
 
 # Jobs yang akan dijalankan
 jobs:
