@@ -19,19 +19,19 @@ class ArtworkDetailPage extends StatefulWidget {
   final String? submissionId;
 
   const ArtworkDetailPage({Key? key, required this.artwork})
-      : artworkId = null,
-        submissionId = null,
-        super(key: key);
+    : artworkId = null,
+      submissionId = null,
+      super(key: key);
 
   const ArtworkDetailPage.fromId({Key? key, required this.artworkId})
-      : artwork = null,
-        submissionId = null,
-        super(key: key);
+    : artwork = null,
+      submissionId = null,
+      super(key: key);
 
   const ArtworkDetailPage.fromSubmission({Key? key, required this.submissionId})
-      : artwork = null,
-        artworkId = null,
-        super(key: key);
+    : artwork = null,
+      artworkId = null,
+      super(key: key);
 
   @override
   State<ArtworkDetailPage> createState() => _ArtworkDetailPageState();
@@ -184,24 +184,18 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364),
-              ],
+              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
             ),
           ),
           child: const Center(
-            child: CircularProgressIndicator(
-              color: Color(0xFF8B5CF6),
-            ),
+            child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
           ),
         ),
       );
     }
 
     final artwork = _loadedArtwork ?? widget.artwork;
-    
+
     // Show error if no artwork data
     if (artwork == null) {
       return Scaffold(
@@ -210,11 +204,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF0F2027),
-                Color(0xFF203A43),
-                Color(0xFF2C5364),
-              ],
+              colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
             ),
           ),
           child: Center(
@@ -258,7 +248,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     } catch (e) {
       debugPrint('Error parsing users data: $e');
     }
-    
+
     final artistName =
         (users['name'] as String?) ??
         (artwork['artist_name'] as String?) ??
@@ -267,7 +257,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     final artistAvatar = (users['profile_image_url'] as String?) ?? '';
     final artistBio =
         (users['bio'] as String?) ?? 'Seniman ini belum memiliki bio.';
-    
+
     Map<String, dynamic> social = {};
     try {
       final socialData = users['social_media'];
@@ -457,8 +447,11 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // AI Detection Warning Card (Moved to top for visibility)
-                        if ((artwork['is_ai_suspected'] == true) && 
-                            (artwork['status'] ?? '').toString().toLowerCase() == 'pending') ...[
+                        if ((artwork['is_ai_suspected'] == true) &&
+                            (artwork['status'] ?? '')
+                                    .toString()
+                                    .toLowerCase() ==
+                                'pending') ...[
                           const SizedBox(height: 12),
                           _buildGlassCard(
                             child: Container(
@@ -472,7 +465,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                  color: const Color(0xFFFF6584).withOpacity(0.5),
+                                  color: const Color(
+                                    0xFFFF6584,
+                                  ).withOpacity(0.5),
                                   width: 1.5,
                                 ),
                               ),
@@ -490,10 +485,14 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                               Color(0xFFFFA726),
                                             ],
                                           ),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: const Color(0xFFFF6584).withOpacity(0.3),
+                                              color: const Color(
+                                                0xFFFF6584,
+                                              ).withOpacity(0.3),
                                               blurRadius: 8,
                                               spreadRadius: 1,
                                             ),
@@ -522,8 +521,12 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                           vertical: 6,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFFF6584).withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(20),
+                                          color: const Color(
+                                            0xFFFF6584,
+                                          ).withOpacity(0.2),
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
                                           border: Border.all(
                                             color: const Color(0xFFFF6584),
                                             width: 1.5,
@@ -548,25 +551,35 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Sistem kami mendeteksi bahwa karya ini kemungkinan dibuat menggunakan AI dengan tingkat kepercayaan ${((artwork['ai_generated_score'] ?? 0.0) * 100).toStringAsFixed(1)}%.',
                                           style: GoogleFonts.poppins(
                                             fontSize: 13,
-                                            color: Colors.white.withOpacity(0.95),
+                                            color: Colors.white.withOpacity(
+                                              0.95,
+                                            ),
                                             height: 1.5,
                                           ),
                                         ),
                                         const SizedBox(height: 12),
                                         ClipRRect(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
                                           child: LinearProgressIndicator(
-                                            value: (artwork['ai_generated_score'] ?? 0.0) as double,
-                                            backgroundColor: Colors.white.withOpacity(0.1),
-                                            valueColor: const AlwaysStoppedAnimation<Color>(
-                                              Color(0xFFFF6584),
-                                            ),
+                                            value:
+                                                (artwork['ai_generated_score'] ??
+                                                        0.0)
+                                                    as double,
+                                            backgroundColor: Colors.white
+                                                .withOpacity(0.1),
+                                            valueColor:
+                                                const AlwaysStoppedAnimation<
+                                                  Color
+                                                >(Color(0xFFFF6584)),
                                             minHeight: 8,
                                           ),
                                         ),
@@ -584,7 +597,8 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                                 'Karya ini sedang dalam proses review lebih ketat oleh admin.',
                                                 style: GoogleFonts.poppins(
                                                   fontSize: 12,
-                                                  color: Colors.white.withOpacity(0.85),
+                                                  color: Colors.white
+                                                      .withOpacity(0.85),
                                                   fontStyle: FontStyle.italic,
                                                 ),
                                               ),
@@ -623,9 +637,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   if (artistId.isNotEmpty) {
                                     Navigator.of(context).push(
                                       MaterialPageRoute(
-                                        builder: (_) => EnhancedArtistProfilePage(
-                                          artistId: artistId,
-                                        ),
+                                        builder: (_) =>
+                                            EnhancedArtistProfilePage(
+                                              artistId: artistId,
+                                            ),
                                       ),
                                     );
                                   }
@@ -693,7 +708,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   count: _likeCount,
                                   label: 'Likes',
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFFEC4899), Color(0xFFF472B6)],
+                                    colors: [
+                                      Color(0xFFEC4899),
+                                      Color(0xFFF472B6),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -704,7 +722,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   count: _viewCount,
                                   label: 'Views',
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+                                    colors: [
+                                      Color(0xFF3B82F6),
+                                      Color(0xFF60A5FA),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -715,7 +736,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   count: _shareCount,
                                   label: 'Shares',
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF10B981), Color(0xFF34D399)],
+                                    colors: [
+                                      Color(0xFF10B981),
+                                      Color(0xFF34D399),
+                                    ],
                                   ),
                                 ),
                               ),
@@ -1039,7 +1063,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   onTap: _isLiking ? null : _toggleLike,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                     decoration: BoxDecoration(
                                       gradient: LinearGradient(
                                         colors: _isLiked
@@ -1055,17 +1081,19 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                       borderRadius: BorderRadius.circular(16),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: (_isLiked
-                                                  ? const Color(0xFFDC2626)
-                                                  : const Color(0xFFEC4899))
-                                              .withOpacity(0.4),
+                                          color:
+                                              (_isLiked
+                                                      ? const Color(0xFFDC2626)
+                                                      : const Color(0xFFEC4899))
+                                                  .withOpacity(0.4),
                                           blurRadius: 20,
                                           offset: const Offset(0, 8),
                                         ),
                                       ],
                                     ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           _isLiked
@@ -1099,7 +1127,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                   onTap: _showCommentsModal,
                                   borderRadius: BorderRadius.circular(16),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(vertical: 16),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
                                     decoration: BoxDecoration(
                                       gradient: const LinearGradient(
                                         colors: [
@@ -1119,30 +1149,31 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                                       ],
                                     ),
                                     child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.comment_rounded,
-                                    color: Colors.white,
-                                    size: 22,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'Komentar',
-                                    style: GoogleFonts.poppins(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(
+                                          Icons.comment_rounded,
+                                          color: Colors.white,
+                                          size: 22,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          'Komentar',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),
@@ -1254,10 +1285,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.12),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1456,7 +1484,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
 
     try {
       debugPrint('🔍 Fetching artwork with ID: ${widget.artworkId}');
-      
+
       final response = await Supabase.instance.client
           .from('artworks')
           .select('*, users(*)')
@@ -1474,7 +1502,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           // Show error snackbar
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Karya dengan ID ${widget.artworkId} tidak ditemukan'),
+              content: Text(
+                'Karya dengan ID ${widget.artworkId} tidak ditemukan',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -1526,8 +1556,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     });
 
     try {
-      debugPrint('🔍 Fetching artwork from submission UUID: ${widget.submissionId}');
-      
+      debugPrint(
+        '🔍 Fetching artwork from submission UUID: ${widget.submissionId}',
+      );
+
       // Step 1: Get submission to find artwork_id
       final submissionResponse = await Supabase.instance.client
           .from('event_submissions')
@@ -1545,7 +1577,9 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Karya tidak ditemukan atau sudah dihapus dari event'),
+              content: Text(
+                'Karya tidak ditemukan atau sudah dihapus dari event',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -1592,10 +1626,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       debugPrint('👤 User Response: $userResponse');
 
       // Merge artwork with user data
-      final artworkData = {
-        ...artworkResponse,
-        'users': userResponse ?? {},
-      };
+      final artworkData = {...artworkResponse, 'users': userResponse ?? {}};
 
       debugPrint('✅ Artwork found from submission: ${artworkData['title']}');
 
@@ -1772,21 +1803,21 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   Future<void> _toggleLike() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Silakan login terlebih dahulu'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      // Guest mode - show download dialog
+      _showGuestActionDialog(
+        title: 'Suka Karya Ini?',
+        message:
+            'Download aplikasi Campus Art Space untuk menyukai karya, berkomentar, dan berinteraksi dengan komunitas seni kampus!',
+        icon: Icons.favorite,
+        gradientColors: [Color(0xFFDC2626), Color(0xFFEF4444)],
+      );
       return;
     }
 
     // Optimistic UI update
     final previousLiked = _isLiked;
     final previousCount = _likeCount;
-    
+
     setState(() {
       _isLiking = true;
       _isLiked = !_isLiked;
@@ -1822,10 +1853,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           _likeCount = previousCount;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Gagal: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('Gagal: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1838,6 +1866,18 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   }
 
   void _showCommentsModal() {
+    // Check if guest mode
+    if (_isGuestMode) {
+      _showGuestActionDialog(
+        title: 'Ingin Berkomentar?',
+        message:
+            'Download aplikasi Campus Art Space untuk berbagi pendapat, berdiskusi, dan terhubung dengan seniman!',
+        icon: Icons.chat_bubble_rounded,
+        gradientColors: [Color(0xFF3B82F6), Color(0xFF60A5FA)],
+      );
+      return;
+    }
+
     final artwork = _loadedArtwork ?? widget.artwork;
     if (artwork == null) return;
 
@@ -1884,11 +1924,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.download_rounded,
-                color: Colors.white,
-                size: 24,
-              ),
+              const Icon(Icons.download_rounded, color: Colors.white, size: 24),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -1925,6 +1961,248 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
     );
   }
 
+  void _showGuestActionDialog({
+    required String title,
+    required String message,
+    required IconData icon,
+    required List<Color> gradientColors,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1E1E2C), Color(0xFF2C2C3E)],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.5),
+                  blurRadius: 30,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon Header
+                Container(
+                  padding: EdgeInsets.all(24),
+                  child: Container(
+                    padding: EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: gradientColors),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: gradientColors[0].withOpacity(0.5),
+                          blurRadius: 20,
+                          offset: Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Icon(icon, size: 40, color: Colors.white),
+                  ),
+                ),
+
+                // Title
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 12),
+
+                // Message
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.7),
+                      height: 1.5,
+                    ),
+                  ),
+                ),
+
+                SizedBox(height: 24),
+
+                // Features List
+                Container(
+                  margin: EdgeInsets.symmetric(horizontal: 24),
+                  padding: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildFeatureRow(
+                        Icons.favorite,
+                        'Like & simpan karya favorit',
+                      ),
+                      SizedBox(height: 12),
+                      _buildFeatureRow(
+                        Icons.chat_bubble,
+                        'Komentar & diskusi seni',
+                      ),
+                      SizedBox(height: 12),
+                      _buildFeatureRow(
+                        Icons.person_add,
+                        'Follow seniman favorit',
+                      ),
+                      SizedBox(height: 12),
+                      _buildFeatureRow(Icons.event, 'Akses event & pameran'),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 24),
+
+                // Action Buttons
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    children: [
+                      // Download Button
+                      SizedBox(
+                        width: double.infinity,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pop(context);
+                              _showDownloadDialog();
+                            },
+                            borderRadius: BorderRadius.circular(16),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFF3B82F6),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Color(0xFF8B5CF6).withOpacity(0.4),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 8),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.download_rounded,
+                                    color: Colors.white,
+                                    size: 22,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Text(
+                                    'Download Aplikasi',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      SizedBox(height: 12),
+
+                      // Cancel Button
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: Text(
+                          'Nanti Saja',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Color(0xFF8B5CF6).withOpacity(0.2),
+                Color(0xFF3B82F6).withOpacity(0.2),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: Color(0xFF8B5CF6)),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            text,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.8),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   void _shareArtwork(String title, String imageUrl) {
     // Show share options menu
     showModalBottomSheet(
@@ -1943,10 +2221,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
           decoration: BoxDecoration(
             color: const Color(0xFF1a1a2e).withOpacity(0.95),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -2034,10 +2309,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.1),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
         ),
         child: Row(
           children: [
@@ -2089,7 +2361,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
       final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
       final artworkUrl = 'https://unp-art-space.vercel.app/artwork/$artworkId';
       await Clipboard.setData(ClipboardData(text: artworkUrl));
-      
+
       await _incrementShareCount();
 
       if (mounted) {
@@ -2099,10 +2371,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
               children: [
                 const Icon(Icons.check_circle, color: Colors.white),
                 const SizedBox(width: 12),
-                Text(
-                  'Link copied to clipboard!',
-                  style: GoogleFonts.poppins(),
-                ),
+                Text('Link copied to clipboard!', style: GoogleFonts.poppins()),
               ],
             ),
             backgroundColor: const Color(0xFF10B981),
@@ -2121,7 +2390,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   void _showQRCodeDialog(String title) {
     final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
     final artworkUrl = 'https://unp-art-space.vercel.app/artwork/$artworkId';
-    
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -2163,7 +2432,7 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 24),
-                  
+
                   // QR Code
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -2250,9 +2519,10 @@ class _ArtworkDetailPageState extends State<ArtworkDetailPage>
   Future<void> _shareViaApps(String title) async {
     try {
       await _incrementShareCount();
-      
+
       final artworkId = (_loadedArtwork ?? widget.artwork)?['id'] ?? '';
-      final shareText = '''
+      final shareText =
+          '''
 🎨 $title
 
 Lihat karya seni ini di Campus Art Space!
@@ -2281,10 +2551,7 @@ https://unp-art-space.vercel.app/artwork/$artworkId
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1a1a2e),
-                  Color(0xFF16213e),
-                ],
+                colors: [Color(0xFF1a1a2e), Color(0xFF16213e)],
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
@@ -2321,7 +2588,7 @@ https://unp-art-space.vercel.app/artwork/$artworkId
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Title
                 Text(
                   'UNP Art Space',
@@ -2332,7 +2599,7 @@ https://unp-art-space.vercel.app/artwork/$artworkId
                   ),
                 ),
                 const SizedBox(height: 8),
-                
+
                 // Description
                 Text(
                   'Nikmati pengalaman lebih lengkap dengan aplikasi mobile kami',
@@ -2343,7 +2610,7 @@ https://unp-art-space.vercel.app/artwork/$artworkId
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Continue with Website Button
                 SizedBox(
                   width: double.infinity,
@@ -2382,7 +2649,7 @@ https://unp-art-space.vercel.app/artwork/$artworkId
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // Download App Button
                 SizedBox(
                   width: double.infinity,
@@ -2609,7 +2876,9 @@ class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
             child: Container(
               decoration: BoxDecoration(
                 color: const Color(0xFF1E1E2C).withOpacity(0.95),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.1),
                   width: 1.5,
@@ -2679,7 +2948,9 @@ class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
                         if (!snapshot.hasData) {
                           return const Center(
                             child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
+                              ),
                             ),
                           );
                         }
@@ -2795,8 +3066,8 @@ class _CommentsBottomSheetState extends State<_CommentsBottomSheet> {
                                           strokeWidth: 2,
                                           valueColor:
                                               AlwaysStoppedAnimation<Color>(
-                                            Colors.white,
-                                          ),
+                                                Colors.white,
+                                              ),
                                         ),
                                       )
                                     : const Icon(
@@ -2847,10 +3118,7 @@ class _CommentItem extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.1),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2862,7 +3130,8 @@ class _CommentItem extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => EnhancedArtistProfilePage(artistId: userId),
+                        builder: (context) =>
+                            EnhancedArtistProfilePage(artistId: userId),
                       ),
                     );
                   }
@@ -2870,8 +3139,9 @@ class _CommentItem extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 20,
                   backgroundColor: Colors.white.withOpacity(0.1),
-                  backgroundImage:
-                      avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                  backgroundImage: avatarUrl.isNotEmpty
+                      ? NetworkImage(avatarUrl)
+                      : null,
                   child: avatarUrl.isEmpty
                       ? Icon(
                           Icons.person,
@@ -2909,10 +3179,7 @@ class _CommentItem extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF8B5CF6),
-                                  Color(0xFF6366F1),
-                                ],
+                                colors: [Color(0xFF8B5CF6), Color(0xFF6366F1)],
                               ),
                               borderRadius: BorderRadius.circular(8),
                             ),

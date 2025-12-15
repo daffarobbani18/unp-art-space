@@ -1100,6 +1100,74 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
     }
   }
 
+  Future<void> _deleteEvent() async {
+    try {
+      // Show loading indicator
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+            ),
+          ),
+        );
+      }
+
+      // Delete the event from database
+      // Cascade delete will automatically handle related records (submissions, etc.)
+      await supabase.from('events').delete().eq('id', widget.eventId);
+
+      // Close loading dialog
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Event berhasil dihapus!',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Navigate back to event curation page after short delay
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      }
+    } catch (e) {
+      // Close loading dialog if open
+      if (mounted) {
+        Navigator.pop(context);
+      }
+
+      // Show error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Gagal menghapus event: ${e.toString()}',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      debugPrint('Error deleting event: $e');
+    }
+  }
+
   void _showComingSoonDialog(String feature) {
     showDialog(
       context: context,
@@ -1476,7 +1544,7 @@ class _OrganizerEventDetailPageState extends State<OrganizerEventDetailPage>
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              _showComingSoonDialog('Hapus Event');
+              _deleteEvent();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFEF4444),
