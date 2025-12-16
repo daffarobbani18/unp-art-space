@@ -8,13 +8,12 @@ import '../../../shared/widgets/custom_network_image.dart';
 class EnhancedArtistProfilePage extends StatefulWidget {
   final String artistId;
 
-  const EnhancedArtistProfilePage({
-    Key? key,
-    required this.artistId,
-  }) : super(key: key);
+  const EnhancedArtistProfilePage({Key? key, required this.artistId})
+    : super(key: key);
 
   @override
-  State<EnhancedArtistProfilePage> createState() => _EnhancedArtistProfilePageState();
+  State<EnhancedArtistProfilePage> createState() =>
+      _EnhancedArtistProfilePageState();
 }
 
 class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
@@ -23,11 +22,11 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
 
   late TabController _tabController;
   bool _isLoading = true;
-  
+
   Map<String, dynamic>? _artistProfile;
   List<Map<String, dynamic>> _artworks = [];
   Map<String, dynamic> _statistics = {};
-  
+
   // Follow system
   bool _isFollowing = false;
   int _followerCount = 0;
@@ -57,17 +56,32 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
       // Load artist profile from users table
       final userResponse = await supabase
           .from('users')
-          .select('id, name, email, specialization, bio, social_media, profile_image_url')
+          .select(
+            'id, name, email, specialization, bio, social_media, profile_image_url',
+          )
           .eq('id', widget.artistId)
           .single();
 
       // Load artist artworks
-      final artworksResponse = await supabase
+      // If viewing own profile, show all artworks including pending/rejected
+      // Otherwise, only show approved artworks
+      final currentUser = supabase.auth.currentUser;
+      final isOwnProfile = currentUser?.id == widget.artistId;
+
+      var query = supabase
           .from('artworks')
-          .select('id, title, media_url, thumbnail_url, artwork_type, likes_count, category, created_at')
-          .eq('artist_id', widget.artistId)
-          .eq('status', 'approved')
-          .order('created_at', ascending: false) as List;
+          .select(
+            'id, title, media_url, thumbnail_url, artwork_type, likes_count, category, created_at, status',
+          )
+          .eq('artist_id', widget.artistId);
+
+      // Only filter by status if not viewing own profile
+      if (!isOwnProfile) {
+        query = query.eq('status', 'approved');
+      }
+
+      final artworksResponse =
+          await query.order('created_at', ascending: false) as List;
 
       // Calculate statistics
       final totalArtworks = artworksResponse.length;
@@ -89,7 +103,9 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
         _statistics = {
           'total_artworks': totalArtworks,
           'total_likes': totalLikes,
-          'avg_likes': totalArtworks > 0 ? (totalLikes / totalArtworks).toStringAsFixed(1) : '0',
+          'avg_likes': totalArtworks > 0
+              ? (totalLikes / totalArtworks).toStringAsFixed(1)
+              : '0',
           'categories': categoryMap,
         };
         _isLoading = false;
@@ -205,9 +221,9 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
     } catch (e) {
       debugPrint('Error toggling follow: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -229,18 +245,12 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1a1a2e),
-              Color(0xFF16213e),
-              Color(0xFF0f3460),
-            ],
+            colors: [Color(0xFF1a1a2e), Color(0xFF16213e), Color(0xFF0f3460)],
           ),
         ),
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(
-                  color: Color(0xFF8B5CF6),
-                ),
+                child: CircularProgressIndicator(color: Color(0xFF8B5CF6)),
               )
             : RefreshIndicator(
                 onRefresh: _loadArtistProfile,
@@ -248,40 +258,27 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                 child: CustomScrollView(
                   slivers: [
                     // Profile Header
-                    SliverToBoxAdapter(
-                      child: _buildProfileHeader(),
-                    ),
+                    SliverToBoxAdapter(child: _buildProfileHeader()),
 
                     // Statistics Cards
-                    SliverToBoxAdapter(
-                      child: _buildStatisticsCards(),
-                    ),
+                    SliverToBoxAdapter(child: _buildStatisticsCards()),
 
                     // Bio Section
                     if (_artistProfile?['bio'] != null)
-                      SliverToBoxAdapter(
-                        child: _buildBioSection(),
-                      ),
+                      SliverToBoxAdapter(child: _buildBioSection()),
 
                     // Social Media
                     if (_artistProfile?['social_media'] != null)
-                      SliverToBoxAdapter(
-                        child: _buildSocialMedia(),
-                      ),
+                      SliverToBoxAdapter(child: _buildSocialMedia()),
 
                     // Tab Bar
-                    SliverToBoxAdapter(
-                      child: _buildTabBar(),
-                    ),
+                    SliverToBoxAdapter(child: _buildTabBar()),
 
                     // Tab Content
                     SliverFillRemaining(
                       child: TabBarView(
                         controller: _tabController,
-                        children: [
-                          _buildPortfolioTab(),
-                          _buildCategoriesTab(),
-                        ],
+                        children: [_buildPortfolioTab(), _buildCategoriesTab()],
                       ),
                     ),
                   ],
@@ -306,10 +303,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
             height: 120,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(
-                color: const Color(0xFF8B5CF6),
-                width: 3,
-              ),
+              border: Border.all(color: const Color(0xFF8B5CF6), width: 3),
             ),
             child: ClipOval(
               child: profileImageUrl != null
@@ -344,10 +338,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
           if (specialization != null) ...[
             const SizedBox(height: 8),
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 6,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF8B5CF6), Color(0xFF3B82F6)],
@@ -382,8 +373,8 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _isFollowing 
-                    ? Colors.white.withOpacity(0.2) 
+                backgroundColor: _isFollowing
+                    ? Colors.white.withOpacity(0.2)
                     : const Color(0xFF8B5CF6),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
@@ -431,10 +422,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
         ),
         Text(
           label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: Colors.white60,
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: Colors.white60),
         ),
       ],
     );
@@ -483,10 +471,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.08),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.12),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.white.withOpacity(0.12), width: 1),
           ),
           child: Column(
             children: [
@@ -502,10 +487,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
               ),
               Text(
                 label,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: Colors.white70,
-                ),
+                style: GoogleFonts.poppins(fontSize: 11, color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -517,7 +499,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
 
   Widget _buildBioSection() {
     final bio = _artistProfile?['bio'];
-    
+
     return Padding(
       padding: const EdgeInsets.all(20),
       child: ClipRRect(
@@ -573,7 +555,8 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
   }
 
   Widget _buildSocialMedia() {
-    final socialMedia = _artistProfile?['social_media'] as Map<String, dynamic>?;
+    final socialMedia =
+        _artistProfile?['social_media'] as Map<String, dynamic>?;
     if (socialMedia == null || socialMedia.isEmpty) return const SizedBox();
 
     return Padding(
@@ -619,7 +602,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                   children: socialMedia.entries.map((entry) {
                     IconData icon;
                     Color color;
-                    
+
                     switch (entry.key.toLowerCase()) {
                       case 'instagram':
                         icon = Icons.camera_alt_rounded;
@@ -642,7 +625,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                         icon = Icons.link_rounded;
                         color = Colors.grey;
                     }
-                    
+
                     return Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
@@ -685,9 +668,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
-              unselectedLabelStyle: GoogleFonts.poppins(
-                fontSize: 14,
-              ),
+              unselectedLabelStyle: GoogleFonts.poppins(fontSize: 14),
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               tabs: const [
@@ -744,7 +725,7 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
 
   Widget _buildCategoriesTab() {
     final categories = _statistics['categories'] as Map<String, int>? ?? {};
-    
+
     if (categories.isEmpty) {
       return const Center(child: Text('No categories'));
     }
@@ -758,9 +739,10 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
       itemBuilder: (context, index) {
         final entry = sortedCategories[index];
         final percentage = (_statistics['total_artworks'] as int) > 0
-            ? (entry.value / (_statistics['total_artworks'] as int) * 100).toStringAsFixed(0)
+            ? (entry.value / (_statistics['total_artworks'] as int) * 100)
+                  .toStringAsFixed(0)
             : '0';
-        
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: ClipRRect(
@@ -836,15 +818,18 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
   Widget _buildArtworkCard(Map<String, dynamic> artwork) {
     final imageUrl = artwork['thumbnail_url'] ?? artwork['media_url'];
     final isVideo = artwork['artwork_type'] == 'video';
+    final status = artwork['status'] as String?;
+    final isApproved = status == 'approved';
+    final isPending = status == 'pending';
+    final isRejected = status == 'rejected';
 
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ArtworkDetailPage.fromId(
-              artworkId: artwork['id'],
-            ),
+            builder: (context) =>
+                ArtworkDetailPage.fromId(artworkId: artwork['id']),
           ),
         );
       },
@@ -907,6 +892,49 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                             ),
                           ),
                         ),
+                      // Status badge (only show if not approved)
+                      if (!isApproved && _isCurrentUser)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 5,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isPending
+                                  ? Colors.orange.withOpacity(0.9)
+                                  : Colors.red.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isPending
+                                      ? Icons.schedule_rounded
+                                      : Icons.block_rounded,
+                                  color: Colors.white,
+                                  size: 14,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  isPending ? 'Pending' : 'Rejected',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -927,23 +955,39 @@ class _EnhancedArtistProfilePageState extends State<EnhancedArtistProfilePage>
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.favorite_rounded,
-                            size: 14,
-                            color: Colors.red,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            (artwork['likes_count'] ?? 0).toString(),
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: Colors.white70,
+                      // Only show likes if artwork is approved
+                      if (isApproved)
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.favorite_rounded,
+                              size: 14,
+                              color: Colors.red,
                             ),
+                            const SizedBox(width: 4),
+                            Text(
+                              (artwork['likes_count'] ?? 0).toString(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ],
+                        )
+                      else if (_isCurrentUser)
+                        // Show status text for non-approved artworks
+                        Text(
+                          isPending
+                              ? 'Menunggu verifikasi admin'
+                              : 'Ditolak - Perlu perbaikan',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: isPending ? Colors.orange : Colors.red,
+                            fontStyle: FontStyle.italic,
                           ),
-                        ],
-                      ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                     ],
                   ),
                 ),
